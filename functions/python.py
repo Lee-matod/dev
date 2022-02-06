@@ -2,6 +2,8 @@ import discord
 import contextlib
 import io
 import textwrap
+import time
+import datetime
 
 from discord.ext import commands
 from traceback import format_exception
@@ -49,7 +51,6 @@ class RootPython(commands.Cog):
         if "lines" in args or "def" in args:
             if len(args.split()) > 1:
                 return await ctx.reply(f"`{self.bot.command_prefix}dev py` cannot take other arguments when using `lines`|`def`.")
-
         if "/root/" in code:
             code = code.replace("/root/", settings["folder"]["root_folder"])
         embed = await self.eval(code, ctx, kwargs)
@@ -88,6 +89,7 @@ class RootPython(commands.Cog):
         embed = discord.Embed(title="Console" if not debug else "Debug Console")
         try:
             with contextlib.redirect_stdout(stdout):
+                start = time.time()
                 exec(f"async def func():\n{textwrap.indent(code, '    ')}", local_vars)
                 obj = await local_vars["func"]()
                 res = f"{stdout.getvalue()}\n-- {obj}"
@@ -100,6 +102,7 @@ class RootPython(commands.Cog):
                 res = "".join(format_exception(e, e, e.__traceback__)).replace(settings["folder"]["path_to_file"], "/path/to/file/")
                 embed.description = f"```py\n{res}\n```"
                 embed.colour = discord.Color.red()
+                embed.set_footer(text=f"Script took {datetime.timedelta(seconds=int(time.time() - start))} seconds.")
                 return embed
             await ctx.message.add_reaction("❗")
             return False

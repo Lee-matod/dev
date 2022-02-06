@@ -36,4 +36,4 @@ class Dev(commands.Cog, command_attrs=dict(slash_command=False)):
 def setup(bot: commands.Bot):
     set_settings(bot)
     bot.add_cog(Dev(bot))
-    setup_(bot, extentions=["dev.functions.override", "dev.functions.python", "dev.functions.bot", "dev.functions.execute"], commands=["override", "bot", "python", "execute"])
+    setup_(bot, extentions=["dev.functions.override", "dev.functions.python", "dev.functions.bot", "dev.functions.execute"], commands=["override", "bot", "python", "execute", "reinvoke"])
