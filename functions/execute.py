@@ -56,7 +56,7 @@ class RootExecute(commands.Cog):
 
         if flags.kwargs_:
             kwargs = shlex.split(flags.kwargs_)
-            compiler = self.convert_kwargs_format(settings["kwargs"]["format"])
+            compiler = self.convert_kwargs_format(settings["kwargs"]["format"].strip())
             kwargs_pattern = re.compile(rf"{compiler}")
             for kw in kwargs:
                 match = re.finditer(string=kw, pattern=kwargs_pattern)
@@ -119,7 +119,7 @@ class RootExecute(commands.Cog):
                         alt_ctx: commands.Context = await self.generate_ctx(ctx, ctx.author, ctx.channel, content=message.content)
                         return await alt_ctx.command.reinvoke(alt_ctx)
                     elif not command:
-                        return await ctx.send(message.content)
+                        return await ctx.send(embed=discord.Embed(title="Last Message", description=f"{message.author.mention} said:\n{message.content}", url=message.jump_url))
                 count += 1
             continue
         await ctx.send("Couldn't find anything.")
