@@ -48,7 +48,7 @@ class CContext(commands.Context):
         return self.c
 
 
-class RootExecute(commands.Cog):
+class RootInvoke(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.embed_pattern = re.compile(r"discord\.Embed\(title=.*?\)((\.)?(add_field|set_footer|set_author)?\(?.*\)?)*")
@@ -195,4 +195,4 @@ class RootExecute(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(RootExecute(bot))
+    bot.add_cog(RootInvoke(bot))
