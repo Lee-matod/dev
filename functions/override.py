@@ -1,4 +1,5 @@
 import discord
+import re
 
 from discord.ext import commands
 
@@ -8,6 +9,7 @@ from dev.utils.functs import is_owner
 class RootOverrideBot(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.owner_comp = re.compile(r"((self)?, )?((\d){18} ?)+?")
 
     @commands.group(name="override")
     @is_owner()
@@ -30,15 +32,16 @@ class RootOverrideBot(commands.Cog):
                 if i.isdigit():
                     owners += i
                 else:
-                    print(owners)
-                    print(value)
-                    if not owners[-1].isdigit():
-                        continue
-                    owners += " "
+                    try:
+                        if not owners[-1].isdigit():
+                            continue
+                        owners += " "
+                    except IndexError:
+                        owners += " "
             owners = owners.split()
             for o in owners:
                 new_owners.append(int(o))
-            print(set(new_owners))
+            print(new_owners)
         return await ctx.message.add_reaction("❓")
 
     @root_override.command(name="file")

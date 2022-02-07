@@ -3,7 +3,6 @@ import contextlib
 import io
 import textwrap
 import time
-import datetime
 
 from discord.ext import commands
 from traceback import format_exception
@@ -89,20 +88,26 @@ class RootPython(commands.Cog):
         embed = discord.Embed(title="Console" if not debug else "Debug Console")
         try:
             with contextlib.redirect_stdout(stdout):
-                start = time.time()
+                start = time.perf_counter()
                 exec(f"async def func():\n{textwrap.indent(code, '    ')}", local_vars)
                 obj = await local_vars["func"]()
                 res = f"{stdout.getvalue()}\n-- {obj}"
                 embed.description = f"```py\n{res}\n```"
                 embed.colour = discord.Color.green()
+                end = time.perf_counter()
+                if debug:
+                    embed.set_footer(text=f"Script took {end - start:.3f} seconds.")
                 await ctx.message.add_reaction("☑")
                 return embed
         except Exception as e:
             if debug:
-                res = "".join(format_exception(e, e, e.__traceback__)).replace(settings["folder"]["path_to_file"], "/path/to/file/")
+                res = "".join(format_exception(e, e, e.__traceback__))
+                if settings["folder"]["path_to_file"]:
+                    res.replace(settings["folder"]["path_to_file"], "/path/to/file/")
                 embed.description = f"```py\n{res}\n```"
                 embed.colour = discord.Color.red()
-                embed.set_footer(text=f"Script took {datetime.timedelta(seconds=int(time.time() - start))} seconds.")
+                end = time.perf_counter()
+                embed.set_footer(text=f"Script took {end - start:.3f} seconds.")
                 return embed
             await ctx.message.add_reaction("❗")
             return False
