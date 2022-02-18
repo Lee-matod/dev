@@ -1,7 +1,33 @@
 from discord.ext import commands
+from typing import Union
 
+settings = {
+    "folder": {
+        "path_to_file": None,   # type: str
+        "root_folder": None  # type: str
+    },
+
+    "kwargs": {
+        "separator": "=",  # type: str
+        "format": "%(key)s%(sep)s%(word)s"  # type: str
+    },
+
+    "source": {
+        "filename": None,  # type: str
+        "use_file": False,  # type: bool
+        "not_dev_cmd": "./",  # type: str
+        "show_path": False  # type: bool
+    },
+
+    "file": {
+        "use_file": False,  # type: bool
+        "/": "/",  # type: str
+        "show_path": True  # type: bool
+    },
+
+    "owners": None  # type: Union[list, tuple, set]
+}
 owner: list
-settings = {"folder": {"path_to_file": None, "root_folder": None}, "kwargs": {"separator": "=", "format": "%(key)s%(sep)s%(word)s"}, "owners": None}
 
 
 def set_settings(bot: commands.Bot):

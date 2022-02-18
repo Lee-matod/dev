@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from discord.ext import commands
 
 from dev.utils.functs import is_owner
+from dev.utils.baseclass import commands_
 
 
 class Frames:
@@ -24,12 +25,38 @@ class RootBot(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.group(name="bot", invoke_without_command=True)
+    @commands_.group(name="bot", invoke_without_command=True, parent="dev")
     @is_owner()
     async def root_bot(self, ctx: commands.Context):
         pass
 
-    @root_bot.command(name="check")
+    @commands_.command(name="change", parent="dev bot")
+    async def root_bot_change(self, ctx: commands.Context, func: str, *, value: str):
+        if func == "prefix":
+            self.bot.command_prefix = value
+            return await ctx.message.add_reaction("✅")
+        if func == "owners":
+            new_owners = []
+            if "self" in value:
+                new_owners.append(self.bot.owner_ids or self.bot.owner_id)
+                value = value.replace("self", "")
+            owners = ""
+            for i in value:
+                if i.isdigit():
+                    owners += i
+                else:
+                    try:
+                        if not owners[-1].isdigit():
+                            continue
+                        owners += " "
+                    except IndexError:
+                        owners += " "
+            owners = owners.split()
+            for o in owners:
+                new_owners.append(int(o))
+        return await ctx.message.add_reaction("❓")
+
+    @commands_.command(name="check", parent="dev bot")
     @is_owner()
     async def root_bot_check(self, ctx: commands.Context, checks, value=None):
         if not value:

@@ -3,12 +3,14 @@ import contextlib
 import io
 import textwrap
 import time
+import re
 
 from discord.ext import commands
 from traceback import format_exception
 
 from dev.utils.functs import clean_code, is_owner
 from dev.utils.settings import settings
+from dev.utils.baseclass import commands_
 
 
 class RunEval(discord.ui.View):
@@ -32,14 +34,24 @@ class RootPython(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.group(name="python", aliases=["py"])
+    @commands_.command(name="python", aliases=["py"], parent="dev")
     @is_owner()
-    async def root_eval(self, ctx: commands.Context, *, code: str):
+    async def root_eval(ctx: commands.Context, *, code: str = commands.Option(description="Code to be evaluated.")):
+        """
+        Evaluate Python code.
+        An arguments can be given before specifying the script to change its behaviour.
+        `lines`|`func` = Shows the whole code without executing it and adds line numbers.
+        `debug`|`dbg` = If an error occurs, the bot will send the traceback instead of reacting with a ❗. The time that the script took to run will also be recorded.
+        When specifying the script, a few placeholder texts can be added.
+        `__previous__` = This is replaced with the previous script that was executed. The bot will search with a history length of 100. You may also set line limiters: `__previous__[start:end]`.
+        `/root/` = Replaced with the root folder specified in `settings["folder"]["root_folder"]`.
+        When setting `settings["folder"]["path_to_file"]`, this _str_ will be the replacement for a traceback's file path.
+        """
         args = ""
         for arg in code.split():
             if "```" in arg:
                 break
-            elif arg not in ["lines", "def", "debug", "dbg"]:
+            elif arg not in ["lines", "func", "debug", "dbg"]:
                 continue
             args += f"{arg} "
         code = clean_code(code[len(args):].strip())
@@ -47,34 +59,39 @@ class RootPython(commands.Cog):
         if args:
             for arg in args.split():
                 kwargs[arg] = True
-        if "lines" in args or "def" in args:
+        if "lines" in args or "func" in args:
             if len(args.split()) > 1:
-                return await ctx.reply(f"`{self.bot.command_prefix}dev py` cannot take other arguments when using `lines`|`def`.")
+                return await ctx.reply(f"`{ctx.bot.command_prefix}dev py` cannot take other arguments when using `lines`|`func`.")
         if "/root/" in code:
             code = code.replace("/root/", settings["folder"]["root_folder"])
-        embed = await self.eval(code, ctx, kwargs)
+        embed = await RootPython(ctx.bot).eval(code, ctx, kwargs)
         if embed:
             return await ctx.send(embed=embed)
 
     async def eval(self, code, ctx: commands.Context, kwargs: dict):
         messages = await ctx.channel.history(limit=100).flatten()
+        pattern_without_limits = re.compile(r"__previous__$")
+        pattern_with_limits = re.compile(r"__previous__\[(\d*?):(\d*?)]")
         for message in messages:
             if message.author.id == ctx.author.id:
-                if message.content.startswith("?dev py"):
+                if message.content.startswith("?py"):
                     if "__previous__" in message.content:
                         continue
                     else:
-                        previous_code = message.content.removeprefix("?dev py ")
+                        previous_code = message.content.removeprefix("?py ")
                         previous_code = clean_code(previous_code[previous_code.find("`"):])
-                        if "__previous__" in code:
+                        matches_with_limits = re.finditer(string=code, pattern=pattern_with_limits)
+                        matches_without_limits = re.finditer(string=code, pattern=pattern_without_limits)
+                        if matches_with_limits:
+                            for match in matches_with_limits:
+                                start = match.group(1) or None
+                                end = match.group(2) or None
+                                code = code.replace(f"__previous__[{match.group(1)}:{match.group(2)}]", '\n'.join(previous_code.split("\n")[start if start is None else int(start):end if end is None else int(end)]))
+                        if matches_without_limits:
                             code = code.replace("__previous__", previous_code)
                         break
-                else:
-                    continue
-            else:
-                continue
         debug = kwargs.pop("debug", False) or kwargs.pop("dbg", False)
-        lines = kwargs.pop("lines", False) or kwargs.pop("def", False)
+        lines = kwargs.pop("lines", False) or kwargs.pop("func", False)
         if lines:
             return await self.eval_def(code)
         local_vars = {

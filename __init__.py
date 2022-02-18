@@ -3,5 +3,5 @@ from dev.utils.settings import *
 
 __all__ = [
     "settings",
-    "Dev"
+    "setup"
 ]

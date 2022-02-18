@@ -1,0 +1,71 @@
+import discord
+import inspect
+import pathlib
+import io
+import os
+
+from discord.ext import commands
+
+from dev.utils.baseclass import commands_, command_, Paginator
+from dev.utils.settings import settings
+
+
+class DevFlags(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+
+    @commands_.command(name="--version", aliases=["-V"], parent="dev")
+    async def root_flag_version(ctx: commands.Context, command: str = None):
+        dev_cmd: command_.Group = ctx.bot.get_command("dev")
+        if not command:
+            await ctx.send(embed=discord.Embed(title=f"Version {dev_cmd.version}", color=discord.Color.gold()))
+        elif command in [cmd.name for cmd in dev_cmd.commands]:
+            command: command_.Command = ctx.bot.get_command(f"dev {command}")
+            await ctx.send(embed=discord.Embed(title=f"Version {command.version}", color=discord.Color.gold()))
+        else:
+            await ctx.send(f"Command `{command}` is not found.")
+
+    @commands_.command(name="--source", aliases=["-src"], parent="dev")
+    async def root_flag_source(ctx: commands.Context, *, cmd: str):
+        command = ctx.bot.get_command(f"dev {cmd}" if not cmd.startswith(settings["source"]["not_dev_cmd"]) else cmd)
+        if not command:
+            return await ctx.send(f"Command `{cmd}` is not found.")
+        lines, _ = inspect.getsourcelines(command.callback)
+        directory = inspect.getsourcefile(command.callback)
+        filename = settings["source"]["filename"] or pathlib.Path(inspect.getfile(command.callback)).name
+        if settings["source"]["use_file"]:
+            return await ctx.send(file=discord.File(filename), fp=io.BytesIO(''.join(lines).encode('utf-8')))
+        paginator = commands.Paginator(prefix="```py\n", suffix="```", max_size=1985, linesep='')
+        for line in lines:
+            if "`" in line:
+                line = line.replace("`", "\u200b`")
+            if ctx.bot.http.token in line:
+                line = line.replace(ctx.bot.http.token, "TOKEN")
+            paginator.add_line(line)
+        if settings["folder"]["root_folder"]:
+            directory = directory.replace(settings["folder"]["root_folder"], "/root/")
+        await ctx.send(f"{f'**{directory}**' if settings['source']['show_path'] else ''}\n{paginator.pages[0]}", view=Paginator(paginator, ctx.author.id, PATH=directory, show_path=settings["source"]["show_path"]))
+
+    @commands_.command(name="--file", parent="dev")
+    async def root_flag_file(ctx: commands.Context, *, directory: str):
+        raw_dir = directory
+        if "/root/" in directory:
+            directory = directory.replace("/root/", settings["folder"]["root_folder"])
+        directory = f"{f'{os.getcwd()}/' if not directory.startswith(settings['file']['/']) else ''}{directory}"
+        if not os.path.exists(directory):
+            return await ctx.send(f"Path `{directory}` doesn't exist.")
+        if settings["file"]["use_file"]:
+            return await ctx.send(file=discord.File(directory))
+        paginator = commands.Paginator(prefix=f"```{directory.split('.')[-1]}\n", suffix="```", max_size=1985, linesep='')
+        with open(directory, "r") as file:
+            for line in file.readlines():
+                if "`" in line:
+                    line = line.replace("`", "\u200b`")
+                if ctx.bot.http.token in line:
+                    line = line.replace(ctx.bot.http.token, "TOKEN")
+                paginator.add_line(line)
+        await ctx.send(f"{f'**{raw_dir}**' if settings['file']['show_path'] else ''}\n{paginator.pages[0]}", view=Paginator(paginator, ctx.author.id, PATH=raw_dir, show_path=settings["file"]["show_path"]))
+
+
+def setup(bot: commands.Bot):
+    bot.add_cog(DevFlags(bot))
