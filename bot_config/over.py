@@ -50,6 +50,7 @@ class RootOverrideBot(commands.Cog):
                 await ctx.message.add_reaction("❗")
 
     @commands_.command(name="overwrite", parent="dev", version=1, usage=r"<mode> <attrs> \`\`\`<code>\`\`\`")
+    @is_owner()
     async def root_overwrite(ctx: commands.Context, mode: str = commands.Option(description="The mode to overwrite."), *, attrs: str = commands.Option(description="Attributes to the mode.\n`code`: Script that will be used as the overwrite.")):
         r"""
         Completely change a file's content to be permanently overwriten. Changes can be undone by executing a command that is yet to be created.

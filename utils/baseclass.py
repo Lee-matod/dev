@@ -31,6 +31,7 @@ class Paginator(discord.ui.View):
         self.user_id = user_id
         self.PATH = kwargs.pop("PATH", None)
         self.show_path = kwargs.pop("show_path", False)
+        self.is_embed: discord.Embed = kwargs.pop("embed", False)
 
     @discord.ui.button(emoji="⏪", style=discord.ButtonStyle.primary, disabled=True, custom_id="rewind")
     async def first_page(self, button: discord.Button, interaction: discord.Interaction):
@@ -39,6 +40,9 @@ class Paginator(discord.ui.View):
         self.display_page = 0
         self.enable_or_disable(rewind_=True, previous_=True)
         self.update_display_page()
+        if self.is_embed:
+            self.is_embed.description = self.paginator.pages[self.display_page]
+            return await interaction.message.edit(embed=self.is_embed, view=self)
         await interaction.message.edit(content=f"{f'**{self.PATH}**' if self.show_path else ''}\n{self.paginator.pages[self.display_page]}", view=self)
 
     @discord.ui.button(emoji="◀", style=discord.ButtonStyle.success, disabled=True, custom_id="previous")
@@ -49,9 +53,15 @@ class Paginator(discord.ui.View):
         if self.display_page == 0:
             self.update_display_page()
             self.enable_or_disable(rewind_=True, previous_=True)
+            if self.is_embed:
+                self.is_embed.description = self.paginator.pages[self.display_page]
+                return await interaction.message.edit(embed=self.is_embed, view=self)
             return await interaction.message.edit(content=f"{f'**{self.PATH}**' if self.show_path else ''}\n{self.paginator.pages[self.display_page]}", view=self)
         self.enable_or_disable(next_=False, fastforward_=False)
         self.update_display_page()
+        if self.is_embed:
+            self.is_embed.description = self.paginator.pages[self.display_page]
+            return await interaction.message.edit(embed=self.is_embed, view=self)
         await interaction.message.edit(content=f"{f'**{self.PATH}**' if self.show_path else ''}\n{self.paginator.pages[self.display_page]}", view=self)
 
     @discord.ui.button(label="1", style=discord.ButtonStyle.red, custom_id="current_stop")
@@ -73,9 +83,15 @@ class Paginator(discord.ui.View):
             if self.display_page == len(self.paginator.pages) - 1:
                 self.update_display_page()
                 self.enable_or_disable(next_=True, fastforward_=True)
+                if self.is_embed:
+                    self.is_embed.description = self.paginator.pages[self.display_page]
+                    return await interaction.message.edit(embed=self.is_embed, view=self)
                 return await interaction.message.edit(content=f"{f'**{self.PATH}**' if self.show_path else ''}\n{pages}", view=self)
             self.enable_or_disable(rewind_=False, previous_=False)
             self.update_display_page()
+            if self.is_embed:
+                self.is_embed.description = self.paginator.pages[self.display_page]
+                return await interaction.message.edit(embed=self.is_embed, view=self)
             await interaction.message.edit(content=f"{f'**{self.PATH}**' if self.show_path else ''}\n{pages}", view=self)
         except IndexError:
             self.enable_or_disable(rewind_=True, previous_=True, next_=True, fastforward_=True)
@@ -90,6 +106,9 @@ class Paginator(discord.ui.View):
             pages = self.paginator.pages[self.display_page]
             self.enable_or_disable(next_=True, fastforward_=True)
             self.update_display_page()
+            if self.is_embed:
+                self.is_embed.description = self.paginator.pages[self.display_page]
+                return await interaction.message.edit(embed=self.is_embed, view=self)
             await interaction.message.edit(content=f"{f'**{self.PATH}**' if self.show_path else ''}\n{pages}", view=self)
         except IndexError:
             self.enable_or_disable(rewind_=True, previous_=True, next_=True, fastforward_=True)

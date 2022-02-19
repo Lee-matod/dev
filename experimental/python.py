@@ -1,3 +1,5 @@
+import sys
+
 import discord
 import contextlib
 import io
@@ -10,7 +12,7 @@ from traceback import format_exception
 
 from dev.utils.functs import clean_code, is_owner
 from dev.utils.settings import settings
-from dev.utils.baseclass import commands_
+from dev.utils.baseclass import commands_, Paginator
 
 
 class RunEval(discord.ui.View):
@@ -66,7 +68,9 @@ class RootPython(commands.Cog):
             code = code.replace("/root/", settings["folder"]["root_folder"])
         embed = await RootPython(ctx.bot).eval(code, ctx, kwargs)
         if embed:
-            return await ctx.send(embed=embed)
+            if len(embed) == 2:
+                return await ctx.send(embed=embed[0], view=embed[1])
+            await ctx.send(embed=embed)
 
     async def eval(self, code, ctx: commands.Context, kwargs: dict):
         messages = await ctx.channel.history(limit=100).flatten()
@@ -74,11 +78,11 @@ class RootPython(commands.Cog):
         pattern_with_limits = re.compile(r"__previous__\[(\d*?):(\d*?)]")
         for message in messages:
             if message.author.id == ctx.author.id:
-                if message.content.startswith("?py"):
+                if message.content.startswith("?dev py"):
                     if "__previous__" in message.content:
                         continue
                     else:
-                        previous_code = message.content.removeprefix("?py ")
+                        previous_code = message.content.removeprefix("?dev py ")
                         previous_code = clean_code(previous_code[previous_code.find("`"):])
                         matches_with_limits = re.finditer(string=code, pattern=pattern_with_limits)
                         matches_without_limits = re.finditer(string=code, pattern=pattern_without_limits)
@@ -107,8 +111,18 @@ class RootPython(commands.Cog):
             with contextlib.redirect_stdout(stdout):
                 start = time.perf_counter()
                 exec(f"async def func():\n{textwrap.indent(code, '    ')}", local_vars)
-                obj = await local_vars["func"]()
-                res = f"{stdout.getvalue()}\n-- {obj}"
+                await local_vars["func"]()
+                res = f"{stdout.getvalue()}"
+                if len(res) > 4088:
+                    paginator = commands.Paginator(prefix="```py\n", suffix="\n```", max_size=1985, linesep='')
+                    for line in res.split("\n"):
+                        if "`" in line:
+                            line = line.replace("`", "\u200b`")
+                        paginator.add_line(line)
+                    end = time.perf_counter()
+                    embed.description = paginator.pages[0]; embed.colour = discord.Color.green()
+                    if debug: embed.set_footer(text=f"Script took {end - start:.3f} seconds.")
+                    return embed, Paginator(paginator, ctx.author.id, embed=embed)
                 embed.description = f"```py\n{res}\n```"
                 embed.colour = discord.Color.green()
                 end = time.perf_counter()
