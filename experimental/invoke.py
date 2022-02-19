@@ -39,7 +39,7 @@ class RootInvoke(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands_.command(name="execute", aliases=["exec"], parent="dev")
+    @commands_.command(name="execute", aliases=["exec"], parent="dev", version=1)
     @is_owner()
     async def root_execute(ctx: commands.Context, *, flags: ExecuteFlags = commands.Option(description="Arguments that will be taken into consideration.")):
         """
@@ -100,7 +100,7 @@ class RootInvoke(commands.Cog):
                 return await ctx.message.add_reaction("☑")
             return await new_ctx.send(**kwargs)
 
-    @commands_.command(name="reinvoke", parent="dev")
+    @commands_.command(name="reinvoke", parent="dev", version=1)
     @is_owner()
     async def root_reinvoke(ctx: commands.Context, *, flags: ReinvokeFlags = commands.Option(description="Arguments that will be taken into consideration.")):
         """

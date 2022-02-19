@@ -16,8 +16,8 @@ class RootHelp(commands.Cog):
             command_list = [cmd.name for cmd in dev_cmd.commands if not cmd.name.startswith("--")]; command_list.sort()
             subcommands = '\n'.join(command_list)
             hce = discord.Embed(title=dev_cmd.name, description=f"Root command for the `dev` cog. Subcommands are shown below.\nExecute `{ctx.prefix}dev --help [command]` for more information on a subcommand.",  color=discord.Color.darker_gray())
-            hce.add_field(name="usage", value="dev [--version|-V] [--help] [--source|-src] [--file] <command> [<args>]", inline=False)
-            hce.add_field(name="docs", value=f"`--version`|`-V` [command] = Show the version of a command.\n`--help` [command] = Shows this help menu.\n`--source`|`-src` [command] = Show the source code of a command.\n`--file` [path] = Show a file with its specified `path`.", inline=False)
+            hce.add_field(name="usage", value="dev [--version|-V] [--help|--man] [--source|-src] [--file] <command> [<args>]", inline=False)
+            hce.add_field(name="docs", value=f"`--version`|`-V` [command] = Show the version of a command.\n`--help`|`--man` [command] = Shows this help menu.\n`--source`|`-src` [command] = Show the source code of a command.\n`--file` [path] = Show a file with its specified `path`.", inline=False)
             hce.add_field(name="subcommands", value=subcommands)
             return await ctx.send(embed=hce)
         if command in [cmd.name for cmd in dev_cmd.commands]:
@@ -35,7 +35,7 @@ class RootHelp(commands.Cog):
             if isinstance(cmd, commands.Group):
                 command_list = [cmd.name for cmd in cmd.commands]; command_list.sort()
                 subcommands = '\n'.join(command_list)
-                sche.add_field(name="subcommands", value=subcommands)
+                sche.add_field(name="subcommands", value=subcommands or 'None')
             return await ctx.send(embed=sche)
 
 

@@ -34,7 +34,7 @@ class RootPython(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands_.command(name="python", aliases=["py"], parent="dev")
+    @commands_.command(name="python", aliases=["py"], parent="dev", version=1)
     @is_owner()
     async def root_eval(ctx: commands.Context, *, code: str = commands.Option(description="Code to be evaluated.")):
         """

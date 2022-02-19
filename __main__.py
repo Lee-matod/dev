@@ -41,4 +41,4 @@ class Dev(commands.Cog, command_attrs=dict(slash_command=False)):
 def setup(bot: commands.Bot):
     set_settings(bot)
     bot.add_cog(Dev(bot))
-    setup_(bot, "dev.help_command", "dev.bot_config.override", "dev.exper.invoke", "dev.exper.python", "dev.flags")
+    setup_(bot, "dev.flags.help_command", "dev.flags.flags", "dev.bot_config.over", "dev.experimental.invoke", "dev.experimental.python")
