@@ -31,10 +31,9 @@ class DevFlags(commands.Cog):
 
     @commands_.command(name="--source", aliases=["-src"], parent="dev", version=1)
     async def root_flag_source(ctx: commands.Context, *, cmd: str = commands.Option(description="Command that should be fetched.")):
-        f"""
+        """
         View the source code of a command. 
-        This flag is not exclusive to the `?dev` extension, however commands that aren't part of the cog should start with `{settings["source"]["not_dev_cmd"]}`. 
-        This can be changes in `settings["source"]["not_dev_cmd"]`.
+        This flag is not exclusive to the `?dev` extension, however commands that aren't part of the cog should start with the specified character in `settings["source"]["not_dev_cmd"]`.
         The bot's token is also hidden as `TOKEN`.
         """
         command = ctx.bot.get_command(f"dev {cmd}" if not cmd.startswith(settings["source"]["not_dev_cmd"]) else cmd)

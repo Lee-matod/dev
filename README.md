@@ -20,15 +20,15 @@ settings["kwargs"]["separator"] = ": "
 The full `settings` tree is shown below.
 ```
 "folder":
-    "path_to_file": None,   # type: str
-    "root_folder": None  # type: str
+    "path_to_file": "",   # type: str
+    "root_folder": ""  # type: str
     
 "kwargs":
     "separator": "=",  # type: str
     "format": "%(key)s%(sep)s%(word)s"  # type: str
 
 "source":
-    "filename": None,  # type: str
+    "filename": "",  # type: str
     "use_file": False,  # type: bool
     "not_dev_cmd": "./",  # type: str
     "show_path": False  # type: bool
@@ -38,7 +38,7 @@ The full `settings` tree is shown below.
     "/": "/",  # type: str
     "show_path": True  # type: bool
 
-"owners": None  # type: Union[list, tuple, set]
+"owners": [] # type: list, tuple, set
 ```
 
 **global**
