@@ -10,6 +10,14 @@ This is still under development, so I'm terribly sorry if you experience any iss
 This README.md should also get edited in the near future with more stuff to read.
 ****
 # settings
+
+You can customize this extension however you'd like. To do this simply import `settings` from `dev`. An example is shown below.
+```python
+from dev import settings
+settings["source"]["use_file"] = True
+settings["kwargs"]["separator"] = ": "
+```
+The full `settings` tree is shown below.
 ```
 "folder":
     "path_to_file": None,   # type: str
@@ -42,6 +50,8 @@ This README.md should also get edited in the near future with more stuff to read
 "separator": Character(s) that separates the keyword from the argument.
 
 "format": Format that is used for the kwargs.
+
+"owners": Use another specified user ID(s) that can use the extension.
 
 **?dev --source|-src**
 
