@@ -14,8 +14,12 @@ class DevFlags(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands_.command(name="--version", aliases=["-V"], parent="dev")
-    async def root_flag_version(ctx: commands.Context, command: str = None):
+    @commands_.command(name="--version", aliases=["-V"], parent="dev", version=1)
+    async def root_flag_version(ctx: commands.Context, command: str = commands.Option(description="Command that should be fetched.", default=None)):
+        """
+        View the version of a command. This is exclusive to `?dev` commands.
+        `?dev --version|-V` is the version of the extension.
+        """
         dev_cmd: command_.Group = ctx.bot.get_command("dev")
         if not command:
             await ctx.send(embed=discord.Embed(title=f"Version {dev_cmd.version}", color=discord.Color.gold()))
@@ -25,8 +29,14 @@ class DevFlags(commands.Cog):
         else:
             await ctx.send(f"Command `{command}` is not found.")
 
-    @commands_.command(name="--source", aliases=["-src"], parent="dev")
-    async def root_flag_source(ctx: commands.Context, *, cmd: str):
+    @commands_.command(name="--source", aliases=["-src"], parent="dev", version=1)
+    async def root_flag_source(ctx: commands.Context, *, cmd: str = commands.Option(description="Command that should be fetched.")):
+        f"""
+        View the source code of a command. 
+        This flag is not exclusive to the `?dev` extension, however commands that aren't part of the cog should start with `{settings["source"]["not_dev_cmd"]}`. 
+        This can be changes in `settings["source"]["not_dev_cmd"]`.
+        The bot's token is also hidden as `TOKEN`.
+        """
         command = ctx.bot.get_command(f"dev {cmd}" if not cmd.startswith(settings["source"]["not_dev_cmd"]) else cmd)
         if not command:
             return await ctx.send(f"Command `{cmd}` is not found.")
@@ -46,8 +56,12 @@ class DevFlags(commands.Cog):
             directory = directory.replace(settings["folder"]["root_folder"], "/root/")
         await ctx.send(f"{f'**{directory}**' if settings['source']['show_path'] else ''}\n{paginator.pages[0]}", view=Paginator(paginator, ctx.author.id, PATH=directory, show_path=settings["source"]["show_path"]))
 
-    @commands_.command(name="--file", parent="dev")
+    @commands_.command(name="--file", parent="dev", version=1)
     async def root_flag_file(ctx: commands.Context, *, directory: str):
+        """
+        View a file.
+        By default, the file is sent as a paginator, however this can be changed in settings["file"]["use_file"]. The bot's token is also hidden as `TOKEN`.
+        """
         raw_dir = directory
         if "/root/" in directory:
             directory = directory.replace("/root/", settings["folder"]["root_folder"])

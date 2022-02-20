@@ -9,8 +9,12 @@ class RootHelp(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands_.command(name="--help", aliases=["--man"], parent="dev")
-    async def root_help(ctx: commands.Context, *, command: str = None):
+    @commands_.command(name="--help", aliases=["--man"], parent="dev", version=1)
+    async def root_help(ctx: commands.Context, *, command: str = commands.Option(description="Command that should be fetched.", default=None)):
+        """
+        Help command made exclusively for the `?dev` cog.
+        Flags are hidden, but they can still be accessed and attributes can still be viewed using their respective commands.
+        """
         dev_cmd: commands.Group = ctx.bot.get_command("dev")
         if not command:
             command_list = [cmd.name for cmd in dev_cmd.commands if not cmd.name.startswith("--")]; command_list.sort()
@@ -22,7 +26,7 @@ class RootHelp(commands.Cog):
             return await ctx.send(embed=hce)
         if command in [cmd.name for cmd in dev_cmd.commands]:
             cmd = ctx.bot.get_command(f"dev {command}")
-            if not cmd or command.startswith("--"):
+            if not cmd:
                 return await ctx.send(f"Command `{command}` is not found.")
             options = {}
             docs = '\n'.join(cmd.help.split("\n")[1:])

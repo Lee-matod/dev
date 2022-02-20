@@ -1,6 +1,5 @@
 import io
 import re
-import shlex
 import inspect
 import discord
 import textwrap
