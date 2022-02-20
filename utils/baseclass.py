@@ -1,10 +1,9 @@
 import discord
 
+from typing import Type
 from discord.ext import commands
 from discord.utils import MISSING
 from discord.ext.commands.core import GroupT, CommandT, Command, Group
-
-from typing import Type
 
 add_parents = {}
 

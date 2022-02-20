@@ -1,11 +1,9 @@
-import discord
-
 from discord.ext import commands
 
-from dev.utils.settings import set_settings
 from dev.utils.setup import setup_
 from dev.utils.functs import is_owner
 from dev.utils.baseclass import commands_
+from dev.utils.settings import set_settings
 
 
 class Dev(commands.Cog, command_attrs=dict(slash_command=False)):

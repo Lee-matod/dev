@@ -1,13 +1,13 @@
+import io
+import os
 import discord
 import inspect
 import pathlib
-import io
-import os
 
 from discord.ext import commands
 
-from dev.utils.baseclass import commands_, command_, Paginator
 from dev.utils.settings import settings
+from dev.utils.baseclass import commands_, command_, Paginator
 
 
 class DevFlags(commands.Cog):
