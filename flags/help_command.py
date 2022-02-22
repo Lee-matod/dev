@@ -24,7 +24,7 @@ class RootHelp(commands.Cog):
             hce.add_field(name="docs", value=f"`--version`|`-V` [command] = Show the version of a command.\n`--help`|`--man` [command] = Shows this help menu.\n`--source`|`-src` [command] = Show the source code of a command.\n`--file` [path] = Show a file with its specified `path`.", inline=False)
             hce.add_field(name="subcommands", value=subcommands)
             return await ctx.send(embed=hce)
-        if command in [cmd.name for cmd in dev_cmd.commands]:
+        if command.split()[0] in [cmd.name for cmd in dev_cmd.commands]:
             cmd = ctx.bot.get_command(f"dev {command}")
             if not cmd:
                 return await ctx.send(f"Command `{command}` is not found.")

@@ -11,7 +11,7 @@ This README.md should also get edited in the near future with more stuff to read
 ****
 # settings
 
-You can customize this extension however you'd like. To do this simply import `settings` from `dev`. An example is shown below.
+You can customize this extension however you'd like. To do this simply import `settings` from `dev` and change the module and its setting accordingly. An example is shown below.
 ```python
 from dev import settings
 settings["source"]["use_file"] = True
@@ -33,12 +33,15 @@ The full `settings` tree is shown below.
     "not_dev_cmd": "./",  # type: str
     "show_path": False  # type: bool
 
-"file": {
+"file": 
     "use_file": False,  # type: bool
     "/": "/",  # type: str
     "show_path": True  # type: bool
 
-"owners": [] # type: list, tuple, set
+"http": 
+    "format": "ATTR(%(name)s)"  # type: str
+
+"owners": []  # type: list, tuple, set
 ```
 
 **global**
@@ -70,3 +73,7 @@ The full `settings` tree is shown below.
 "/": "/": If the directory starts with `settings["file"]["/"]`, the directory specified should start at `/` instead of the current working directory.
 
 "show_path":  Whether the path for the file should be sent or not.
+
+**?dev http get**
+
+"format": Format that is used for variable placeholder texts.

@@ -73,7 +73,7 @@ class RootPython(commands.Cog):
     async def eval(self, code, ctx: commands.Context, kwargs: dict):
         messages = await ctx.channel.history(limit=100).flatten()
         pattern_without_limits = re.compile(r"__previous__$")
-        pattern_with_limits = re.compile(r"__previous__\[(\d*?):(\d*?)]")
+        pattern_with_limits = re.compile(r"__previous__\[(\d*?)(:\d*?)?]")
         for message in messages:
             if message.author.id == ctx.author.id:
                 if message.content.startswith("?dev py"):
@@ -88,7 +88,11 @@ class RootPython(commands.Cog):
                             for match in matches_with_limits:
                                 start = match.group(1) or None
                                 end = match.group(2) or None
-                                code = code.replace(f"__previous__[{match.group(1)}:{match.group(2)}]", '\n'.join(previous_code.split("\n")[start if start is None else int(start):end if end is None else int(end)]))
+                                if end:
+                                    end = end[1:]
+                                    code = code.replace(f"__previous__[{match.group(1)}{match.group(2)}]", '\n'.join(previous_code.split("\n")[start if start is None else int(start):end if end is None else int(end)]))
+                                else:
+                                    code = code.replace(f"__previous__[{match.group(1)}]", "\n".join(previous_code.split("\n")[int(start):int(start) + 1]))
                         if matches_without_limits:
                             code = code.replace("__previous__", previous_code)
                         break
