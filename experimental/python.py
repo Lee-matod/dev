@@ -42,7 +42,8 @@ class RootPython(commands.Cog):
         An arguments can be given before specifying the script to change its behaviour.
         `lines`|`func` = Shows the whole code without executing it and adds line numbers.
         `debug`|`dbg` = If an error occurs, the bot will send the traceback instead of reacting with a ❗. The time that the script took to run will also be recorded.
-        When specifying the script, a few placeholder texts can be added.
+
+        When specifying a script, some placeholder texts can be set.
         `__previous__` = This is replaced with the previous script that was executed. The bot will search with a history length of 100. You may also set line limiters: `__previous__[start:end]`.
         `/root/` = Replaced with the root folder specified in `settings["folder"]["root_folder"]`.
         When setting `settings["folder"]["path_to_file"]`, this _str_ will be the replacement for a traceback's file path.
@@ -64,99 +65,101 @@ class RootPython(commands.Cog):
                 return await ctx.reply(f"`{ctx.bot.command_prefix}dev py` cannot take other arguments when using `lines`|`func`.")
         if "/root/" in code:
             code = code.replace("/root/", settings["folder"]["root_folder"])
-        embed = await RootPython(ctx.bot).eval(code, ctx, kwargs)
+        embed = await evaluate(code, ctx, **kwargs)
         if embed:
             if len(embed) == 2:
                 return await ctx.send(embed=embed[0], view=embed[1])
             await ctx.send(embed=embed)
 
-    async def eval(self, code, ctx: commands.Context, kwargs: dict):
-        messages = await ctx.channel.history(limit=100).flatten()
-        pattern_without_limits = re.compile(r"__previous__$")
-        pattern_with_limits = re.compile(r"__previous__\[(\d*?)(:\d*?)?]")
-        for message in messages:
-            if message.author.id == ctx.author.id:
-                if message.content.startswith("?dev py"):
-                    if "__previous__" in message.content:
-                        continue
-                    else:
-                        previous_code = message.content.removeprefix("?dev py ")
-                        previous_code = clean_code(previous_code[previous_code.find("`"):])
-                        matches_with_limits = re.finditer(string=code, pattern=pattern_with_limits)
-                        matches_without_limits = re.finditer(string=code, pattern=pattern_without_limits)
-                        if matches_with_limits:
-                            for match in matches_with_limits:
-                                start = match.group(1) or None
-                                end = match.group(2) or None
-                                if end:
-                                    end = end[1:]
-                                    code = code.replace(f"__previous__[{match.group(1)}{match.group(2)}]", '\n'.join(previous_code.split("\n")[start if start is None else int(start):end if end is None else int(end)]))
-                                else:
-                                    code = code.replace(f"__previous__[{match.group(1)}]", "\n".join(previous_code.split("\n")[int(start):int(start) + 1]))
-                        if matches_without_limits:
-                            code = code.replace("__previous__", previous_code)
-                        break
-        debug = kwargs.pop("debug", False) or kwargs.pop("dbg", False)
-        lines = kwargs.pop("lines", False) or kwargs.pop("func", False)
-        if lines:
-            return await self.eval_def(code)
-        local_vars = {
-            "discord": discord,
-            "commands": commands,
-            "bot": self.bot,
-            "ctx": ctx,
-        }
 
-        stdout = io.StringIO()
-        embed = discord.Embed(title="Console" if not debug else "Debug Console")
-        try:
-            with contextlib.redirect_stdout(stdout):
-                start = time.perf_counter()
-                exec(f"async def func():\n{textwrap.indent(code, '    ')}", local_vars)
-                await local_vars["func"]()
-                res = f"{stdout.getvalue()}"
-                if len(res) > 4088:
-                    paginator = commands.Paginator(prefix="```py\n", suffix="\n```", max_size=1985, linesep='')
-                    for line in res.split("\n"):
-                        if "`" in line:
-                            line = line.replace("`", "\u200b`")
-                        paginator.add_line(line)
-                    end = time.perf_counter()
-                    embed.description = paginator.pages[0]; embed.colour = discord.Color.green()
-                    if debug: embed.set_footer(text=f"Script took {end - start:.3f} seconds.")
-                    return embed, Paginator(paginator, ctx.author.id, embed=embed)
-                embed.description = f"```py\n{res}\n```"
-                embed.colour = discord.Color.green()
+async def evaluate(code, ctx: commands.Context, **kwargs):
+    messages = await ctx.channel.history(limit=100).flatten()
+    pattern_without_limits = re.compile(r"__previous__$")
+    pattern_with_limits = re.compile(r"__previous__\[(\d*?)(:\d*?)?]")
+    for message in messages:
+        if message.author.id == ctx.author.id:
+            if message.content.startswith("?dev py"):
+                if "__previous__" in message.content:
+                    continue
+                else:
+                    previous_code = message.content.removeprefix("?dev py ")
+                    previous_code = clean_code(previous_code[previous_code.find("`"):])
+                    matches_with_limits = re.finditer(string=code, pattern=pattern_with_limits)
+                    matches_without_limits = re.finditer(string=code, pattern=pattern_without_limits)
+                    if matches_with_limits:
+                        for match in matches_with_limits:
+                            start = match.group(1) or None
+                            end = match.group(2) or None
+                            if end:
+                                end = end[1:]
+                                code = code.replace(f"__previous__[{match.group(1)}{match.group(2)}]", '\n'.join(previous_code.split("\n")[start if start is None else int(start):end if end is None else int(end)]))
+                            else:
+                                code = code.replace(f"__previous__[{match.group(1)}]", "\n".join(previous_code.split("\n")[int(start):int(start) + 1]))
+                    if matches_without_limits:
+                        code = code.replace("__previous__", previous_code)
+                    break
+    debug = kwargs.pop("debug", False) or kwargs.pop("dbg", False)
+    lines = kwargs.pop("lines", False) or kwargs.pop("func", False)
+    if lines:
+        return await eval_def(code)
+    local_vars = {
+        "discord": discord,
+        "commands": commands,
+        "bot": ctx.bot,
+        "ctx": ctx,
+    }
+
+    stdout = io.StringIO()
+    embed = discord.Embed(title="Console" if not debug else "Debug Console")
+    try:
+        with contextlib.redirect_stdout(stdout):
+            start = time.perf_counter()
+            exec(f"async def func():\n{textwrap.indent(code, '    ')}", local_vars)
+            await local_vars["func"]()
+            res = f"{stdout.getvalue()}"
+            if len(res) > 4088:
+                paginator = commands.Paginator(prefix="```py\n", suffix="\n```", max_size=1985, linesep='')
+                for line in res.split("\n"):
+                    if "`" in line:
+                        line = line.replace("`", "\u200b`")
+                    paginator.add_line(line)
                 end = time.perf_counter()
-                if debug:
-                    embed.set_footer(text=f"Script took {end - start:.3f} seconds.")
-                await ctx.message.add_reaction("☑")
-                return embed
-        except Exception as e:
+                embed.description = paginator.pages[0]; embed.colour = discord.Color.green()
+                if debug: embed.set_footer(text=f"Script took {end - start:.3f} seconds.")
+                return embed, Paginator(paginator, ctx.author.id, embed=embed)
+            embed.description = f"```py\n{res}\n```"
+            embed.colour = discord.Color.green()
+            end = time.perf_counter()
             if debug:
-                res = "".join(format_exception(e, e, e.__traceback__))
-                if settings["folder"]["path_to_file"]:
-                    res.replace(settings["folder"]["path_to_file"], "/path/to/file/")
-                embed.description = f"```py\n{res}\n```"
-                embed.colour = discord.Color.red()
-                end = time.perf_counter()
                 embed.set_footer(text=f"Script took {end - start:.3f} seconds.")
-                return embed
-            await ctx.message.add_reaction("❗")
-            return False
+            await ctx.message.add_reaction("☑")
+            return embed
+    except Exception as e:
+        if debug:
+            res = "".join(format_exception(e, e, e.__traceback__))
+            if settings["folder"]["path_to_file"]:
+                res.replace(settings["folder"]["path_to_file"], "/path/to/file/")
+            embed.description = f"```py\n{res}\n```"
+            embed.colour = discord.Color.red()
+            end = time.perf_counter()
+            embed.set_footer(text=f"Script took {end - start:.3f} seconds.")
+            return embed
+        await ctx.message.add_reaction("❗")
+        return False
 
-    async def eval_def(self, code) -> discord.Embed:
-        indented_code = textwrap.indent(code, '    ')
-        indented_code_split = indented_code.split("\n") if indented_code.split("\n")[-1] != '' else indented_code.split("\n")[:-len([a for a in indented_code.split("\n") if a == ''])]
-        obj = ""
-        for c in range(len(indented_code_split)):
-            obj += f"{c + 2}. | {indented_code_split[c]}\n"
-        res = f"```py\n" \
-              f"1. | async def func():\n" \
-              f"{obj}" \
-              f"```"
-        embed = discord.Embed(title="File", description=res, color=discord.Color.gold())
-        return embed
+
+async def eval_def(code) -> discord.Embed:
+    indented_code = textwrap.indent(code, '    ')
+    indented_code_split = indented_code.split("\n") if indented_code.split("\n")[-1] != '' else indented_code.split("\n")[:-len([a for a in indented_code.split("\n") if a == ''])]
+    obj = ""
+    for c in range(len(indented_code_split)):
+        obj += f"{c + 2}. | {indented_code_split[c]}\n"
+    res = f"```py\n" \
+          f"1. | async def func():\n" \
+          f"{obj}" \
+          f"```"
+    embed = discord.Embed(title="File", description=res, color=discord.Color.gold())
+    return embed
 
 
 def setup(bot: commands.Bot):
