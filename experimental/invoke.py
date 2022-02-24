@@ -5,13 +5,12 @@ import discord
 import textwrap
 import contextlib
 
-from copy import copy
 from typing import Optional
 from discord.ext import commands
 
-from dev.utils.functs import is_owner
 from dev.utils.settings import settings
 from dev.utils.baseclass import CContext, commands_
+from dev.utils.functs import is_owner, convert_kwargs_format, generate_ctx
 
 
 class ExecuteFlags(commands.FlagConverter):
@@ -159,32 +158,6 @@ def flag_checks(message: discord.Message, flags):
         if not message.content.endswith(flags.endswith_):
             return False
     return True
-
-
-async def generate_ctx(ctx: commands.Context, author: discord.Member, channel: discord.TextChannel, **kwargs) -> commands.Context:
-    alt_msg: discord.Message = copy(ctx.message)
-    alt_msg._update(kwargs)
-    alt_msg.author = author
-    alt_msg.channel = channel
-    return await ctx.bot.get_context(alt_msg, cls=type(ctx))
-
-
-def convert_kwargs_format(formatter: str):
-    format_style = re.compile(r"%\((\w+)\)s")
-    f = re.finditer(format_style, formatter)
-    re_format = []
-    compiler = ""
-    for i in f:
-        if i:
-            re_format.append(i.group(1))
-    for i in re_format:
-        if i == "key":
-            compiler += r"\w+?"
-        elif i == "sep":
-            compiler += rf"{settings['kwargs']['separator']}"
-        elif i == "word":
-            compiler += r".*"
-    return compiler
 
 
 async def re_iter(flags: ExecuteFlags, local_vars: dict, say_say, embeds_say, match=None, string=None, pattern=None):

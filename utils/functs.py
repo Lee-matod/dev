@@ -1,6 +1,36 @@
+import re
+import discord
+
+from copy import copy
 from discord.ext import commands
 
 from dev.utils.settings import get_owner, settings
+
+
+async def generate_ctx(ctx: commands.Context, author: discord.Member, channel: discord.TextChannel, **kwargs) -> commands.Context:
+    alt_msg: discord.Message = copy(ctx.message)
+    alt_msg._update(kwargs)
+    alt_msg.author = author
+    alt_msg.channel = channel
+    return await ctx.bot.get_context(alt_msg, cls=type(ctx))
+
+
+def convert_kwargs_format(formatter: str):
+    format_style = re.compile(r"%\((\w+)\)s")
+    f = re.finditer(format_style, formatter)
+    re_format = []
+    compiler = ""
+    for i in f:
+        if i:
+            re_format.append(i.group(1))
+    for i in re_format:
+        if i == "key":
+            compiler += r"\w+?"
+        elif i == "sep":
+            compiler += rf"{settings['kwargs']['separator']}"
+        elif i == "word":
+            compiler += r".*"
+    return compiler
 
 
 def is_owner():
