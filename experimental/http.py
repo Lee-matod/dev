@@ -7,6 +7,7 @@ import inspect
 import aiohttp
 import discord
 
+from lxml import html, etree
 from discord.ext import commands
 
 from dev.utils.functs import is_owner
@@ -84,7 +85,7 @@ class RootHTTP(commands.Cog):
 
     @commands_.command(name="get", parent="dev http", version=1)
     @is_owner()
-    async def root_http_get(ctx: commands.Context, url: str = commands.Option(description="Link to fetch the contents from."), mode: str = commands.Option(description="Return mode."), allow_redirects: bool = commands.Option(description="Whether redirects should be allowed or not.", default=False), *, kwargs: str = commands.Option(description="Keyword arguments that should be passed to the get method.", default={})):
+    async def root_http_get(ctx: commands.Context, url: str = commands.Option(description="Link to fetch the contents from."), mode: str = commands.Option(description="Return mode."), allow_redirects: bool = commands.Option(description="Whether redirects should be allowed or not.", default=False), *, kwargs: str = commands.Option(description="Keyword arguments that should be passed to the get method.", default=None)):
         """
         Get a response from a specified url. Response modes can differ.
         Virtual variables act as placeholders text for the `url` parameter. Execute `?dev --help|--man http` for more information.
@@ -94,6 +95,7 @@ class RootHTTP(commands.Cog):
         `json` = Convert the response to JSON. This isn't always available.
         `text` = Send the response as text.
         `read` = Read the response's content and return it.
+        `xpath` = Returns a website's HTML content given its XPath. The XPath should be given as a kwarg to the `mode` argument with its format being the one specified in `settigs["kwargs"]["format"]`.
         """
         async with aiohttp.ClientSession() as session:
             kwargs_ = {}
@@ -107,7 +109,6 @@ class RootHTTP(commands.Cog):
                         return await ctx.send(f"Attribute `{match.group(2)}` does not exist.")
                     url = url.replace(match.group(1), attr)
             if kwargs:
-                kwargs = shlex.split(kwargs)
                 compiler = convert_kwargs_format(settings["kwargs"]["format"].strip())
                 kwargs_pattern = re.compile(rf"{compiler}")
                 for kw in kwargs:
@@ -139,6 +140,16 @@ class RootHTTP(commands.Cog):
                         if len(response) > 3000:
                             return await ctx.send(file=discord.File(filename="response.txt", fp=io.BytesIO(response)))
                         await ctx.send(f"{response}")
+                    elif mode.startswith("xpath"):
+                        match = re.finditer(string=mode, pattern=kwargs_pattern)
+                        if match:
+                            for m in match:
+                                key, word = m.group().split(settings['kwargs']['separator'], 1)
+                                kwargs_[key] = word
+                        tree = html.fromstring(await response.text())
+                        tree = etree.ElementTree(tree)
+                        xpath = tree.xpath(kwargs_['xpath'])
+                        await ctx.send(xpath)
                     else:
                         await ctx.message.add_reaction("❓")
             except aiohttp.InvalidURL:

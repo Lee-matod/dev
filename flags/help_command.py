@@ -32,7 +32,7 @@ class RootHelp(commands.Cog):
             docs = '\n'.join(cmd.help.split("\n")[1:])
             for option in cmd.option_descriptions:
                 options[option] = cmd.option_descriptions[option]
-            sche = discord.Embed(title=cmd.name, description=cmd.short_doc, color=discord.Color.darker_gray())
+            sche = discord.Embed(title=cmd.qualified_name, description=cmd.short_doc, color=discord.Color.darker_gray())
             sche.add_field(name="usage", value=f"dev {cmd.name}{'|' + '|'.join(alias for alias in cmd.aliases) if cmd.aliases else ' '} {cmd.usage or cmd.signature}", inline=False)
             sche.add_field(name="arguments", value='\n'.join(f"`{option}`: {cmd.option_descriptions[option]}" for option in options), inline=False)
             sche.add_field(name="docs", value=docs, inline=False)
