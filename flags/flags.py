@@ -80,8 +80,8 @@ class DevFlags(commands.Cog):
     @commands_.command(name="--file", parent="dev", version=1)
     async def root_flag_file(ctx: commands.Context, *, directory: str):
         """
-        View a file.
-        By default, the file is sent as a paginator, however this can be changed in settings["file"]["use_file"]. The bot's token is hidden as `TOKEN`.
+        View a file. If `directory` starts with the character(s) specified in `settings['file']['/']` then the directory will be treated as the root folder instead of the current working directory.
+        By default, the file is sent as a paginator, however this can be changed in `settings["file"]["use_file"]`. The bot's token is hidden as `TOKEN`.
         """
         raw_dir = directory
         if "/root/" in directory:

@@ -39,4 +39,4 @@ class Dev(commands.Cog, command_attrs=dict(slash_command=False)):
 def setup(bot: commands.Bot):
     set_settings(bot)
     bot.add_cog(Dev(bot))
-    setup_(bot, "dev.flags.help_command", "dev.flags.flags", "dev.config.over", "dev.experimental.invoke", "dev.experimental.python", "dev.experimental.http")
+    setup_(bot, "dev.flags.help_command", "dev.flags.flags", "dev.config.over", "dev.config.bot", "dev.experimental.invoke", "dev.experimental.python", "dev.experimental.http")
