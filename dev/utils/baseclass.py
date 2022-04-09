@@ -24,15 +24,18 @@ class CContext(commands.Context):
 
 class StringCodeblockConverter(commands.Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> Union[Tuple[Any, str], Tuple[str]]:
+        start_pos: Optional[int] = None
+        end_pos: Optional[int] = None
+
         arguments: str = ""
         codeblock: str = ""
-        for i in range(len(argument)):
-            if f"{argument[i]}{argument[i + 1]}{argument[i + 2]}" == "```":
-                arguments = argument[:i]
-                codeblock = argument[i:]
-                break
-        if codeblock and argument:
-            return arguments.strip(), codeblock.strip()
+        for i in range(len(argument.split())):
+            if argument.split()[i].startswith("```") or "```" in argument.split()[i] and not end_pos:
+                start_pos = i
+            if argument.split()[i].endswith("```") or "```" in argument.split()[i] and start_pos:
+                end_pos = i
+        if start_pos and end_pos:
+            arguments = argument[start_pos:end_pos + 1].strip(), codeblock.strip()
         return (arguments.strip(),)
 
 
@@ -187,7 +190,7 @@ class Group(commands.Group):
         self.args = args
         self.kwargs = kwargs
 
-    def command(self, name: str = ..., *args, **kwargs):
+    def command(self, name: str = MISSING, *args, **kwargs):
         def decorator(func):
             kwargs.setdefault('parent', self)
             result = command(name=name, *args, **kwargs)(func)
@@ -195,7 +198,7 @@ class Group(commands.Group):
             return result
         return decorator
 
-    def group(self, name: str = ..., *args, **kwargs):
+    def group(self, name: str = MISSING, *args, **kwargs):
         def decorator(func):
             kwargs.setdefault('parent', self)
             result = group(name=name, *args, **kwargs)(func)

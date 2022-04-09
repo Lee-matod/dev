@@ -82,7 +82,7 @@ class RootOverrideBot(commands.Cog):
         except Exception:
             await ctx.message.add_reaction("❗")
 
-    @root_override.command(name="setting", version=1, aliases=["settings"], usage=r"<setting> <command_name|script>")
+    @root_override.command(name="setting", version=1, aliases=["settings"], usage=r"<setting>... <command_name|script>")
     @is_owner()
     async def root_override_setting(self, ctx: commands.Context, *, greedy: OverrideSettingConverter):
         """Temporarily override a (some) setting(s). All changes will be undone once the command has finished executing. This differentiates from its counterpart `dev overwrite` which does not switch back once the command has been terminated.
@@ -147,7 +147,7 @@ class RootOverrideBot(commands.Cog):
         pass
 
     @root_overwrite.command(name="command", version=1, usage=r"<command_name> <script>")
-    async def root_overwrite_command(self, ctx: commands.Context, command_code: StringCodeblockConverter):
+    async def root_overwrite_command(self, ctx: commands.Context, *, command_code: StringCodeblockConverter):
         r"""Completely change a command's execution script to be permanently overwriten. Changes can be undone by executing a command that is yet to be created.
         Script that will be used as the command overwrite should be specified in between \`\`\`.
         """
@@ -187,7 +187,7 @@ class RootOverrideBot(commands.Cog):
             f.writelines(rl)
             await ctx.message.add_reaction("☑")
 
-    @root_overwrite.command(name="setting", version=1, aliases=["settings"], usage=r"<setting> <command_name|script>")
+    @root_overwrite.command(name="setting", version=1, aliases=["settings"], usage=r"<setting>... <command_name|script>")
     async def root_overwrite_setting(self, ctx: commands.Context, *, setting: str):
         """Temporarily change a setting's value. Normal settings will be reverted once the bot has been restarted.
         Command execution after setting specification isn't available on this mode. Check out `dev override setting|settings` for that.
