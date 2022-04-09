@@ -19,4 +19,4 @@ async def ping(ctx: commands.Context):
 bot.load_extension("dev")
 
 
-bot.run("TOKEN")
+bot.run("")
