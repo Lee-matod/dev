@@ -187,6 +187,22 @@ class Group(commands.Group):
         self.args = args
         self.kwargs = kwargs
 
+    def command(self, name: str = ..., *args, **kwargs):
+        def decorator(func):
+            kwargs.setdefault('parent', self)
+            result = command(name=name, *args, **kwargs)(func)
+            self.add_command(result)
+            return result
+        return decorator
+
+    def group(self, name: str = ..., *args, **kwargs):
+        def decorator(func):
+            kwargs.setdefault('parent', self)
+            result = group(name=name, *args, **kwargs)(func)
+            self.add_command(result)
+            return result
+        return decorator
+
     async def invoke(self, ctx: commands.Context) -> None:
         ctx.invoked_subcommand = None
         ctx.subcommand_passed = None
