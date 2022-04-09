@@ -8,8 +8,8 @@ import contextlib
 from typing import Optional
 from discord.ext import commands
 
-from dev.utils.settings import settings
-from dev.utils.baseclass import CContext, commands_
+from dev.utils.startup import settings
+from dev.utils.baseclass import CContext, root
 from dev.utils.functs import is_owner, convert_kwargs_format, generate_ctx
 
 
@@ -38,9 +38,9 @@ class RootInvoke(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands_.command(name="execute", aliases=["exec"], parent="dev", version=1)
+    @root.command(name="execute", aliases=["exec"], parent="dev", version=1)
     @is_owner()
-    async def root_execute(ctx: commands.Context, *, flags: ExecuteFlags = commands.Option(description="Arguments that will be taken into consideration.")):
+    async def root_execute(self, ctx: commands.Context, *, flags: ExecuteFlags):
         """
         Execute a command with changeable given arguments and attributes. Customization is done via flags.
         **Flag arguments:**
@@ -55,7 +55,7 @@ class RootInvoke(commands.Cog):
         embed_pattern = re.compile(r"discord\.Embed\(title=.*?\)((\.)?(add_field|set_footer|set_author)?\(?.*\)?)*")
         flags.args_ = shlex.split(flags.args_)
         new_ctx = await ctx.bot.get_context(ctx.message, cls=CContext)
-        new_ctx.set_properties(flags.as_ or ctx.author, flags.at_ or ctx.channel)
+        new_ctx._set_properties(flags.as_ or ctx.author, flags.at_ or ctx.channel)
         kwargs_dict = {}
 
         if flags.kwargs_:
@@ -99,9 +99,9 @@ class RootInvoke(commands.Cog):
                 return await ctx.message.add_reaction("☑")
             return await new_ctx.send(**kwargs)
 
-    @commands_.command(name="reinvoke", parent="dev", version=1)
+    @root.command(name="reinvoke", parent="dev", version=1)
     @is_owner()
-    async def root_reinvoke(ctx: commands.Context, *, flags: ReinvokeFlags = commands.Option(description="Arguments that will be taken into consideration.")):
+    async def root_reinvoke(self, ctx: commands.Context, *, flags: ReinvokeFlags):
         """
         Reinvoke the last command that was executed or fetch a message by either ctx.author or a given user. Customization is done via flags.
         **Flag arguments:**
@@ -116,9 +116,8 @@ class RootInvoke(commands.Cog):
         """
         flags.author_ = flags.author_ or ctx.author
 
-        messages = await ctx.channel.history(limit=flags.history_limit_).flatten()
         count = 0
-        for message in messages:
+        async for message in ctx.channel.history(limit=flags.history_limit_):
             if message.author.id == flags.author_.id:
                 if message.content.startswith(f"{ctx.prefix}dev reinvoke") and flags.is_command_:
                     flags.skip_messages_ += 1

@@ -1,4 +1,7 @@
+from typing import Optional
 from discord.ext import commands
+
+from dev.utils.baseclass import root
 
 settings = {
     "folder": {
@@ -23,10 +26,6 @@ settings = {
         "/": "/",  # type: str
         "show_path": True  # type: bool
     },
-    "http": {
-        "format": "ATTR(%(name)s)"  # type: str
-    },
-
     "owners": []  # type: list, tuple, set
 }
 owner: list
@@ -41,7 +40,7 @@ def set_settings(bot: commands.Bot):
 
 
 def check_types():
-    setting_types = {"folder": {"path_to_file": str, "root_folder": str}, "kwargs": {"separator": str, "format": str}, "source": {"filename": str, "use_file": bool, "not_dev_cmd": str, "show_path": bool}, "file": {"use_file": bool, "/": str, "show_path": bool}, "http": {"format": str}, "owners": (list, tuple, set)}
+    setting_types = {"folder": {"path_to_file": str, "root_folder": str}, "kwargs": {"separator": str, "format": str}, "source": {"filename": str, "use_file": bool, "not_dev_cmd": str, "show_path": bool}, "file": {"use_file": bool, "/": str, "show_path": bool}, "owners": (list, tuple, set)}
     for module in setting_types:
         if module == "owners":
             if not isinstance(settings["owners"], (list, tuple, set)):
@@ -54,3 +53,17 @@ def check_types():
 
 def get_owner():
     return owner
+
+
+def setup_(bot: commands.Bot, *args):
+    for ext in args:
+        try:
+            bot.load_extension(ext)
+        except commands.ExtensionAlreadyLoaded:
+            bot.unload_extension(ext)
+            bot.load_extension(ext)
+
+    for cmd, parent_name in root._add_parent.items():
+        parent: Optional[commands.Group] = bot.get_command(parent_name)
+        parent.add_command(cmd)
+        bot.remove_command(cmd.name)

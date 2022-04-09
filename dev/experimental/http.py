@@ -9,8 +9,8 @@ import discord
 
 from discord.ext import commands
 
-from dev.utils.settings import settings
-from dev.utils.baseclass import commands_
+from dev.utils.baseclass import root
+from dev.utils.startup import settings
 from dev.utils.functs import is_owner, convert_kwargs_format
 
 
@@ -18,9 +18,9 @@ class RootHTTP(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands_.group(name="http", parent="dev", version=1)
+    @root.group(name="http", parent="dev", version=1)
     @is_owner()
-    async def root_http(ctx: commands.Context, mode: str = commands.Option(description="Mode in which to edit a variable."), name: str = commands.Option(description="Name of the variable."), *, value: str = commands.Option(description="Value of the variable.", default=None)):
+    async def root_http(self, ctx: commands.Context, mode: str, name: str, *, value: str = None):
         """
         Add, remove, edit a virtual variable to be used when tokens or API keys are part of a link. You may also check the value or if the variable exists.
         For security reasons, this command is DM only.
@@ -82,9 +82,9 @@ class RootHTTP(commands.Cog):
         else:
             await ctx.message.add_reaction("❓")
 
-    @commands_.command(name="get", parent="dev http", version=1)
+    @root.command(name="get", parent="dev http", version=1)
     @is_owner()
-    async def root_http_get(ctx: commands.Context, url: str = commands.Option(description="Link to fetch the contents from."), mode: str = commands.Option(description="Return mode."), allow_redirects: bool = commands.Option(description="Whether redirects should be allowed or not.", default=False), *, kwargs: str = commands.Option(description="Keyword arguments that should be passed to the get method.", default={})):
+    async def root_http_get(self, ctx: commands.Context, url: str, mode: str, allow_redirects: bool = False, *, kwargs: str = ""):
         """
         Get a response from a specified url. Response modes can differ.
         Virtual variables act as placeholders text for the `url` parameter. Execute `?dev --help|--man http` for more information.

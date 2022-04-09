@@ -2,20 +2,21 @@ import discord
 
 from discord.ext import commands
 
-from dev.utils.baseclass import commands_
+from typing import Optional
+from dev.utils.baseclass import root
 
 
 class RootHelp(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands_.command(name="--help", aliases=["--man"], parent="dev", version=1)
-    async def root_help(ctx: commands.Context, *, command: str = commands.Option(description="Command that should be fetched.", default=None)):
+    @root.command(name="--help", aliases=["--man"], parent="dev", version=1)
+    async def root_help(self, ctx: commands.Context, *, command: str = None):
         """
         Help command made exclusively for the `?dev` cog.
         Flags are hidden, but they can still be accessed and attributes can still be viewed using their respective commands.
         """
-        dev_cmd: commands.Group = ctx.bot.get_command("dev")
+        dev_cmd: Optional[commands.Group] = self.bot.get_command("dev")
         if not command:
             command_list = [cmd.name for cmd in dev_cmd.commands if not cmd.name.startswith("--")]; command_list.sort()
             subcommands = '\n'.join(command_list)
@@ -25,16 +26,12 @@ class RootHelp(commands.Cog):
             hce.add_field(name="subcommands", value=subcommands)
             return await ctx.send(embed=hce)
         if command.split()[0] in [cmd.name for cmd in dev_cmd.commands]:
-            cmd = ctx.bot.get_command(f"dev {command}")
+            cmd = self.bot.get_command(f"dev {command}")
             if not cmd:
                 return await ctx.send(f"Command `{command}` is not found.")
-            options = {}
-            docs = '\n'.join(cmd.help.split("\n")[1:])
-            for option in cmd.option_descriptions:
-                options[option] = cmd.option_descriptions[option]
-            sche = discord.Embed(title=cmd.qualified_name, description=cmd.short_doc, color=discord.Color.darker_gray())
+            docs = '\n'.join(cmd.help.split("\n")[1:]) if cmd.help else 'No docs available.'
+            sche = discord.Embed(title=cmd.qualified_name, description=cmd.short_doc if cmd.short_doc else '', color=discord.Color.darker_gray())
             sche.add_field(name="usage", value=f"dev {cmd.name}{'|' + '|'.join(alias for alias in cmd.aliases) if cmd.aliases else ' '} {cmd.usage or cmd.signature}", inline=False)
-            sche.add_field(name="arguments", value='\n'.join(f"`{option}`: {cmd.option_descriptions[option]}" for option in options), inline=False)
             sche.add_field(name="docs", value=docs, inline=False)
             if isinstance(cmd, commands.Group):
                 command_list = [cmd.name for cmd in cmd.commands]; command_list.sort()

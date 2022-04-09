@@ -1,25 +1,39 @@
+from typing import *
+
 import discord
 
-from typing import Type
 from discord.ext import commands
-from discord.utils import MISSING
-from discord.ext.commands.core import GroupT, CommandT, Command, Group
+from discord.ext.commands.core import hooked_wrapped_callback
 
-add_parents = {}
+from dev.utils.utils import MISSING
 
 
 class CContext(commands.Context):
-    def set_properties(self, a: discord.Member, c: discord.TextChannel):
-        self.a = a
-        self.c = c
+    def _set_properties(self, author: discord.Member, channel: discord.TextChannel):
+        self._author = author
+        self._channel = channel
 
     @property
     def author(self):
-        return self.a
+        return self._author
 
     @property
     def channel(self):
-        return self.c
+        return self._channel
+
+
+class StringCodeblockConverter(commands.Converter):
+    async def convert(self, ctx: commands.Context, argument: str) -> Union[Tuple[Any, str], Tuple[str]]:
+        arguments: str = ""
+        codeblock: str = ""
+        for i in range(len(argument)):
+            if f"{argument[i]}{argument[i + 1]}{argument[i + 2]}" == "```":
+                arguments = argument[:i]
+                codeblock = argument[i:]
+                break
+        if codeblock and argument:
+            return arguments.strip(), codeblock.strip()
+        return (arguments.strip(),)
 
 
 class Paginator(discord.ui.View):
@@ -67,6 +81,7 @@ class Paginator(discord.ui.View):
     async def current_stop(self, button: discord.Button, interaction: discord.Interaction):
         if interaction.user.id != self.user_id:
             return
+        button: discord.Button
         for button in self.children:
             if not button.custom_id == "delete":
                 button.disabled = True
@@ -120,6 +135,7 @@ class Paginator(discord.ui.View):
         await interaction.message.delete()
 
     def enable_or_disable(self, *, rewind_=False, previous_=False, next_=False, fastforward_=False):
+        button: discord.Button
         b_rewind = [button for button in self.children if button.custom_id == "rewind"][0]
         b_previous = [button for button in self.children if button.custom_id == "previous"][0]
         b_next = [button for button in self.children if button.custom_id == "next"][0]
@@ -130,90 +146,117 @@ class Paginator(discord.ui.View):
         b_fastforward.disabled = fastforward_
 
     def update_display_page(self):
+        b: discord.Button
         current_stop = [b for b in self.children if b.custom_id == "current_stop"][0]
         current_stop.label = self.display_page + 1
 
 
-class command_(commands.GroupMixin):
+class GroupMixin(commands.GroupMixin):
     def __init__(self, *args, **kwargs):
-        global command_version, add_parents
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.args = args
         self.kwargs = kwargs
-        command_version = {}
+        self._add_parent: Dict[Union[commands.Command, commands.Group], str] = {}
 
-    def __call__(self, *args, **kwargs):
-        return self
-
-    def group(self, name: str = MISSING, cls: Type[GroupT] = MISSING, version: float = MISSING, parent: str = None, *args, **kwargs):
-        command_version[name] = version
-
-        def decorator(func) -> GroupT:
+    def group(self, name: str = MISSING, cls: Type[commands.Group] = MISSING, version: float = MISSING, parent: str = None, *args, **kwargs):
+        def decorator(func):
             kwargs.setdefault("parent", self)
-            result = group(name=name, cls=cls, *args, **kwargs)(func)
+            result = group(name=name, cls=cls, **kwargs)(func)
             if parent:
-                add_parents[result] = parent
+                self._add_parent[result] = parent
                 return result
             self.add_command(result)
             return result
         return decorator
 
-    def command(self, name: str = MISSING, cls: Type[CommandT] = MISSING,  version: float = MISSING, parent: str = None, *args, **kwargs):
-        command_version[name] = version
-
-        def decorator(func) -> CommandT:
+    def command(self, name: str = MISSING, cls: Type[commands.Command] = MISSING, version: float = MISSING, parent: str = None, *args, **kwargs):
+        def decorator(func):
             kwargs.setdefault("parent", self)
-            result = command(name=name, cls=cls, *args, **kwargs)(func)
+            result = command(name=name, cls=cls, **kwargs)(func)
             if parent:
-                add_parents[result] = parent
+                self._add_parent[result] = parent
                 return result
             self.add_command(result)
             return result
         return decorator
 
-    class Group(commands.Group):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args)
-            self.args = args
-            self.kwargs = kwargs
 
-        def __call__(self, *args, **kwargs):
-            return self
+class Group(commands.Group):
+    def __init__(self, func, name, *args, **kwargs):
+        super().__init__(func, name=name, *args, **kwargs)
+        self.args = args
+        self.kwargs = kwargs
 
-        @property
-        def version(self):
-            return command_version[self.name]
+    async def invoke(self, ctx: commands.Context) -> None:
+        ctx.invoked_subcommand = None
+        ctx.subcommand_passed = None
+        early_invoke = not self.invoke_without_command
+        if early_invoke:
+            await self.prepare(ctx)
 
-    class Command(commands.Command):
-        def __init__(self, *args, **kwargs):
-            super().__init__(self)
-            self.args = args
-            self.kwargs = kwargs
+        view = ctx.view
+        previous = view.index
+        view.skip_ws()
+        trigger = view.get_word()
 
-        def __call__(self, *args, **kwargs):
-            return self
+        if trigger:
+            ctx.subcommand_passed = trigger
+            ctx.invoked_subcommand = self.all_commands.get(trigger, None)
 
-        @property
-        def version(self):
-            return command_version[self.name]
+        if early_invoke:
+            injected = hooked_wrapped_callback(self, ctx, self.callback)
+            await injected(ctx, *ctx.args, **ctx.kwargs)
+
+        ctx.invoked_parents.append(ctx.invoked_with)  # type: ignore
+
+        if trigger and ctx.invoked_subcommand:
+            ctx.invoked_with = trigger
+            await ctx.invoked_subcommand.invoke(ctx)
+        elif not early_invoke:
+            view.index = previous
+            view.previous = previous
+            await super().invoke(ctx)
+
+    @property
+    def version(self):
+        return self.kwargs.get("version", MISSING)
 
 
-commands_ = command_()
+class Command(commands.Command):
+    def __init__(self, func, name, *args, **kwargs):
+        super().__init__(func, name=name, **kwargs)
+        self.args = args
+        self.kwargs = kwargs
+
+    async def invoke(self, ctx: commands.Context):
+        await self.prepare(ctx)
+        ctx.invoked_subcommand = None
+        ctx.subcommand_passed = None
+        injected = hooked_wrapped_callback(self, ctx, self.callback)
+        await injected(ctx, *ctx.args, **ctx.kwargs)
+
+    @property
+    def version(self):
+        return self.kwargs.get("version", MISSING)
 
 
-def group(name: str = MISSING, cls: Type[GroupT] = MISSING, **attrs):
+def group(name: str = MISSING, cls=MISSING, **attrs):
     if cls is MISSING:
         cls = Group  # type: ignore
+
     return command(name=name, cls=cls, **attrs)
 
 
-def command(name: str = MISSING, cls: Type[CommandT] = MISSING, **attrs):
+def command(name: str = MISSING, cls=MISSING, **attrs):
     if cls is MISSING:
         cls = Command  # type: ignore
 
-    def decorator(func) -> CommandT:
+    def decorator(func):
         if isinstance(func, Command):
             raise TypeError("Callback is already a command.")
         return cls(func, name=name, **attrs)
 
     return decorator
+
+
+root = GroupMixin()

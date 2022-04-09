@@ -4,7 +4,7 @@ import discord
 from copy import copy
 from discord.ext import commands
 
-from dev.utils.settings import get_owner, settings
+from dev.utils.startup import get_owner, settings
 
 
 async def generate_ctx(ctx: commands.Context, author: discord.Member, channel: discord.TextChannel, **kwargs) -> commands.Context:
@@ -43,31 +43,6 @@ def is_owner():
             return True
         raise commands.NotOwner("You either do not own this bot or are not listed in the override owner list.")
     return commands.check(owner)
-
-
-def set_kwargs(kwarg):
-    kwargs = {}
-    command = kwarg.split()
-    for cmd in command:
-        if cmd.startswith("--"):
-            pos = command.index(cmd)
-            stop = None
-            for c in command[pos + 1:]:
-                if str(c).startswith("--"):
-                    stop = command.index(c)
-                    break
-            kwargs[cmd] = " ".join(command[pos + 1:stop])
-    for cmd in kwargs:
-        if str(kwargs[cmd]).startswith("-"):
-            kwargs[cmd] = kwargs[cmd].split()
-            kwargs[cmd] = [kwargs[cmd][0], " ".join(kwargs[cmd][1:])]
-    return kwargs
-
-
-def check_for(i, kwargs: dict):
-    if i in kwargs:
-        return True
-    return False
 
 
 def clean_code(content: str):

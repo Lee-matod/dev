@@ -8,9 +8,9 @@ import contextlib
 from discord.ext import commands
 from traceback import format_exception
 
-from dev.utils.settings import settings
+from dev.utils.startup import settings
+from dev.utils.baseclass import root, Paginator
 from dev.utils.functs import clean_code, is_owner
-from dev.utils.baseclass import commands_, Paginator
 
 
 class RunEval(discord.ui.View):
@@ -34,15 +34,14 @@ class RootPython(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands_.command(name="python", aliases=["py"], parent="dev", version=1)
+    @root.command(name="python", aliases=["py"], parent="dev", version=1)
     @is_owner()
-    async def root_eval(ctx: commands.Context, *, code: str = commands.Option(description="Code to be evaluated.")):
+    async def root_eval(self, ctx: commands.Context, *, code: str):
         """
         Evaluate Python code.
         An arguments can be given before specifying the script to change its behaviour.
         `lines`|`func` = Shows the whole code without executing it and adds line numbers.
         `debug`|`dbg` = If an error occurs, the bot will send the traceback instead of reacting with a ❗. The time that the script took to run will also be recorded.
-
         When specifying a script, some placeholder texts can be set.
         `__previous__` = This is replaced with the previous script that was executed. The bot will search with a history length of 100. You may also set line limiters: `__previous__[start:end]`.
         `/root/` = Replaced with the root folder specified in `settings["folder"]["root_folder"]`.
@@ -73,10 +72,9 @@ class RootPython(commands.Cog):
 
 
 async def evaluate(code, ctx: commands.Context, **kwargs):
-    messages = await ctx.channel.history(limit=100).flatten()
     pattern_without_limits = re.compile(r"__previous__$")
     pattern_with_limits = re.compile(r"__previous__\[(\d*?)(:\d*?)?]")
-    for message in messages:
+    async for message in ctx.channel.history(limit=100):
         if message.author.id == ctx.author.id:
             if message.content.startswith("?dev py"):
                 if "__previous__" in message.content:
