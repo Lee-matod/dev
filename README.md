@@ -1,9 +1,9 @@
 # dev
 A debugging, testing and editing cog for enhanced-dpy.
 
-enhanced-dpy Github: https://github.com/iDevision/enhanced-discord.py
+dpy Github: https://github.com/Rapptz/discord.py
 
-enhanced-dpy docs: https://enhanced-dpy.readthedocs.io/en/latest/index.html
+dpy docs: https://discordpy.readthedocs.io/en/latest/index.html
 
 This is still under development, so I'm terribly sorry if you experience any issues.
 
