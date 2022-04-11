@@ -1,9 +1,9 @@
 # dev
-A debugging, testing and editing cog for enhanced-dpy.
+A debugging, testing and editing cog for discord.py. This does not use slash commands (mainly because I think they're ugly), so message intents have to be enabled!
 
-dpy Github: https://github.com/Rapptz/discord.py
+discord.py Github: https://github.com/Rapptz/discord.py
 
-dpy docs: https://discordpy.readthedocs.io/en/latest/index.html
+discord.py docs: https://discordpy.readthedocs.io/en/latest/index.html
 
 This is still under development, so I'm terribly sorry if you experience any issues.
 
