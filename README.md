@@ -14,66 +14,27 @@ This README.md should also get edited in the near future with more stuff to read
 You can customize this extension however you'd like. To do this simply import `settings` from `dev` and change the module and its setting accordingly. An example is shown below.
 ```python
 from dev import settings
-settings["source"]["use_file"] = True
-settings["kwargs"]["separator"] = ": "
+settings["owners"] = [1234567890]
 ```
 The full `settings` tree is shown below.
 ```
-"folder":
-    "path_to_file": "",   # type: str
-    "root_folder": ""  # type: str
-    
-"kwargs":
-    "separator": "=",  # type: str
-    "format": "%(key)s%(sep)s%(word)s"  # type: str
-
-"source":
-    "filename": "",  # type: str
-    "use_file": False,  # type: bool
-    "not_dev_cmd": "./",  # type: str
-    "show_path": False  # type: bool
-
-"file": 
-    "use_file": False,  # type: bool
-    "/": "/",  # type: str
-    "show_path": True  # type: bool
-
-"http": 
-    "format": "ATTR(%(name)s)"  # type: str
-
-"owners": []  # type: list, tuple, set
+"path_to_file": f"{os.getcwd()}",   # type: str
+"root_folder": "",  # type: str
+"virtual_vars_format": "|%(name)s|",  # type: str
+"owners": []  # type: List[int], Tuple[int], Set[int]
 ```
+**path_to_file**
 
-**global**
+If specified, any instances of this string in a traceback will be removed before sending. Defaults to your current working directory.
 
-"path_to_file": The path specified will be used instead of the actual directory to a file when an exception occurs, and it is sent as a message.
+**root_folder**
 
-"root_folder": The path specified will be the one that replaces the `/root/` placeholder text.
+If specified, typing out `|root|` will convert it to the directory specified.
 
-"separator": Character(s) that separates the keyword from the argument.
+**virtual_vars_format**
 
-"format": Format that is used for the kwargs.
+The format in which a virtual variable should be defined. `%(name)s` represents the name of the virtual variable. Defaults to `|VIRTUAL_VAR_NAME|`.
 
-"owners": Use another specified user ID(s) that can use the extension.
+**owners**
 
-**?dev --source|-src**
-
-"filename": This replaces the filename with a string of choice.
-
-"use_file": Whether the bot should send a file or a paginator.
-
-"not_dev_cmd": Whether the command should be taken as a `?dev` command or as a foreign one.
-
-"show_path": Whether the path for the file should be sent or not.
-
-**?dev --file**
-
-"use_file": Whether the bot should send a file or a paginator.
-
-"/": "/": If the directory starts with `settings["file"]["/"]`, the directory specified should start at `/` instead of the current working directory.
-
-"show_path":  Whether the path for the file should be sent or not.
-
-**?dev http get**
-
-"format": Format that is used for variable placeholder texts.
+If specified, this list of user IDs will be used to define users that are able to execute `dev`.
