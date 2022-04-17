@@ -24,17 +24,13 @@ The full `settings` tree is shown below.
 "owners": []  # type: List[int], Tuple[int], Set[int]
 ```
 **path_to_file**
-
 If specified, any instances of this string in a traceback will be removed before sending. Defaults to your current working directory.
 
 **root_folder**
-
 If specified, typing out `|root|` will convert it to the directory specified.
 
 **virtual_vars_format**
-
 The format in which a virtual variable should be defined. `%(name)s` represents the name of the virtual variable. Defaults to `|VIRTUAL_VAR_NAME|`.
 
 **owners**
-
 If specified, this list of user IDs will be used to define users that are able to execute `dev`.
