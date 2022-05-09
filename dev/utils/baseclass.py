@@ -1,0 +1,160 @@
+# -*- coding: utf-8 -*-
+
+"""
+dev.utils.utils
+~~~~~~~~~~~~~~~
+
+Basic classes that will be used with the dev extension.
+
+:copyright: Copyright 2022 Lee (Lee-matod)
+:license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
+"""
+
+from typing import *
+
+from discord.ext import commands
+
+from dev.utils.utils import MISSING
+
+GroupT = TypeVar("GroupT", bound="Group")
+CommandT = TypeVar("CommandT", bound="Command")
+ContextT = TypeVar("ContextT", bound="Context")
+CogT = TypeVar("CogT", bound="Optional[Cog]")
+
+
+__all__ = (
+    "Command",
+    "Group",
+    "GlobalLocals",
+    "Root",
+    "root"
+)
+
+
+class GlobalLocals:
+    def __init__(self, __globals: Optional[Dict[str, Any]] = None, __locals: Optional[Dict[str, Any]] = None):
+        self.globals: Dict[str, Any] = __globals or {}
+        self.locals: Dict[str, Any] = __locals or {}
+
+    def update(self, __new_globals: Optional[Dict[str, Any]] = None, __new_locals: Optional[Dict[str, Any]] = None):
+        if __new_globals:
+            self.globals.update(__new_globals)
+        if __new_locals:
+            self.locals.update(__new_locals)
+        return self
+
+
+class GroupMixin(commands.GroupMixin):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        self.args = args
+        self.kwargs = kwargs
+        self.all_commands: Dict[str, Union[Command, Group]] = {}
+        self._add_parent: Dict[Union[Command, Group], str] = {}
+
+    def group(self, name: str = MISSING, cls: Type[GroupT] = MISSING, *args: Any, **kwargs: Any) -> Callable[[str, Type[GroupT], ..., Any], CommandT]:
+        def decorator(func) -> Command:
+            parent = kwargs.get("parent", MISSING)
+            kwargs.setdefault('parent', self)
+            result = group(name=name, cls=cls, **kwargs)(func)
+            self.all_commands[name] = result
+            if parent:
+                self._add_parent[result] = parent
+            return result
+        return decorator
+
+    def command(self, name: str = MISSING, cls: Type[CommandT] = MISSING, *args: Any, **kwargs: Any) -> Callable[[str, Type[GroupT], ..., Any], CommandT]:
+        def decorator(func) -> Command:
+            parent = kwargs.get("parent", MISSING)
+            kwargs.setdefault('parent', self)
+            result = command(name=name, cls=cls, **kwargs)(func)
+            self.all_commands[name] = result
+            if parent:
+                self._add_parent[result] = parent
+            return result
+
+        return decorator
+
+
+root = GroupMixin()
+
+
+class Group(commands.Group):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.args = args
+        self.kwargs = kwargs
+
+    @property
+    def supports_virtual_vars(self) -> bool:
+        return self.kwargs.get("supports_virtual_vars", False)
+
+    def group(self, name: str = MISSING, cls: Type[GroupT] = MISSING, *args: Any, **kwargs: Any) -> Callable[[str, Type[GroupT], ..., Any], CommandT]:
+        def decorator(func) -> Command:
+            kwargs.setdefault('parent', self)
+            result = group(name=name, cls=cls, **kwargs)(func)
+            self.add_command(result)
+            return result
+        return decorator
+
+    def command(self, name: str = MISSING, cls: Type[CommandT] = MISSING, *args: Any, **kwargs: Any) -> Callable[[str, Type[GroupT], ..., Any], CommandT]:
+        def decorator(func) -> Command:
+            kwargs.setdefault('parent', self)
+            result = command(name=name, cls=cls, **kwargs)(func)
+            self.add_command(result)
+            return result
+
+        return decorator
+
+
+class Command(commands.Command):
+    def __init__(self, func, *args, **kwargs):
+        super().__init__(func, **kwargs)
+        list(args).append(func)
+        self.args = args
+        self.kwargs = kwargs
+
+    @property
+    def supports_virtual_vars(self) -> bool:
+        return self.kwargs.get("supports_virtual_vars", False)
+
+
+class Root(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        self.root_command = root.all_commands.get("dev", None)
+        self.OVERRIDE_CALLBACKS: Dict[str, str] = {}
+        self.COMMAND_CALLBACKS: Dict[str, Callable] = {}
+        for kls in type(self).__mro__:
+            for key, cmd in kls.__dict__.items():
+                if isinstance(cmd, (Command, Group)):
+                    cmd.cog = self
+
+    def cog_check(self, ctx) -> bool:
+        from dev.utils.startup import Settings
+
+        if Settings.OWNERS:
+            if ctx.author.id in Settings.OWNERS:
+                return True
+            raise commands.NotOwner("You either do not own this bot or are not listed in the override owner list.")
+        elif ctx.author.id in ctx.bot.owner_ids or ctx.author.id == ctx.bot.owner_id:
+            return True
+        raise commands.NotOwner("You either do not own this bot or are not listed in the override owner list.")
+
+
+def group(name: str = MISSING, cls=MISSING, **attrs: Any):
+    if cls is MISSING:
+        cls = Group
+
+    return command(name=name, cls=cls, **attrs)
+
+
+def command(name: str = MISSING, cls=MISSING, **attrs):
+    if cls is MISSING:
+        cls = Command
+
+    def decorator(func):
+        if isinstance(func, Command):
+            raise TypeError('Callback is already a command.')
+        return cls(func, name=name, **attrs)
+    return decorator
