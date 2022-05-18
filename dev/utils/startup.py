@@ -28,7 +28,7 @@ __all__ = (
 
 
 class Settings:
-    FLAG_DELIMITER: Optional[str] = ": "
+    FLAG_DELIMITER: str = ": "
     INVOKE_ON_EDIT: Optional[bool] = True
     OWNERS: Optional[Sequence[int]] = []
     PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
