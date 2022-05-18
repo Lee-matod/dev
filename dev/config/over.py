@@ -10,26 +10,36 @@ Override or overwrite certain aspects and functions of the bot.
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 
-from typing import *
 
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union
+)
+
+import collections.abc
+import contextlib
+import discord
+import inspect
 import io
 import re
 import shlex
-import inspect
-import discord
 import textwrap
-import contextlib
-import collections.abc
 
-from datetime import datetime
 from discord.ext import commands
+from datetime import datetime
 
-from dev.handlers import replace_vars, ExceptionHandler
 from dev.converters import CodeblockConverter, convert_str_to_bool, convert_str_to_ids
+from dev.handlers import ExceptionHandler, replace_vars
 
+from dev.utils.baseclass import Root, root
+from dev.utils.functs import clean_code, generate_ctx, table_creator, send
 from dev.utils.startup import Settings
-from dev.utils.baseclass import root, Root
-from dev.utils.functs import clean_code, send, generate_ctx, table_creator
 
 
 class OverrideSettingConverter(commands.Converter):
@@ -80,7 +90,7 @@ class RootOverride(Root):
         if self.OVERRIDES:
             rows = [[k, v[0], v[1]] for k, v in self.OVERRIDES.items()]
             content = table_creator(rows, ["IDs", "Types", "Descriptions"])
-        await send(ctx, content, is_py_bt=True if self.OVERRIDES else False)
+        await send(ctx, content, py_codeblock=True if self.OVERRIDES else False)
 
     @root_override.command(name="undo", aliases=["del", "delete"])
     async def root_override_undo(self, ctx: commands.Context, id_num: int = 0):
@@ -90,10 +100,7 @@ class RootOverride(Root):
             _, desc, callback, command_string = args
         except IndexError:
             return await send(ctx, f"Override with ID of `{id_num}` not found.")
-        if command_string in self.COMMAND_CALLBACKS:
-            del self.COMMAND_CALLBACKS[command_string]
-        if command_string in self.OVERRIDE_CALLBACKS:
-            del self.OVERRIDE_CALLBACKS[command_string]
+        del self.CALLBACKS[id_num]
         if ctx.invoked_with in ("delete", "del"):
             self.sort_dict_id("override", "del", id_num if id_num != 0 else len(self.OVERRIDES))
             return await send(ctx, f"Deleted the override with the ID number of `{id_num if id_num != 0 else len(self.OVERRIDES)}`.\n{desc}")
@@ -114,12 +121,11 @@ class RootOverride(Root):
         command: Union[commands.Command, commands.Group] = self.bot.get_command(command_string)
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
-        self.sort_dict_id("override", "add", ("command", f"Command that was overrided: {command_string} ‒ {datetime.utcnow().strftime('%b %d, %Y at %H:%M:%S UTC')}", command.callback, command_string))
-        self.OVERRIDE_CALLBACKS[command.qualified_name] = script
-        self.COMMAND_CALLBACKS[command.qualified_name] = command.callback
+        self.sort_dict_id("override", "add", ("command", f"Command that was overridden: {command_string} ‒ {datetime.utcnow().strftime('%b %d, %Y at %H:%M:%S UTC')}", command.callback, command_string))
         self.bot.remove_command(command_string)
         script = clean_code(replace_vars(script))
-        local_vars = {
+        self.CALLBACKS[len(self.OVERRIDES)] = (command.qualified_name, command.callback, script)
+        local_vars: Dict[str, Any] = {
             "discord": discord,
             "commands": commands,
             "bot": self.bot,
@@ -168,7 +174,7 @@ class RootOverride(Root):
         if self.OVERWRITES:
             rows = [[k, v[0], v[1]] for k, v in self.OVERWRITES.items()]
             content = table_creator(rows, ["IDs", "Types", "Descriptions"])
-        await send(ctx, content, is_py_bt=True if self.OVERWRITES else False)
+        await send(ctx, content, py_codeblock=True if self.OVERWRITES else False)
 
     @root_overwrite.command(name="undo", aliases=["del", "delete"])
     async def root_overwrite_undo(self, ctx: commands.Context, id_num: int = 0):
@@ -250,11 +256,16 @@ class RootOverride(Root):
         code = "\n".join(new_code)
         command = self.bot.get_command(command_string)
         if not command:
-            return await ctx.send(f"Command `{command_string}` not found.")
-        if command.qualified_name in self.COMMAND_CALLBACKS:
-            command.callback = self.COMMAND_CALLBACKS[command.qualified_name]
-        directory = inspect.getsourcefile(command.callback)
-        lines, _ = inspect.getsourcelines(command.callback)
+            return await send(ctx, f"Command `{command_string}` not found.")
+        # we don't want to override the command's actual callback,
+        # so we set it to a variable which we can later change if the
+        # command's name is found in the callbacks dictionary
+        source = command.callback
+        if command.qualified_name in [name[0] for name in self.CALLBACKS.values()]:
+            # we find the original callback instead of any changed ones
+            source = [callback[1] for callback in self.CALLBACKS.values() if callback[0] == command.qualified_name][0]
+        directory = inspect.getsourcefile(source)
+        lines, _ = inspect.getsourcelines(source)
         self.sort_dict_id("overwrite", "add", ("command", f"Command that was overwritten: {command_string} ‒ {datetime.utcnow().strftime('%b %d, %Y at %H:%M:%S UTC')}", command.callback, "".join(lines)))
 
         with open(directory, "r") as f:
@@ -270,6 +281,7 @@ class RootOverride(Root):
                     if rev_read_lines[i] == lines[0]:
                         start = i + 1
                         break
+            # find the actual start and end points of the file
             start, end = (len(rev_read_lines) - start), (len(rev_read_lines) - end)
 
         if len(code.split("\n")) > len(lines):  # make sure that we have the correct amount of lines necessary to include the new script
@@ -299,7 +311,7 @@ class RootOverride(Root):
         Multiple settings can be specified.
         A setting format should be specified as follows: `[module]=attr`. Adding single or double quotes in between the different parameters is also a valid option.
         """
-        changed = []
+        changed = []  # a formatted version of the settings that were changed
         raw_changed = {}
         setting_patter = re.compile(r"\[?[\"|\']?(.+)[\"|\']?]?=[\"|\']?(.+)[\"|\']?")
         split_args = shlex.split(settings)
@@ -313,13 +325,13 @@ class RootOverride(Root):
                 raw_changed[match.group(1)] = setting
                 if isinstance(setting, bool):
                     setattr(Settings, match.group(1).upper(), convert_str_to_bool(match.group(2)))
-                elif isinstance(setting, collections.abc.Collection):
+                elif isinstance(setting, (list, tuple, set)):
                     setattr(Settings, match.group(1).upper(), convert_str_to_ids(match.group(2)))
                 else:
                     setattr(Settings, match.group(1).upper(), match.group(2))
                 changed.append(f"Settings.{match.group(1).upper()}={match.group(2)}")
         self.sort_dict_id("overwrite", "add", ("setting", f"Settings that were overwritten: {' | '.join(changed) if changed else 'None'} ‒ {datetime.utcnow().strftime('%b %d, %Y at %H:%M:%S UTC')}", None, raw_changed))
-        await ctx.send(embed=discord.Embed(title="Settings Changed" if changed else "Nothing Changed", description="`" + '`\n`'.join(changed) + "`" if changed else "No changes were made to the current version of the settings.", colour=discord.Color.green() if changed else discord.Color.red()))
+        await send(ctx, discord.Embed(title="Settings Changed" if changed else "Nothing Changed", description="`" + '`\n`'.join(changed) + "`" if changed else "No changes were made to the current version of the settings.", colour=discord.Color.green() if changed else discord.Color.red()))
 
     def sort_dict_id(self, _type: Literal["overwrite", "override"], mode: Literal["del", "add"], arg: Any) -> None:
         values = []
