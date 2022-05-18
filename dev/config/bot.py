@@ -10,15 +10,16 @@ Direct bot reconfiguration and attributes manager.
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 
-import time
+
 import discord
+import time
 
 from discord.ext import commands
 
 from dev.converters import convert_str_to_ids
 
+from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
-from dev.utils.baseclass import root, Root
 from dev.utils.utils import escape, plural
 
 
@@ -26,7 +27,7 @@ class RootBot(Root):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
 
-    @root.group(name="bot", parent="dev", version=1, invoke_without_command=True)
+    @root.group(name="bot", parent="dev", invoke_without_command=True)
     async def root_bot(self, ctx: commands.Context):
         """Check bot statistics."""
         is_autosharded = ", automatically sharded" if isinstance(self.bot, commands.AutoShardedBot) else (", manually sharded" if self.bot.shard_count else '')
@@ -52,9 +53,9 @@ class RootBot(Root):
         embed.add_field(name="Visibility", value=f"Seeing a total of {guilds}, {channels}, and {users}: {real_user} and {bot_user}.", inline=False)
         embed.add_field(name="Commands", value=f"A total of {cmds} and {cogs} are up for use.", inline=False)
         embed.add_field(name="Information", value=f"Running with an average latency of {latency} ms. {', '.join(intents)} and {intent}.", inline=False)
-        await send(ctx, embed=embed)
+        await send(ctx, embed)
 
-    @root_bot.command(name="reload", version=1)
+    @root_bot.command(name="reload")
     async def root_bot_reload(self, ctx: commands.Context, *cogs: str):
         """Reload all or a specific set of the bot's extension(s)
         If specific cogs are specified, they should be separated by a blank space.
@@ -73,7 +74,7 @@ class RootBot(Root):
             reloaded_cogs = ("☑ " + "\n☑ ".join(successful) if successful else "") + ("❌ " + "\n❌ ".join(unsuccessful) if unsuccessful else '')
             embed = discord.Embed(title=f"Reloaded {plural(len(successful), 'Cog')}", description=reloaded_cogs, color=discord.Color.blurple())
             embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
-            return await send(ctx, embed=embed)
+            return await send(ctx, embed)
 
         successful = []
         unsuccessful = []
@@ -88,16 +89,16 @@ class RootBot(Root):
         reloaded_cogs = ("☑ " + "\n☑ ".join(successful) if successful else "") + ("❌ " + "\n❌ ".join(unsuccessful) if unsuccessful else '')
         embed = discord.Embed(title=f"Reloaded {plural(len(successful), 'Cog')}", description=reloaded_cogs, color=discord.Color.blurple())
         embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
-        return await send(ctx, embed=embed)
+        return await send(ctx, embed)
 
-    @root_bot.command(name="edit", version=1)
+    @root_bot.command(name="edit")
     async def root_bot_edit(self, ctx: commands.Context, attr: str, *, value: str = None):
         """Edit any attributed of the bot.
         **Text Placeholders**
         `__existent__` = Keep already existent values of the specified attribute and add new ones (if specified).
         **Attributes**
         `prefix` = Change the prefix of the bot.
-        `owner`|`owners` = Change or add owner ID(s).
+        `owner`|`owners` = Change, add or view current owner ID(s).
         """
         if attr == "prefix":
             if not value:
@@ -129,10 +130,10 @@ class RootBot(Root):
                 self.bot.owner_ids = None
                 return await send(ctx, f"Successfully set `{attr}` to None.")
             ids = convert_str_to_ids(value)
-            exec(compile(f"bot.owner_ids = ({', '.join(ids)})", "<repl>", "single"), {"bot": self.bot})  # cause why not lol
+            self.bot.owner_ids = set(ids)
             await send(ctx, f"Successfully changed `{attr}` to `{'`, `'.join(str(owner) for owner in self.bot.owner_ids) or 'None'}`")
 
-    @root_bot.command(name="enable", version=1)
+    @root_bot.command(name="enable")
     async def root_bot_enable(self, ctx: commands.Context, *, command_name: str):
         """Enable a command.
         It is not recommended to disable this command using `dev bot disable`.
@@ -145,7 +146,7 @@ class RootBot(Root):
         command.enabled = True
         await ctx.message.add_reaction("☑")
 
-    @root_bot.command(name="disable", version=1)
+    @root_bot.command(name="disable")
     async def root_bot_disable(self, ctx: commands.Context, *, command_name: str):
         """Disable a command.
         It is not recommended to disable the `dev bot enable` command.
@@ -160,8 +161,8 @@ class RootBot(Root):
         command.enabled = False
         await ctx.message.add_reaction("☑")
 
-    @root_bot.command(name="close", version=1)
+    @root_bot.command(name="close")
     async def root_bot_close(self, ctx: commands.Context):
         """Closes the bot."""
         await ctx.message.add_reaction("👋")
-        await self.bot.close
+        await self.bot.close()
