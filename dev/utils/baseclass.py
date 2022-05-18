@@ -4,28 +4,39 @@
 dev.utils.utils
 ~~~~~~~~~~~~~~~
 
-Basic classes that will be used with the dev extension.
+Basic classes that will be used within the dev extension.
 
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 
-from typing import *
+
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from discord.ext import commands
+from discord.utils import MISSING
 
-from dev.utils.utils import MISSING
 
-GroupT = TypeVar("GroupT", bound="Group")
+CogT = TypeVar("CogT", bound="Optional[Cog]")
 CommandT = TypeVar("CommandT", bound="Command")
 ContextT = TypeVar("ContextT", bound="Context")
-CogT = TypeVar("CogT", bound="Optional[Cog]")
+GroupT = TypeVar("GroupT", bound="Group")
 
 
 __all__ = (
     "Command",
-    "Group",
     "GlobalLocals",
+    "Group",
     "Root",
     "root"
 )
@@ -52,7 +63,17 @@ class GroupMixin(commands.GroupMixin):
         self.all_commands: Dict[str, Union[Command, Group]] = {}
         self._add_parent: Dict[Union[Command, Group], str] = {}
 
-    def group(self, name: str = MISSING, cls: Type[GroupT] = MISSING, *args: Any, **kwargs: Any) -> Callable[[str, Type[GroupT], ..., Any], CommandT]:
+    def group(
+            self,
+            name: str = MISSING,
+            cls: Type[GroupT] = MISSING,
+            *args: Any,
+            **kwargs: Any) -> Callable[
+        [
+            Callable[[CogT, ContextT, Any], Coroutine[Any, Any, Any]],
+        ],
+        CommandT
+    ]:
         def decorator(func) -> Command:
             parent = kwargs.get("parent", MISSING)
             kwargs.setdefault('parent', self)
@@ -63,7 +84,17 @@ class GroupMixin(commands.GroupMixin):
             return result
         return decorator
 
-    def command(self, name: str = MISSING, cls: Type[CommandT] = MISSING, *args: Any, **kwargs: Any) -> Callable[[str, Type[GroupT], ..., Any], CommandT]:
+    def command(
+            self,
+            name: str = MISSING,
+            cls: Type[CommandT] = MISSING,
+            *args: Any,
+            **kwargs: Any) -> Callable[
+        [
+            Callable[[CogT, ContextT, Any], Coroutine[Any, Any, Any]],
+        ],
+        CommandT
+    ]:
         def decorator(func) -> Command:
             parent = kwargs.get("parent", MISSING)
             kwargs.setdefault('parent', self)
@@ -89,7 +120,17 @@ class Group(commands.Group):
     def supports_virtual_vars(self) -> bool:
         return self.kwargs.get("supports_virtual_vars", False)
 
-    def group(self, name: str = MISSING, cls: Type[GroupT] = MISSING, *args: Any, **kwargs: Any) -> Callable[[str, Type[GroupT], ..., Any], CommandT]:
+    def group(
+            self,
+            name: str = MISSING,
+            cls: Type[CommandT] = MISSING,
+            *args: Any,
+            **kwargs: Any) -> Callable[
+        [
+            Callable[[CogT, ContextT, Any], Coroutine[Any, Any, Any]],
+        ],
+        CommandT
+    ]:
         def decorator(func) -> Command:
             kwargs.setdefault('parent', self)
             result = group(name=name, cls=cls, **kwargs)(func)
@@ -97,7 +138,17 @@ class Group(commands.Group):
             return result
         return decorator
 
-    def command(self, name: str = MISSING, cls: Type[CommandT] = MISSING, *args: Any, **kwargs: Any) -> Callable[[str, Type[GroupT], ..., Any], CommandT]:
+    def command(
+            self,
+            name: str = MISSING,
+            cls: Type[CommandT] = MISSING,
+            *args: Any,
+            **kwargs: Any) -> Callable[
+        [
+            Callable[[CogT, ContextT, Any], Coroutine[Any, Any, Any]],
+        ],
+        CommandT
+    ]:
         def decorator(func) -> Command:
             kwargs.setdefault('parent', self)
             result = command(name=name, cls=cls, **kwargs)(func)
@@ -123,8 +174,15 @@ class Root(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.root_command = root.all_commands.get("dev", None)
-        self.OVERRIDE_CALLBACKS: Dict[str, str] = {}
-        self.COMMAND_CALLBACKS: Dict[str, Callable] = {}
+        self.CALLBACKS: Dict[
+            int,  # ID
+            Tuple[
+                str,  # command name
+                Callable[[CogT, ContextT, Any], Coroutine[Any, Any, Any]],  # original callback
+                str  # new source code
+            ]
+        ] = {}
+
         for kls in type(self).__mro__:
             for key, cmd in kls.__dict__.items():
                 if isinstance(cmd, (Command, Group)):
