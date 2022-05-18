@@ -10,13 +10,14 @@ Basic utilities that will be used with the dev extension.
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 
+
 from typing import Any, Dict
-from discord.utils import escape_markdown, escape_mentions, MISSING
+from discord.utils import escape_markdown, escape_mentions
+
 
 __all__ = (
     "escape",
     "local_globals",
-    "MISSING",
     "plural"
 )
 
@@ -28,4 +29,4 @@ def escape(content: str):
 
 
 def plural(amount: int, singular: str) -> str:
-    return f"{amount} {singular}" if amount == 1 else f"{amount} {singular}s"
+    return f"{amount} {singular}" if amount == 1 else f"{amount} {singular}s" if not singular.endswith("s") else f"{amount} {singular}'"
