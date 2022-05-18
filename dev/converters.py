@@ -10,6 +10,7 @@ Custom converters that are used in the dev extension.
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 
+
 from typing import *
 
 from discord.ext import commands
@@ -42,27 +43,14 @@ class CodeblockConverter(commands.Converter):
 
         for i in range(len(argument)):
             if "".join([argument[i], argument[i + 1], argument[i + 2]]) == "```":
-                if start is None and end is None:
-                    start = i
-                elif end is None and start is not None:
-                    end = i + 3
-                    break
+                start = i
+                break
+        for i in range(len(argument)):
+            if "".join([argument[-i], argument[-i - 1], argument[-i - 2]]) == "```":
+                end = -i
         codeblock = argument[start:end]
         arguments = argument[:start]
         return arguments.strip(), codeblock
-
-
-"""
-for i in range(len(argument)):
-    if "".join([argument[i], argument[i + 1], argument[i + 2]]) == "```":
-        start = i
-        break
-
-for i in range(len("".join(list(reversed(argument))))):
-    if "".join([argument[-i], argument[-i + 1], argument[-i + 2]]) == "```":
-        end = i + 3
-        break
-"""
 
 
 async def __previous__(ctx: commands.Context, code: str, /):
