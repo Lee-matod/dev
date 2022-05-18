@@ -12,25 +12,25 @@ Functions and variables that will get executed once the dev extension is loaded.
 
 import re
 import os
-import collections.abc
 
 from discord.ext import commands
-from typing import Collection, Optional
+from typing import Sequence, Optional
 
-from dev.utils.baseclass import root, Group
+from dev.utils.baseclass import Group, root
+
 
 __all__ = (
-    "set_settings",
-    "virtual_vars_format",
     "Settings",
-    "setup_"
+    "set_settings",
+    "setup_",
+    "virtual_vars_format",
 )
 
 
 class Settings:
-    MENTION_AUTHOR: Optional[bool] = True
+    FLAG_DELIMITER: Optional[str] = ": "
     INVOKE_ON_EDIT: Optional[bool] = True
-    OWNERS: Optional[Collection[int]] = []
+    OWNERS: Optional[Sequence[int]] = []
     PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
     ROOT_FOLDER: Optional[str] = ""
     VIRTUAL_VARS: str = "|%(name)s|"
@@ -59,9 +59,9 @@ async def set_settings(bot: commands.Bot) -> None:
 
 def check_types() -> None:
     setting_types = (
-        [Settings.MENTION_AUTHOR, bool, "MENTION_AUTHOR"],
+        [Settings.FLAG_DELIMITER, str, "FLAG_DELIMITER"],
         [Settings.INVOKE_ON_EDIT, bool, "INVOKE_ON_EDIT"],
-        [Settings.OWNERS, collections.abc.Collection, "OWNERS"],
+        [Settings.OWNERS, (list, tuple, set), "OWNERS"],
         [Settings.PATH_TO_FILE, str, "PATH_TO_FILE"],
         [Settings.ROOT_FOLDER, str, "ROOT_FOLDER"],
         [Settings.VIRTUAL_VARS, str, "VIRTUAL_VARS"]
@@ -73,6 +73,9 @@ def check_types() -> None:
 
     if not Settings.VIRTUAL_VARS:
         raise ValueError(f"Settings.VIRTUAL_VARS cannot be None")
+
+    if not Settings.FLAG_DELIMITER:
+        raise ValueError(f"Settings.FLAG_DELIMITER cannot be None")
 
 
 def virtual_vars_format() -> str:
