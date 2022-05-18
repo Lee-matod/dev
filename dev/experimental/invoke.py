@@ -9,7 +9,12 @@ Command invocation or reinvocation with changeable execution attributes.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-from typing import *
+
+
+from typing import (
+    Optional,
+    Union
+)
 
 import discord
 
@@ -17,9 +22,9 @@ from discord.ext import commands
 
 from dev.handlers import ExceptionHandler
 
-from dev.utils.startup import Settings
-from dev.utils.baseclass import root, Root
+from dev.utils.baseclass import Root, root
 from dev.utils.functs import generate_ctx, send
+from dev.utils.startup import Settings
 
 
 class ReinvokeFlags(commands.FlagConverter):
@@ -38,22 +43,22 @@ class RootInvoke(Root):
         Checks can be optionally bypassed by using `repeat!` instead of `repeat`.
         """
         kwargs = {"content": f"{ctx.prefix}{command_string}", "author": ctx.author, "channel": ctx.channel}
-        context = await generate_ctx(ctx, **kwargs)
-        if not context.command:
-            return await send(ctx, f"Command `{context.invoked_with}` not found.")
         for _ in range(amount):
+            context = await generate_ctx(ctx, **kwargs)
+            if not context.command:
+                return await send(ctx, f"Command `{context.invoked_with}` not found.")
             if ctx.invoked_with.endswith("!"):
                 await context.command.reinvoke(context)
             else:
                 await context.command.invoke(context)
 
     @root.command(name="debug", parent="dev", aliases=["dbg"])
-    async def root_debug(self, ctx: commands.Context, *, command_args):
+    async def root_debug(self, ctx: commands.Context, *, command_string: str):
         """Catch errors when executing a command.
         This command will probably not catch errors with commands that already have an error handler.
         If `settings["folder"]["path_to_file"]` is specified, any instances of this path will be removed if a traceback is sent. Defaults to the current working directory.
         """
-        kwargs = {"content": f"{ctx.prefix}{command_args}", "author": ctx.author, "channel": ctx.channel}
+        kwargs = {"content": f"{ctx.prefix}{command_string}", "author": ctx.author, "channel": ctx.channel}
         context: commands.Context = await generate_ctx(ctx, **kwargs)
         if not context.command:
             return await send(ctx, f"Command `{context.invoked_with}` not found.")
@@ -65,7 +70,7 @@ class RootInvoke(Root):
             for error in handler.error:
                 exc_val, tb = error
                 embeds.append(discord.Embed(title=exc_val.__class__.__name__, description=tb.replace(Settings.PATH_TO_FILE, ""), color=discord.Color.red()))
-            await send(ctx, is_py_bt=True, embeds=embeds)
+            await send(ctx, embeds, py_codeblock=True)
         else:
             await ctx.message.add_reaction("☑")
         setattr(type(handler), "error", [])
@@ -107,7 +112,7 @@ class RootInvoke(Root):
                 if ctx.invoked_with == "invoke":
                     return await context.command.invoke(context)
                 return await context.command.reinvoke(context)
-            return await ctx.send("No command found in the message reference.")
+            return await send(ctx, "No command found in the message reference.")
         author = author or ctx.author
         c = 0
         async for message in ctx.channel.history(limit=100):
@@ -123,7 +128,7 @@ class RootInvoke(Root):
                             return await context.command.invoke(context)
                         return await context.command.reinvoke(context)
                 c += 1
-        await ctx.send("Unable to find any messages matching the given arguments.")
+        await send(ctx, "Unable to find any messages matching the given arguments.")
 
 
 def flag_checks(message: discord.Message, flags: ReinvokeFlags) -> bool:
