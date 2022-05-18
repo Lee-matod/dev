@@ -10,14 +10,15 @@ A virtual variable manager directly implemented to the dev extension.
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 
+
 import discord
 
-from typing import Optional
 from discord.ext import commands
+from typing import Optional
 
 from dev.utils.functs import send
+from dev.utils.baseclass import Root, root
 from dev.utils.utils import local_globals
-from dev.utils.baseclass import root, Root
 
 
 class ValueSubmitter(discord.ui.Modal):
@@ -71,7 +72,7 @@ class RootVariables(Root):
         if mode in ["new", "create"]:
             if name in local_globals:
                 return await send(ctx, f"A variable called `{name}` already exists.")
-            await send(ctx, "\u200b", view=ModalSubmitter(name, True, ctx.author))
+            await send(ctx, ModalSubmitter(name, True, ctx.author))
 
         elif mode in ["delete", "del"]:
             if local_globals.get(name, False):
@@ -82,7 +83,7 @@ class RootVariables(Root):
         elif mode in ["edit", "replace"]:
             if name not in local_globals:
                 return await send(ctx, f"No variable called `{name}` found.")
-            await send(ctx, "\u200b", view=ModalSubmitter(name, False, ctx.author, local_globals[name]))
+            await send(ctx, ModalSubmitter(name, False, ctx.author, local_globals[name]))
 
         elif mode in ["all", "~"]:
             variables = '\n'.join(f"+ {var}" for var in local_globals) if local_globals else "- No variables found."
