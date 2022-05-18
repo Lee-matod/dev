@@ -9,19 +9,24 @@ Basic functions that will be used with the dev extension.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-from typing import *
 
-import io
+
+from typing import (
+    Any,
+    Dict,
+    List,
+    Sequence,
+    Union
+)
 
 import discord
+import io
 
-from copy import copy
-from typing import TextIO
 from discord.ext import commands
+from copy import copy
 
 from dev.handlers import Paginator
 
-from dev.utils.startup import Settings
 from dev.utils.utils import local_globals
 
 
@@ -62,83 +67,106 @@ def table_creator(rows: List[List[Any]], labels: List[str]) -> str:
     return "\n".join(table_str.split("\n")[:-2])
 
 
-async def send(ctx: commands.Context, content: Optional[str] = None, *, is_py_bt: bool = False, **options) -> discord.Message:
+async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed, discord.File]], discord.Embed, discord.File, discord.ui.View, str], **options: bool) -> Union[discord.Message, Dict[str, Any]]:
     """Evaluates how to send a discord message.
 
     Parameters
     ----------
     ctx: :class:`commands.Context`
         The context in which the command was invoked on.
-    content: Optional[:class:`str`]
-        The contents that the message should include.
-    is_py_bt: :class:`bool`
-        Whether the contents of the message are inside a Python codeblock.
-    options:
-        Additional key-word arguments that will be sent to ctx.send.
+    args:
+        Additional arguments that will be sent to :meth:`ctx.send`.
 
     Returns
     -------
     discord.Message
         The message that was sent. This does not include Pagination messages.
     """
-    kwargs = {"mention_author": Settings.MENTION_AUTHOR}
-    kwargs.update(options)
-    content = str(content).replace(ctx.bot.http.token, "TOKEN") if content else None
-
-    if content:
-        content = _revert_virtual_var_value(content)
-        if not isinstance(content, (discord.Embed, discord.File, TextIO)):
-            if len(content) > 1990:
+    py_codeblock = options.get("py_codeblock", False)
+    kwargs = {}
+    for arg in args:
+        if isinstance(arg, discord.Embed):
+            arg.description = arg.description.replace(ctx.bot.http.token, "TOKEN")
+            arg.description = _revert_virtual_var_value(arg.description)
+            if len(arg.description) > 4085:
                 paginator = commands.Paginator(prefix="```py\n", suffix="```\n")
-                for line in content.split("\n"):
+                for line in arg.description.split("\n"):
                     paginator.add_line(line.replace("`", "\u200b`"))
+                arg.description = paginator.pages[0]
+                await ctx.send(embed=arg, view=Paginator(paginator, ctx.author.id))
+            else:
+                if py_codeblock:
+                    replacement = arg.description.replace("`", "\u200b`")
+                    arg.description = f'```py\n{replacement}\n```'
+                if kwargs.get("embed", False):
+                    other_embed = kwargs.pop("embed")
+                    kwargs["embeds"] = [other_embed, arg]
+                elif kwargs.get("embeds", False):
+                    kwargs["embeds"].append(arg)
+                else:
+                    kwargs["embed"] = arg
+
+        elif isinstance(arg, discord.File):
+            string = _revert_virtual_var_value("".join(line.decode('utf-8') for line in arg.fp.readlines()).replace(ctx.bot.http.token, "TOKEN")).encode('utf-8')
+            if kwargs.get("file", False):
+                file = kwargs.pop("file")
+                kwargs["files"] = [file, discord.File(filename=f"{arg.filename}.txt" if "." not in arg.filename else arg.filename, fp=io.BytesIO(string))]
+            elif kwargs.get("files", False):
+                kwargs["files"].append(string)
+            else:
+                kwargs["file"] = discord.File(filename=f"{arg.filename}.txt" if "." not in arg.filename else arg.filename, fp=io.BytesIO(string))
+
+        elif isinstance(arg, (list, set, tuple)):
+            items = []
+            str_type = ""
+            inst_type = None
+            for item in arg:
+                if isinstance(item, discord.File):
+                    if inst_type:
+                        if not isinstance(item, inst_type):
+                            raise ValueError
+                    str_type = "files"
+                    inst_type = discord.File
+                    string = _revert_virtual_var_value("".join(line.decode('utf-8') for line in item.fp.readlines()).replace(ctx.bot.http.token, "TOKEN")).encode('utf-8')
+                    items.append(discord.File(filename=f"{item.filename}.txt" if "." not in item.filename else item.filename, fp=io.BytesIO(string)))
+                elif isinstance(item, discord.Embed):
+                    if inst_type:
+                        if not isinstance(item, inst_type):
+                            raise ValueError
+                    str_type = "embeds"
+                    inst_type = discord.Embed
+                    item.description = _revert_virtual_var_value(item.description.replace(ctx.bot.http.token, "TOKEN"))
+                    if len(item.description) > 4085:
+                        paginator = commands.Paginator(prefix="```py\n", suffix="```\n")
+                        for line in item.description.split("\n"):
+                            paginator.add_line(line.replace("`", "\u200b`"))
+                        item.description = paginator.pages[0]
+                        await ctx.send(embed=item, view=Paginator(paginator, ctx.author.id))
+                    else:
+                        if py_codeblock:
+                            replacement = item.description.replace("`", "\u200b`")
+                            item.description = f'```py\n{replacement}\n```'
+                        items.append(item)
+            if str_type:
+                kwargs[str_type] = items
+
+        elif isinstance(arg, discord.ui.View):
+            kwargs["view"] = arg
+
+        else:
+            content = _revert_virtual_var_value(str(arg).replace(ctx.bot.http.token, "TOKEN"))
+            if len(content) > 1990:
+                paginator = commands.Paginator(prefix="```py\n", suffix="\n```")
+                for line in content.split("\n"):
+                    paginator.add_line(line)
                 await ctx.send(paginator.pages[0], view=Paginator(paginator, ctx.author.id))
             else:
-                if is_py_bt:
-                    replacement = content.replace("`", "\u200b`")
-                    content = f'```py\n{replacement}\n```'
+                if py_codeblock:
+                    content = content.replace("`", "\u200b`")
+                    content = f"```py\n{content}\n```"
                 kwargs["content"] = content
-
-    for _type, _content in options.items():
-        if isinstance(_content, discord.File):
-            string = _revert_virtual_var_value("".join(line.decode('utf-8') for line in _content.fp.readlines()).replace(ctx.bot.http.token, "TOKEN")).encode('utf-8')
-            kwargs["file"] = discord.File(filename=f"{_content.filename}.txt", fp=io.BytesIO(string))
-
-        elif isinstance(_content, discord.Embed):
-            _content.description = _content.description.replace(ctx.bot.http.token, "TOKEN")
-            _content.description = _revert_virtual_var_value(_content.description)
-            if len(_content.description) > 4085:
-                paginator = commands.Paginator(prefix="```py\n", suffix="```\n")
-                for line in _content.description.split("\n"):
-                    paginator.add_line(line.replace("`", "\u200b`"))
-                _content.description = _content.description = paginator.pages[0]
-                await ctx.send(embed=_content, view=Paginator(paginator, ctx.author.id))
-            else:
-                if is_py_bt:
-                    replacement = _content.description.replace("`", "\u200b`")
-                    _content.description = f'```py\n{replacement}\n```'
-                kwargs["embed"] = _content
-
-        elif _type == "embeds":
-            embeds = []
-            for embed in options["embeds"]:
-                if isinstance(embed, discord.Embed):
-                    embed.description = embed.description.replace(ctx.bot.http.token, "TOKEN")
-                    embed.description = _revert_virtual_var_value(embed.description)
-                    if is_py_bt:
-                        replacement = embed.description.replace("`", "\u200b`")
-                        embed.description = f'```py\n{replacement}\n```'
-                    embeds.append(embed)
-            kwargs["embeds"] = embeds
     if kwargs:
         return await ctx.send(**kwargs)
-
-
-def _revert_virtual_var_value(string: str) -> str:
-    # For security reasons, when using await send(), this gets automatically called
-    for var_name, var_value in local_globals.items():
-        string = string.replace(var_value, var_name)
-    return string
 
 
 async def generate_ctx(ctx: commands.Context, author: discord.Member, channel: discord.TextChannel, **kwargs) -> commands.Context:
@@ -196,3 +224,10 @@ def clean_code(content: str) -> str:
         return "\n".join(content.split("\n")[1:-1])
     else:
         return content
+
+
+def _revert_virtual_var_value(string: str) -> str:
+    # For security reasons, when using await send(), this gets automatically called
+    for var_name, var_value in local_globals.items():
+        string = string.replace(var_value, var_name)
+    return string
