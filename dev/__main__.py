@@ -9,6 +9,9 @@ Includes the root command for the dev extension, as well as other commands that 
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
+
+
+import contextlib
 import discord
 
 from discord.ext import commands
@@ -22,16 +25,25 @@ class RootCommand(Root):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
 
-    @root.group(name="dev", invoke_without_command=True, usage="[--help|--man] [--source|-src [--file]] <command>")
+    @root.group(name="dev", invoke_without_command=True, ignore_extra=False, usage="[--help|--man] [--source|-src [--file]] [--inspect|-i] <command>")
     async def root_(self, ctx: commands.Context):
         """Root command for the `dev` extension.
         Execute `dev --help [command]` for more information on a subcommand.
-        `--help`|`--man` [command] = Shows this help menu.
+        `--help`|`--man` [command] = Shows a custom made help command.
         `--source`|`-src` [--file] <command> = Shows the source code of a command.
+        `--inspect`|`-i` <command> = Get the signature of a command.
         """
+
+    @root_.command(name="exit", aliases=["quit", "kys"])
+    async def root_exit(self, ctx: commands.Context):
+        """Exit the whole code at once. Note that this may cause issues."""
+        await ctx.message.add_reaction("👋")
+        with contextlib.suppress(SystemExit):
+            exit()
 
     @root_.command(name="visibility")
     async def root_visibility(self, ctx: commands.Context, toggle: bool = None):
+        """Toggle whether the dev command is hidden."""
         if toggle:
             if self.root_command.hidden:
                 return await send(ctx, f"`dev` is already hidden.")
@@ -49,6 +61,7 @@ class RootCommand(Root):
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
         if Settings.INVOKE_ON_EDIT:
-            if before.content.startswith(self.bot.command_prefix) and after.content.startswith(self.bot.command_prefix):
-                await before.clear_reactions()
+            prefix = await self.bot.get_prefix(after)
+            if before.content.startswith(prefix) and after.content.startswith(prefix):
+                await after.clear_reactions()
                 await self.bot.process_commands(after)
