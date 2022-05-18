@@ -4,39 +4,38 @@
 dev
 ~~~
 
-A simple debugging, editing and testing extension for discord.py.
+A simple debugging, editing and testing extension for discord.py version 2.0 (master).
 
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
+
+
 from dev.__main__ import *
-from dev.handlers import *
 from dev.converters import *
+from dev.handlers import *
 
-from dev.config.bot import RootBot
-from dev.config.over import RootOverride
-from dev.config.variables import RootVariables
-from dev.experimental.http import RootHTTP
-from dev.experimental.invoke import RootInvoke
-from dev.experimental.python import RootPython
-from dev.flags.flags import RootFlags
+from dev.config import RootBot, RootOverride, RootVariables
+from dev.experimental import RootHTTP, RootInvoke, RootPython
+from dev.flags import RootFlags
 
-from dev.utils.utils import *
+from dev.utils.baseclass import *
 from dev.utils.functs import *
 from dev.utils.startup import *
-from dev.utils.baseclass import *
+from dev.utils.utils import *
+
 
 __all__ = (
+    "CodeblockConverter",
     "Command",
     "Dev",
+    "GlobalLocals",
     "Group",
-    "VirtualVarReplacer",
-    "codeblock_converter",
-    "local_globals",
     "Root",
+    "Settings",
+    "replace_vars",
     "root",
-    "send",
-    "Settings"
+    "send"
 )
 
 cogs = [RootCommand, RootBot, RootOverride, RootVariables, RootHTTP, RootInvoke, RootPython, RootFlags]
@@ -44,7 +43,7 @@ cogs = [RootCommand, RootBot, RootOverride, RootVariables, RootHTTP, RootInvoke,
 
 class Dev(*cogs):
     """
-    The frontend Root cog of the dev extension.
+    The frontend root cog of the dev extension.
     """
 
 
