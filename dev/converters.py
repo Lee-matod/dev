@@ -46,8 +46,10 @@ class CodeblockConverter(commands.Converter):
                 start = i
                 break
         for i in range(len(argument)):
-            if "".join([argument[-i], argument[-i - 1], argument[-i - 2]]) == "```":
-                end = -i
+            i += 1
+            if "".join([argument[-i], argument[-(i + 1)], argument[-(i + 2)]]) == "```":
+                end = -(i - 1) if i != 1 else None
+                break
         codeblock = argument[start:end]
         arguments = argument[:start]
         return arguments.strip(), codeblock
