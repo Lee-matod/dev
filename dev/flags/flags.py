@@ -25,11 +25,11 @@ if TYPE_CHECKING:
     from dev.utils.baseclass import Command, Group
 
 
-class RootFlags(Root, command_attrs={"hidden": True}):
+class RootFlags(Root):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
 
-    @root.command(name="--help", aliases=["--man"], parent="dev")
+    @root.command(name="--help", aliases=["--man"], parent="dev", hidden=True)
     async def root_help(self, ctx: commands.Context, *, command_string: str = ""):
         """Help command made exclusively made for the `dev` extensions.
         Flags are hidden, but they can still be accessed and attributes can still be viewed using their respective commands.
@@ -46,25 +46,12 @@ class RootFlags(Root, command_attrs={"hidden": True}):
             command_list.sort()
             subcommands = '\n'.join(command_list)
             embed.add_field(name="subcommands", value=subcommands or 'No subcommands')
+        embed.set_footer(text=f"Supports Variables: {command.supports_virtual_vars}")
         return await ctx.send(embed=embed)
 
-    @root.command(name="--attributes", aliases=["-attrs"], parent="dev")
-    async def root_(self, ctx: commands.Context, *, command_string: str = ""):
-        """Get the attributes of a command.
-        This is exclusive to the `dev` extension.
-        """
-        command: Union[Command, Group] = self.bot.get_command(f"dev {command_string}".strip())
-        if not command:
-            return await send(ctx, f"Command `{command_string}` not found.")
-        embed = discord.Embed(title=command.qualified_name, color=discord.Color.darker_gray())
-        embed.add_field(name="Cog", value=command.cog_name)
-        embed.add_field(name="Requires Positional Variables", value=command.require_var_positional)
-        embed.add_field(name="Supports Virtual Variables", value=command.supports_virtual_vars)
-        # still have more to do
-
-    @root.command(name="--inspect", aliases=["-i"], parent="dev")
+    @root.command(name="--inspect", aliases=["-i"], parent="dev", hidden=True)
     async def root_types(self, ctx: commands.Context, *, command_string: str):
-        """Get the signature and the types expected for a command.
+        """Inspect a command.
         This is not exclusive to the `dev` extension.
         """
         command = self.bot.get_command(command_string)
@@ -78,9 +65,9 @@ class RootFlags(Root, command_attrs={"hidden": True}):
                 params.append(f"`*{name}{'*' if sign.required else ''}`: _{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_{' = ' + str(sign.default) if not isinstance(sign.default, type) else ''}")
             else:  # **kwargs aren't supported in dpy
                 params.append(f"`{name}{'*' if sign.required else ''}`: _{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_{' = ' + str(sign.default) if not isinstance(sign.default, type) else ''}")
-        await send(ctx, discord.Embed(title=command_string, description="\n".join(params), color=discord.Color.darker_gray()))
+        await send(ctx, discord.Embed(title=command_string, description=f"**Type:** `{type(command).__name__}`\n**Command ID:** `{hex(id(command))}`\n**Module:** `{inspect.getmodule(command.callback).__name__}`\n**Cog**: `{command.cog_name}`\n**Signature**\n" + "\n".join(params), color=discord.Color.darker_gray()))
 
-    @root.command(name="--source", parent="dev", aliases=["-src", "--sourceFile", "-srcF"])
+    @root.command(name="--source", parent="dev", aliases=["-src", "--sourceFile", "-srcF"], hidden=True)
     async def root_source(self, ctx: commands.Context, *, command_string: str = ""):
         """View the source code of a command.
         This is not exclusive to the `dev` extension.
