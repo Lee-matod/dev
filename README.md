@@ -1,7 +1,9 @@
 # dev
-A debugging, testing and editing cog for discord.py. This does not use slash commands (mainly because I think they're ugly), so message intents have to be enabled! (Or set the bot's prefix to its tag).
+A debugging, testing and editing cog for discord.py. This does not use slash commands 
+(mainly because I think they're ugly), so message intents have to be enabled! 
+(Or set the bot's prefix to its tag).
 
-discord.py Github: https://github.com/Rapptz/discord.py
+discord.py Github: https://github.com/Rapptz/discord.py 
 
 discord.py docs: https://discordpy.readthedocs.io/en/latest/index.html
 
@@ -9,14 +11,46 @@ This is still under development, so I'm terribly sorry if you experience any iss
 
 This README.md should also get edited in the near future with more stuff to read.
 ****
+# setup
+
+Currently, there is no `python3 -m pip install dev`, so you'd have to manually install this extension. Sorry :/
+
+In-code setup is quite simple. Since the bot is required to be logged in once the extension is loaded 
+(you'll see why in a bit), you have to use discord.py 2.0's `setup_hook` event to load the extension. 
+An example is shown below
+
+```python
+from discord.ext import commands
+
+bot = commands.Bot(command_prefix=..., intents=...)
+
+@bot.listen()  # or `@bot.event`, both work
+async def setup_hook() -> None:
+    await bot.load_extension("dev")
+...
+
+# or if you're subclassing commands.Bot
+
+class Bot(commands.Bot):
+    def __init__(self):
+        super().__init__(command_prefix=..., intents=...)
+    
+    async def setup_hook(self) -> None:
+        await self.load_extension("dev")
+...
+```
+****
 # settings
 
-You can customize this extension however you'd like. To do this simply import `Settings` from `dev` and change the module and its setting accordingly. An example is shown below.
+You can customize this extension however you'd like. To do this simply import `Settings` from `dev` and change 
+its attributes accordingly. An example is shown below.
 ```python
 from dev import Settings
 Settings.OWNERS = [1234567890]
+INVOKE_ON_EDIT = False
 ```
-The full `settings` tree is shown below.
+The full `settings` tree and what they do are shown below. Note that if the wrong type of value is passed, a 
+`ValueError` will be raised
 ```python
 FLAG_DELIMITER: str = ": "
 INVOKE_ON_EDIT: Optional[bool] = True
@@ -25,3 +59,14 @@ PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
 ROOT_FOLDER: Optional[str] = ""
 VIRTUAL_VARS: str = "|%(name)s|"
 ```
+* **FLAG_DELIMITER:** For the moment only used in `dev http`, this setting is used to determine when to separate
+keys and values when specifying any kwargs that should be passed in to the get method. Currently, data types aren't
+supported.
+* **INVOKE_ON_EDIT:** If `True`, then a command will be reinvoked if it is edited.
+* **OWNERS:** A list of user IDs that can override `bot.owner_id(s)` determining who can use the dev extension.
+If none are specified, then it defaults to the ID of the owner of the bot 
+* (this is why the bot is required to be logged in once the extension is loaded).
+* **PATH_TO_FILE:** If a traceback is sent, the path that is specified will be removed from it. This can be used to hide
+personal names or unwanted information.
+* **ROOT_FOLDER:** This is the path that is going to replace the `|root|` placeholder text.
+* **VIRTUAL_VARS:** The format in which virtual variables should be specified.
