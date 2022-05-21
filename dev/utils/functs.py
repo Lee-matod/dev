@@ -86,18 +86,27 @@ async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed,
     kwargs = {}
     for arg in args:
         if isinstance(arg, discord.Embed):
-            arg.description = arg.description.replace(ctx.bot.http.token, "TOKEN")
-            arg.description = _revert_virtual_var_value(arg.description)
-            if len(arg.description) > 4085:
-                paginator = commands.Paginator(prefix="```py\n", suffix="```\n")
-                for line in arg.description.split("\n"):
-                    paginator.add_line(line.replace("`", "\u200b`"))
-                arg.description = paginator.pages[0]
-                await ctx.send(embed=arg, view=Paginator(paginator, ctx.author.id))
+            if arg.description:
+                arg.description = arg.description.replace(ctx.bot.http.token, "TOKEN")
+                arg.description = _revert_virtual_var_value(arg.description)
+                if len(arg.description) > 4085:
+                    paginator = commands.Paginator(prefix="```py\n", suffix="```\n")
+                    for line in arg.description.split("\n"):
+                        paginator.add_line(line.replace("`", "\u200b`"))
+                    arg.description = paginator.pages[0]
+                    await ctx.send(embed=arg, view=Paginator(paginator, ctx.author.id))
+                else:
+                    if py_codeblock:
+                        replacement = arg.description.replace("`", "\u200b`")
+                        arg.description = f'```py\n{replacement}\n```'
+                    if kwargs.get("embed", False):
+                        other_embed = kwargs.pop("embed")
+                        kwargs["embeds"] = [other_embed, arg]
+                    elif kwargs.get("embeds", False):
+                        kwargs["embeds"].append(arg)
+                    else:
+                        kwargs["embed"] = arg
             else:
-                if py_codeblock:
-                    replacement = arg.description.replace("`", "\u200b`")
-                    arg.description = f'```py\n{replacement}\n```'
                 if kwargs.get("embed", False):
                     other_embed = kwargs.pop("embed")
                     kwargs["embeds"] = [other_embed, arg]
@@ -135,17 +144,20 @@ async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed,
                             raise ValueError
                     str_type = "embeds"
                     inst_type = discord.Embed
-                    item.description = _revert_virtual_var_value(item.description.replace(ctx.bot.http.token, "TOKEN"))
-                    if len(item.description) > 4085:
-                        paginator = commands.Paginator(prefix="```py\n", suffix="```\n")
-                        for line in item.description.split("\n"):
-                            paginator.add_line(line.replace("`", "\u200b`"))
-                        item.description = paginator.pages[0]
-                        await ctx.send(embed=item, view=Paginator(paginator, ctx.author.id))
+                    if item.description:
+                        item.description = _revert_virtual_var_value(item.description.replace(ctx.bot.http.token, "TOKEN"))
+                        if len(item.description) > 4085:
+                            paginator = commands.Paginator(prefix="```py\n", suffix="```\n")
+                            for line in item.description.split("\n"):
+                                paginator.add_line(line.replace("`", "\u200b`"))
+                            item.description = paginator.pages[0]
+                            await ctx.send(embed=item, view=Paginator(paginator, ctx.author.id))
+                        else:
+                            if py_codeblock:
+                                replacement = item.description.replace("`", "\u200b`")
+                                item.description = f'```py\n{replacement}\n```'
+                            items.append(item)
                     else:
-                        if py_codeblock:
-                            replacement = item.description.replace("`", "\u200b`")
-                            item.description = f'```py\n{replacement}\n```'
                         items.append(item)
             if str_type:
                 kwargs[str_type] = items
