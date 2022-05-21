@@ -193,35 +193,41 @@ class RootOverride(Root):
 
             with open(directory, "r") as f:
                 read_lines = f.readlines()
-                # find what lines we have to edit
                 rev_read_lines = read_lines.copy()
                 rev_read_lines.reverse()
-                start, end = 0, 0
-                for i in range(len(rev_read_lines)):
-                    if rev_read_lines[i] == lines[-1]:
-                        end = i + 1
-                    elif end:
-                        if rev_read_lines[i] == lines[0]:
-                            start = i + 1
-                            break
-                start, end = (len(rev_read_lines) - start), (len(rev_read_lines) - end)
+            # find what lines we have to edit
+            start_counter, end_counter = 0, len(lines)
+            start, end = None, None
+            # sometimes there could be a repeated line of code which is why we have to make sure there's the correct
+            # difference between the start and end lines of the file and the one's we're searching for
+            while not all((end, start)):
+                if read_lines[start_counter] == lines[0]:
+                    start = start_counter
+                if read_lines[end_counter] == lines[-1]:
+                    end = end_counter
+                start_counter += 1
+                end_counter += 1
+            if None in (start, end):
+                return await send(ctx, f"Couldn't find the correct source lines for the command.")
 
-            if len(arg.split("\n")) > len(lines):  # make sure that we have the correct amount of lines necessary to include the new script
+            # make sure that we have the correct amount of lines necessary to include the new script
+            if len(arg.split("\n")) > len(lines):
                 with open(directory, "w") as f:
-                    read_lines[end] = read_lines[end] + "\n" * (len(arg.split("\n")) - len(lines) - 1)
+                    read_lines[end] = read_lines[end] + "\n" * (len(arg.split("\n")) - len(lines))
                     end += len(arg.split("\n")) - len(lines)
                     f.writelines(read_lines)
-                with open(directory, "r") as f:  # since we edited the file, we have to get our new set of lines
+                with open(directory, "r") as f:
+                    # since we edited the file, we have to get our new set of lines
                     read_lines = f.readlines()
 
             with open(directory, "w") as f:
                 count = 0
                 for line in range(start, end + 1):
                     try:
-                        read_lines[line] = arg.split("\n")[count] + "\n"
+                        read_lines[line] = arg.split("\n")[count] + "\n" if line != end else arg.split("\n")[count]
                         count += 1
                     except IndexError:
-                        # deal with any extra lines
+                        # deal with any extra lines, so we don't get a huge whitespace
                         read_lines[line] = ""
                 f.writelines(read_lines)
             self.sort_dict_id("overwrite", "del", id_num if id_num != 0 else len(self.OVERWRITES))
@@ -242,24 +248,9 @@ class RootOverride(Root):
         command_string, script = command_code
         if not command_string or not script:
             return await ctx.send("Malformed arguments were given.")
-        code = clean_code(replace_vars(script))
-        code = code.split("\n")
-        new_code = []
-        for line in code:
-            amount = 0
-            for char in line:
-                if char == " ":
-                    amount += 1
-                amount *= 2
-                break
-            new_code.append(line.replace("  ", "    ", amount))
-        code = "\n".join(new_code)
         command = self.bot.get_command(command_string)
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
-        # we don't want to override the command's actual callback,
-        # so we set it to a variable which we can later change if the
-        # command's name is found in the callbacks dictionary
         source = command.callback
         if command.qualified_name in [name[0] for name in self.CALLBACKS.values()]:
             # we find the original callback instead of any changed ones
@@ -268,28 +259,57 @@ class RootOverride(Root):
         lines, _ = inspect.getsourcelines(source)
         self.sort_dict_id("overwrite", "add", ("command", f"Command that was overwritten: {command_string} ‒ {datetime.utcnow().strftime('%b %d, %Y at %H:%M:%S UTC')}", command.callback, "".join(lines)))
 
+        code = clean_code(replace_vars(script))
+        code = code.split("\n")
+        new_code = []
+        indentation = 0
+        for char in lines[0]:
+            if char == " ":
+                indentation += 1
+            else:
+                break
+        # since discord's intents are a multiple of 2 we convert them to a multiples of 4.
+        # we also add the correct indentation level if necessary
+        for line in code:
+            amount = 0
+            for char in line:
+                if char == " ":
+                    amount += 1
+                amount *= 2
+                break
+            new_code.append(f"{' ' * indentation}{line.replace('  ', '    ', amount)}")
+        code = "\n".join(new_code)
+        # we don't want to override the command's actual callback,
+        # so we set it to a variable which we can later change if the
+        # command's name is found in the callbacks dictionary
+
         with open(directory, "r") as f:
             read_lines = f.readlines()
-            # find what lines we have to edit
             rev_read_lines = read_lines.copy()
             rev_read_lines.reverse()
-            start, end = 0, 0
-            for i in range(len(rev_read_lines)):
-                if rev_read_lines[i] == lines[-1]:
-                    end = i + 1
-                elif end:
-                    if rev_read_lines[i] == lines[0]:
-                        start = i + 1
-                        break
-            # find the actual start and end points of the file
-            start, end = (len(rev_read_lines) - start), (len(rev_read_lines) - end)
+        # find what lines we have to edit
+        start_counter, end_counter = 0, len(lines)
+        start, end = None, None
+        # sometimes there could be a repeated line of code which is why we have to make sure there's the correct
+        # difference between the start and end lines of the file and the one's we're searching for
+        while not all((end, start)):
+            if read_lines[start_counter] == lines[0]:
+                start = start_counter
+            if read_lines[end_counter] == lines[-1]:
+                end = end_counter
+            start_counter += 1
+            end_counter += 1
+        if None in (start, end):
+            return await send(ctx, f"Couldn't find the correct source lines for the command `{command_string}`.")
 
-        if len(code.split("\n")) > len(lines):  # make sure that we have the correct amount of lines necessary to include the new script
+        # make sure that we have the correct amount of lines necessary to include the new script
+        if len(code.split("\n")) > len(lines):
             with open(directory, "w") as f:
                 read_lines[end] = read_lines[end] + "\n" * (len(code.split("\n")) - len(lines))
                 end += len(code.split("\n")) - len(lines)
                 f.writelines(read_lines)
-            with open(directory, "r") as f:  # since we edited the file, we have to get our new set of lines
+            with open(directory, "r") as f:
+                # since we edited the file, we have to get our new set of lines
                 read_lines = f.readlines()
 
         with open(directory, "w") as f:
