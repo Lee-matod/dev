@@ -6,16 +6,12 @@ with open("requirements.txt") as file:
 with open("README.md", "r") as file:
     readme = file.read()
 
-packages = [
-    "dev",
-]
-
 setup(
     name="dev",
     author="Lee-matod",
     url="https://github.com/Lee-matod/dev",
     version="1.0.0a",
-    packages=packages,
+    packages=["dev"],
     license="Apache 2.0",
     description="A debugging, testing and editing cog for discord.py",
     long_description=readme,
