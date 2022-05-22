@@ -1,19 +1,26 @@
 # dev
 A debugging, testing and editing cog for discord.py. This does not use slash commands 
 (mainly because I think they're ugly), so message intents have to be enabled! 
-(Or set the bot's prefix to its tag).
+(or set the bot's prefix to its tag).
 
-discord.py Github: https://github.com/Rapptz/discord.py 
+discord.py github: https://github.com/Rapptz/discord.py 
 
 discord.py docs: https://discordpy.readthedocs.io/en/latest/index.html
 
 This is still under development, so I'm terribly sorry if you experience any issues.
 
-This README.md should also get edited in the near future with more stuff to read.
+This `README.md` should also get edited in the near future with more stuff to read.
 ****
 # setup
 
-Currently, there is no `python3 -m pip install dev`, so you'd have to manually install this extension. Sorry :/
+Python 3.8 or higher is required. 
+```
+# For Windows
+py -3 -m pip install -U git+https://github.com/Lee-matod/dev.git
+
+# For Linux/MacOS
+python3 -m pip install -U git+https://github.com/Lee-matod/dev.git
+```
 
 In-code setup is quite simple. Since the bot is required to be logged in once the extension is loaded 
 (you'll see why in a bit), you have to use discord.py 2.0's `setup_hook` event to load the extension. 
