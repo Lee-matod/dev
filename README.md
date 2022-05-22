@@ -13,12 +13,15 @@ This `README.md` should also get edited in the near future with more stuff to re
 ****
 # setup
 
-Python 3.8 or higher is required. 
-```
-# For Windows
-py -3 -m pip install -U git+https://github.com/Lee-matod/dev.git
+Python 3.8 or higher is required. To install the extension, simply run the following command
+on your console depending what operating system you use.
 
-# For Linux/MacOS
+**For Windows**
+```
+py -3 -m pip install -U git+https://github.com/Lee-matod/dev.git
+```
+**For Linux/MacOS**
+```
 python3 -m pip install -U git+https://github.com/Lee-matod/dev.git
 ```
 
@@ -34,9 +37,11 @@ bot = commands.Bot(command_prefix=..., intents=...)
 @bot.listen()  # or `@bot.event`, both work
 async def setup_hook() -> None:
     await bot.load_extension("dev")
-...
+```
+or if you're subclassing commands.Bot
+```
+from discord.ext import commands
 
-# or if you're subclassing commands.Bot
 
 class Bot(commands.Bot):
     def __init__(self):
@@ -44,7 +49,6 @@ class Bot(commands.Bot):
     
     async def setup_hook(self) -> None:
         await self.load_extension("dev")
-...
 ```
 ****
 # settings
@@ -72,7 +76,7 @@ supported.
 * **INVOKE_ON_EDIT:** If `True`, then a command will be reinvoked if it is edited.
 * **OWNERS:** A list of user IDs that can override `bot.owner_id(s)` determining who can use the dev extension.
 If none are specified, then it defaults to the ID of the owner of the bot 
-* (this is why the bot is required to be logged in once the extension is loaded).
+(this is why the bot is required to be logged in once the extension is loaded).
 * **PATH_TO_FILE:** If a traceback is sent, the path that is specified will be removed from it. This can be used to hide
 personal names or unwanted information.
 * **ROOT_FOLDER:** This is the path that is going to replace the `|root|` placeholder text.
