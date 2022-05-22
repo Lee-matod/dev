@@ -29,7 +29,7 @@ __all__ = (
 
 class Settings:
     FLAG_DELIMITER: str = ": "
-    INVOKE_ON_EDIT: Optional[bool] = True
+    INVOKE_ON_EDIT: bool = True
     OWNERS: Optional[Sequence[int]] = []
     PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
     ROOT_FOLDER: Optional[str] = ""
