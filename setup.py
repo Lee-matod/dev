@@ -18,5 +18,5 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     include_package_data=True,
-    python_requires=">=3.9.0",
+    python_requires=">=3.8.0",
 )
