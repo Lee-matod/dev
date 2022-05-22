@@ -42,7 +42,6 @@ or if you're subclassing commands.Bot
 ```python
 from discord.ext import commands
 
-
 class Bot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix=..., intents=...)
@@ -58,7 +57,8 @@ its attributes accordingly. An example is shown below.
 ```python
 from dev import Settings
 Settings.OWNERS = [1234567890]
-INVOKE_ON_EDIT = False
+Settings.INVOKE_ON_EDIT = False
+Settings.VIRTUAL_VARS = "-%(name)s-"
 ```
 The full `settings` tree and what they do are shown below. Note that if the wrong type of value is passed, a 
 `ValueError` will be raised
