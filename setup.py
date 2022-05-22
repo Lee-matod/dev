@@ -4,10 +4,7 @@ with open("README.md", "r") as file:
     readme = file.read()
 
 packages = [
-    "dev",
-    "config",
-    "experimental",
-    "flags"
+    "dev"
 ]
 
 setup(name="dev",
