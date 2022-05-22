@@ -39,7 +39,7 @@ async def setup_hook() -> None:
     await bot.load_extension("dev")
 ```
 or if you're subclassing commands.Bot
-```
+```python
 from discord.ext import commands
 
 
