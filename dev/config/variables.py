@@ -14,7 +14,9 @@ A virtual variable manager directly implemented to the dev extension.
 import discord
 
 from discord.ext import commands
-from typing import Optional
+from typing import Literal, Optional
+
+from dev.converters import LiteralModes
 
 from dev.utils.functs import send
 from dev.utils.baseclass import Root, root
@@ -57,7 +59,7 @@ class RootVariables(Root):
         super().__init__(bot)
 
     @root.command(name="variable", parent="dev", aliases=["variables", "vars", "var"])
-    async def root_variable(self, ctx: commands.Context, mode: str, name: Optional[str]):
+    async def root_variable(self, ctx: commands.Context, mode: LiteralModes[Literal["content", "exists", "all", "~", "edit", "replace", "delete", "del", "new", "create"]], name: Optional[str]):
         """A virtual variable manager.
         This allows you to create temporary variables that can later be used as placeholder texts if you want to hide certain things from the public.
         Note that all variables created using this manager will later be destroyed once the bot restarts.
@@ -69,6 +71,8 @@ class RootVariables(Root):
         `delete`|`del` = Delete an already existing variable.
         `new`|`create` = Create a new variable.
         """
+        if mode is None:
+            return
         if mode in ["new", "create"]:
             if name in local_globals:
                 return await send(ctx, f"A variable called `{name}` already exists.")
