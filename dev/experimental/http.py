@@ -17,8 +17,9 @@ import io
 import json
 
 from discord.ext import commands
-from typing import Dict, Optional
+from typing import Dict, Literal
 
+from dev.converters import LiteralModes
 from dev.handlers import replace_vars
 
 from dev.utils.baseclass import Root, root
@@ -30,8 +31,8 @@ class RootHTTP(Root):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
 
-    @root.command(name="http", parent="dev", supports_virtual_vars=True)
-    async def root_http(self, ctx: commands.Context, url: str, mode: str, allow_redirects: bool = False, *, options: str = None):
+    @root.command(name="http", parent="dev", virtual_vars=True)
+    async def root_http(self, ctx: commands.Context, url: str, mode: LiteralModes[Literal["status", "json", "text", "read"]], allow_redirects: bool = False, *, options: str = None):
         """Get a response from a specified url. Response modes can differ.
         **Modes:**
         `status` = Return the status code of the website.
