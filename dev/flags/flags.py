@@ -46,7 +46,7 @@ class RootFlags(Root):
             command_list.sort()
             subcommands = '\n'.join(command_list)
             embed.add_field(name="subcommands", value=subcommands or 'No subcommands')
-        embed.set_footer(text=f"Supports Variables: {command.supports_virtual_vars}")
+        embed.set_footer(text=f"Supports Variables: {command.supports_virtual_vars}. Supports Root Placeholder: {command.supports_root_placeholder}")
         return await ctx.send(embed=embed)
 
     @root.command(name="--inspect", aliases=["-i"], parent="dev", hidden=True)
@@ -84,10 +84,12 @@ class RootFlags(Root):
 
         if not file:
             if command.qualified_name in [name[0] for name in self.CALLBACKS.values()]:
-                return await send(ctx, f"{[source[2] for source in reversed(self.CALLBACKS.values()) if source[0] == command.qualified_name][0]}", py_codeblock=True)
+                return await send(ctx, f"{[source[2] for source in self.CALLBACKS.values() if source[0] == command.qualified_name][-1]}", py_codeblock=True)
             lines, _ = inspect.getsourcelines(command.callback)
             return await send(ctx, f"{''.join(lines)}", py_codeblock=True)
-
-        directory = inspect.getsourcefile([callback[1] for callback in self.CALLBACKS.values() if callback[0] == command.qualified_name][0])
+        callback = command.callback
+        if command.qualified_name in [value[1] for value in self.CALLBACKS.values()]:
+            callback = [callback[1] for callback in self.CALLBACKS.values() if callback[0] == command.qualified_name][0]
+        directory = inspect.getsourcefile(callback)
         with open(directory) as source:
             await send(ctx, f"{''.join(source.readlines())}", py_codeblock=True)
