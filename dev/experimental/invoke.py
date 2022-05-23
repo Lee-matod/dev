@@ -9,13 +9,14 @@ Command invocation or reinvocation with changeable execution attributes.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-
-
+import io
 from typing import (
+    Sequence,
     Optional,
     Union
 )
 
+import contextlib
 import discord
 
 from discord.ext import commands
@@ -33,9 +34,112 @@ class ReinvokeFlags(commands.FlagConverter):
     endswith_: Optional[str] = commands.flag(name="endswith", default=None)
 
 
+class NoSendContext(commands.Context):
+    async def send(
+        self,
+        content: Optional[str] = None,
+        *,
+        tts: bool = False,
+        embed: Optional[discord.Embed] = None,
+        embeds: Optional[Sequence[discord.Embed]] = None,
+        file: Optional[discord.File] = None,
+        files: Optional[Sequence[discord.File]] = None,
+        stickers: Optional[Sequence[Union[discord.GuildSticker, discord.StickerItem]]] = None,
+        delete_after: Optional[float] = None,
+        nonce: Optional[Union[str, int]] = None,
+        allowed_mentions: Optional[discord.AllowedMentions] = None,
+        reference: Optional[Union[discord.Message, discord.MessageReference, discord.PartialMessage]] = None,
+        mention_author: Optional[bool] = None,
+        view: Optional[discord.ui.View] = None,
+        suppress_embeds: bool = False,
+        ephemeral: bool = False,
+    ) -> None:
+        args = [f"{tts = }", f"{suppress_embeds = }", f"{ephemeral = }", f"{mention_author = }"]
+        embed_format = "embed = title: {0.title}\n" \
+                       "        description: {0.description}\n" \
+                       "        color: {0.color}\n" \
+                       "        author: {0.author}\n" \
+                       "        footer: {0.footer}\n" \
+                       "        url: {0.url}\n" \
+                       "        timestamp: {0.timestamp}\n" \
+                       "        image: {0.image.url}\n" \
+                       "        video: {0.video.url}"
+        fields_format = "        fields = name: {0.name}\n" \
+                        "                 value: {0.value}\n" \
+                        "                 inline: {0.inline}"
+        if content:
+            args.append(f"content = {content}")
+        if embed:
+            body = embed_format.format(embed)
+            fields = []
+            if embed.fields:
+                for field in embed.fields:
+                    fields.append(fields_format.format(field))
+            fields = "\n" + "\n".join(fields)
+            args.append(f"{body}{fields}")
+        if embeds:
+            for e in embeds:
+                body = embed_format.format(e)
+                fields = []
+                if e.fields:
+                    for field in e.fields:
+                        fields.append(fields_format.format(field))
+                fields = "\n" + "\n".join(fields)
+                args.append(f"{body}{fields}")
+        if file:
+            args.append(f"file = filename: {file.filename}"
+                        f"       content: {file.fp.read()}")
+        if files:
+            for f in files:
+                args.append(f"file = filename: {f.filename}"
+                            f"       content: {f.fp.read()}")
+        if stickers:
+            args.append(f"stickers = {', '.join(f'<{sticker.name}={str(sticker.id)}>' for sticker in stickers)}")
+        if delete_after:
+            args.append(f"{delete_after = }")
+        if nonce:
+            args.append(f"{nonce = }")
+        if allowed_mentions:
+            args.append(f"{allowed_mentions = }")
+        if reference:
+            args.append(f"reference = <{reference.id}={reference.jump_url}>")
+
+        print("\n".join(args))
+
+
 class RootInvoke(Root):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
+
+    @root.command(name="no_send", parent="dev", aliases=["ns", "nosend"])
+    async def root_no_send(self, ctx: commands.Context, *, command_string: str):
+        """Instead of sending a message via `ctx.send`, the message will be redirected to stdout.
+        Note that this won't work for all types of `discord.abc.Messageable`, only for `ctx.send`.
+        If stdout was already redirected once the message was sent, then the command won't work either (for obvious reasons).
+        So make sure to exit your stdout manager before sending any messages if you want to use this command properly.
+        """
+        kwargs = {"content": f"{ctx.prefix}{command_string}", "author": ctx.author, "channel": ctx.channel}
+        context = await generate_ctx(ctx, **kwargs)
+        context.__class__ = NoSendContext
+        if not context.command:
+            return await send(ctx, f"Command `{context.invoked_with}` not found.")
+        await context.command.reinvoke(context)
+
+    @root.command(name="no_print", parent="dev", aliases=["np", "noprint"])
+    async def root_no_print(self, ctx: commands.Context, *, command_string: str):
+        """If there are any print statements in the command, they will be ignored and sent via a Discord message.
+        Note that this won't work if the stdout is being redirected to another file.
+        """
+        kwargs = {"content": f"{ctx.prefix}{command_string}", "author": ctx.author, "channel": ctx.channel}
+        context = await generate_ctx(ctx, **kwargs)
+        if not context.command:
+            return await send(ctx, f"Command `{context.invoked_with}` not found.")
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            await context.command.reinvoke(context)
+        resp = (f"**stdout**\n```py\n{out}\n```" if (out := stdout.getvalue()) else '') + ("\n" if out else '') + (f"**stderr**\n```py\n{err}\n```" if (err := stderr.getvalue()) else '')
+        if resp:
+            await send(ctx, discord.Embed(title="Output", description=resp, colour=discord.Color.blurple()))
 
     @root.command(name="repeat", parent="dev", aliases=["repeat!"])
     async def root_repeat(self, ctx: commands.Context, amount: int, *, command_string: str):
