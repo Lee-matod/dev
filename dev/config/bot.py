@@ -15,8 +15,9 @@ import discord
 import time
 
 from discord.ext import commands
+from typing import Literal
 
-from dev.converters import convert_str_to_ids
+from dev.converters import convert_str_to_ints, LiteralModes
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
@@ -92,7 +93,7 @@ class RootBot(Root):
         return await send(ctx, embed)
 
     @root_bot.command(name="edit")
-    async def root_bot_edit(self, ctx: commands.Context, attr: str, *, value: str = None):
+    async def root_bot_edit(self, ctx: commands.Context, attr: LiteralModes[Literal["prefix", "owner", "owners"]], *, value: str = None):
         """Edit any attributed of the bot.
         **Text Placeholders**
         `__existent__` = Keep already existent values of the specified attribute and add new ones (if specified).
@@ -100,6 +101,8 @@ class RootBot(Root):
         `prefix` = Change the prefix of the bot.
         `owner`|`owners` = Change, add or view current owner ID(s).
         """
+        if attr is None:
+            return
         if attr == "prefix":
             if not value:
                 return await send(ctx, f"{attr}: `{escape(self.bot.command_prefix)}`")
@@ -129,7 +132,7 @@ class RootBot(Root):
             elif value.lower() == "none":
                 self.bot.owner_ids = None
                 return await send(ctx, f"Successfully set `{attr}` to None.")
-            ids = convert_str_to_ids(value)
+            ids = convert_str_to_ints(value)
             self.bot.owner_ids = set(ids)
             await send(ctx, f"Successfully changed `{attr}` to `{'`, `'.join(str(owner) for owner in self.bot.owner_ids) or 'None'}`")
 
