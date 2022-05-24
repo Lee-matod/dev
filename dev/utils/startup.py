@@ -14,7 +14,7 @@ import re
 import os
 
 from discord.ext import commands
-from typing import Sequence, Optional
+from typing import Optional, Set
 
 from dev.utils.baseclass import Group, root
 
@@ -30,7 +30,7 @@ __all__ = (
 class Settings:
     FLAG_DELIMITER: str = ": "
     INVOKE_ON_EDIT: bool = True
-    OWNERS: Optional[Sequence[int]] = []
+    OWNERS: Optional[Set[int]] = {}
     PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
     ROOT_FOLDER: Optional[str] = ""
     VIRTUAL_VARS: str = "|%(name)s|"
@@ -52,8 +52,11 @@ async def set_settings(bot: commands.Bot) -> None:
         No user IDs were specified.
     """
     if not Settings.OWNERS:
-        data = await bot.application_info()
-        Settings.OWNERS = [data.owner.id]
+        try:
+            data = await bot.application_info()
+            Settings.OWNERS = [data.owner.id]
+        except AttributeError:
+            pass
     check_types()
 
 
@@ -61,7 +64,7 @@ def check_types() -> None:
     setting_types = (
         [Settings.FLAG_DELIMITER, str, "FLAG_DELIMITER"],
         [Settings.INVOKE_ON_EDIT, bool, "INVOKE_ON_EDIT"],
-        [Settings.OWNERS, (list, tuple, set), "OWNERS"],
+        [Settings.OWNERS, set, "OWNERS"],
         [Settings.PATH_TO_FILE, str, "PATH_TO_FILE"],
         [Settings.ROOT_FOLDER, str, "ROOT_FOLDER"],
         [Settings.VIRTUAL_VARS, str, "VIRTUAL_VARS"]
