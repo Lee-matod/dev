@@ -10,12 +10,14 @@ A simple debugging, editing and testing extension for discord.py version 2.0 (ma
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 
+__version__ = "1.0.0a"
+
 
 from dev.__main__ import *
 from dev.converters import *
 from dev.handlers import *
 
-from dev.config import RootBot, RootOverride, RootVariables
+from dev.config import RootBot, RootManagement, RootOver, RootVariables
 from dev.experimental import RootHTTP, RootInvoke, RootPython
 from dev.flags import RootFlags
 
@@ -38,7 +40,7 @@ __all__ = (
     "send"
 )
 
-cogs = [RootCommand, RootBot, RootOverride, RootVariables, RootHTTP, RootInvoke, RootPython, RootFlags]
+cogs = [RootBot, RootCommand, RootFlags, RootHTTP, RootInvoke, RootManagement, RootOver, RootPython, RootVariables]
 
 
 class Dev(*cogs):
