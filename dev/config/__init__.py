@@ -12,12 +12,14 @@ Configuration-based commands used to mainly reconfigure and edit the bot.
 
 
 from dev.config.bot import *
+from dev.config.management import *
 from dev.config.over import *
 from dev.config.variables import *
 
 
 __all__ = (
     "RootBot",
+    "RootManagement",
     "RootOverride",
     "RootVariables"
 )
