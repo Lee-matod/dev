@@ -25,9 +25,7 @@ py -3 -m pip install -U git+https://github.com/Lee-matod/dev.git
 python3 -m pip install -U git+https://github.com/Lee-matod/dev.git
 ```
 
-In-code setup is quite simple. Since the bot is required to be logged in once the extension is loaded 
-(you'll see why in a bit), you have to use discord.py 2.0's `setup_hook` event to load the extension. 
-An example is shown below
+In-code setup is quite simple. An example is shown below
 
 ```python
 from discord.ext import commands
@@ -75,8 +73,7 @@ keys and values when specifying any kwargs that should be passed in to the get m
 supported.
 * **INVOKE_ON_EDIT:** If `True`, then a command will be reinvoked if it is edited.
 * **OWNERS:** A list of user IDs that can override `bot.owner_id(s)` determining who can use the dev extension.
-If none are specified, then it defaults to the ID of the owner of the bot 
-(this is why the bot is required to be logged in once the extension is loaded).
+If none are specified, and the bot is logged in before the extension gets loaded, then it defaults to the ID of the owner of the bot.
 * **PATH_TO_FILE:** If a traceback is sent, the path that is specified will be removed from it. This can be used to hide
 personal names or unwanted information.
 * **ROOT_FOLDER:** This is the path that is going to replace the `|root|` placeholder text.
