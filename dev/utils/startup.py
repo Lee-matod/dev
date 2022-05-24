@@ -54,7 +54,7 @@ async def set_settings(bot: commands.Bot) -> None:
     if not Settings.OWNERS:
         try:
             data = await bot.application_info()
-            Settings.OWNERS = [data.owner.id]
+            Settings.OWNERS = {data.owner.id}
         except AttributeError:
             pass
     check_types()
@@ -72,7 +72,7 @@ def check_types() -> None:
     for module in setting_types:
         received, expected, var = module
         if not isinstance(received, expected):
-            raise ValueError(f"invalid type for Settings.{var}. Expected {expected.__class__!r} but received {type(received).__class__!r}")
+            raise ValueError(f"invalid type for Settings.{var}. Expected {expected.__name__} but received {type(received).__name__}")
 
     if not Settings.VIRTUAL_VARS:
         raise ValueError(f"Settings.VIRTUAL_VARS cannot be None")
