@@ -15,7 +15,7 @@ class RootManagement(Root):
         super().__init__(bot)
         self.cwd: str = os.getcwd()
 
-    @root.command(name="cwd", parent="dev")
+    @root.command(name="cwd", parent="dev", aliases=["change_cwd"], root_placeholder=True)
     async def root_files_cwd(self, ctx: commands.Context, *, new_cwd: str = None):
         """Change the current working directory that the bot should focus on."""
         if new_cwd is None:
@@ -30,7 +30,7 @@ class RootManagement(Root):
     async def root_files(self, ctx: commands.Context):
         """Everything related to file management"""
 
-    @root_files.command(name="upload", aliases=["new", "create"])
+    @root_files.command(name="upload", aliases=["new", "create"], root_placeholder=True)
     async def root_files_upload(self, ctx: commands.Context, attachment: discord.Attachment, *, directory: str = None):
         """Create a new file"""
         if directory is None:
@@ -43,7 +43,7 @@ class RootManagement(Root):
             file.write(content.decode("utf-8"))
         await ctx.message.add_reaction("☑")
 
-    @root_files.command(name="edit", aliases=["change"], require_var_positional=True)
+    @root_files.command(name="edit", aliases=["change"], require_var_positional=True, root_placeholder=True)
     async def root_files_edit(self, ctx: commands.Context, attachment: discord.Attachment, *, directory: str):
         """Edit an existing file"""
         directory = f"{self.cwd + '/' if directory.startswith('|') else ''}{directory.replace('|root|', Settings.ROOT_FOLDER)}"
@@ -54,7 +54,7 @@ class RootManagement(Root):
             file.write(content.decode("utf-8"))
         await ctx.message.add_reaction("☑")
 
-    @root_files.command(name="rename")
+    @root_files.command(name="rename", root_placeholder=True)
     async def root_files_rename(self, ctx: commands.Context, current_name: str, new_name: str):
         """Rename an existing file."""
         directory = f"{self.cwd + '/' if current_name.startswith('|') else ''}{current_name.replace('|root|', Settings.ROOT_FOLDER)}"
@@ -64,7 +64,7 @@ class RootManagement(Root):
             f"{(parent := '/'.join(directory.split('/')[:-1])) + ('/' if parent else '')}{new_name}")
         await ctx.message.add_reaction("☑")
 
-    @root_files.command(name="show", aliases=["view"])
+    @root_files.command(name="show", aliases=["view"], root_placeholder=True)
     async def root_files_show(self, ctx: commands.Context, *, directory: str):
         """Show an existing file"""
         directory = f"{self.cwd + '/' if directory.startswith('|') else ''}{directory.replace('|root|', Settings.ROOT_FOLDER)}"
@@ -73,7 +73,7 @@ class RootManagement(Root):
         with open(directory, "r") as file:
             await send(ctx, discord.File(fp=io.BytesIO(file.read().encode('utf-8')), filename=directory.split("/")[-1]))
 
-    @root_files.command(name="delete", aliases=["del", "remove"], require_var_positional=True)
+    @root_files.command(name="delete", aliases=["del", "remove"], require_var_positional=True, root_placeholder=True)
     async def root_files_delete(self, ctx: commands.Context, *, directory: str):
         """Delete an existing file."""
         directory = f"{self.cwd + '/' if directory.startswith('|') else ''}{directory.replace('|root|', Settings.ROOT_FOLDER)}"
@@ -86,25 +86,23 @@ class RootManagement(Root):
     async def root_folders(self, ctx: commands.Context):
         """Everything related to folder management"""
 
-    @root_folders.command(name="new", aliases=["create"])
+    @root_folders.command(name="new", aliases=["create"], root_placeholder=True)
     async def root_folders_new(self, ctx: commands.Context, *, directory: str):
-        """Create a new folder."""
         directory = f"{self.cwd + '/' if directory.startswith('|') else ''}{directory.replace('|root|', Settings.ROOT_FOLDER)}"
         if pathlib.Path(directory).exists():
             return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` already exists.")
         pathlib.Path(directory).mkdir()
         await ctx.message.add_reaction("☑")
 
-    @root_folders.command(name="rename")
+    @root_folders.command(name="rename", root_placeholder=True)
     async def root_folders_rename(self, ctx: commands.Context, current_name: str, new_name: str):
-        """Rename an already existing folder."""
         directory = f"{self.cwd + '/' if current_name.startswith('|') else ''}{current_name.replace('|root|', Settings.ROOT_FOLDER)}"
         if not pathlib.Path(directory).exists():
             return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
         pathlib.Path(directory).rename(new_name)
         await ctx.message.add_reaction("☑")
 
-    @root_folders.command(name="tree", aliases=["tree!"])
+    @root_folders.command(name="tree", aliases=["tree!"], root_placeholder=True)
     async def root_folders_tree(self, ctx: commands.Context, *, directory: str = None):
         """Get the files and folders inside a given directory.
         Execute `tree!` instead of `tree` to show the full path of the files and folders.
@@ -122,9 +120,8 @@ class RootManagement(Root):
         tree.append("```")
         await send(ctx, "\n".join(tree))
 
-    @root_folders.command(name="delete", aliases=["del", "remove"])
+    @root_folders.command(name="delete", aliases=["del", "remove"], root_placeholder=True)
     async def root_folders_delete(self, ctx: commands.Context, *, directory):
-        """Delete an already existing folder."""
         directory = f"{self.cwd + '/' if directory.startswith('|') else ''}{directory.replace('|root|', Settings.ROOT_FOLDER)}"
         if not pathlib.Path(directory).exists():
             return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
