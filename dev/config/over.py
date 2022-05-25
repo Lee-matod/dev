@@ -140,7 +140,7 @@ class RootOver(Root):
         """Temporarily override a (some) setting(s). All changes will be undone once the command has finished executing. This differentiates from its counterpart `dev overwrite` which does not switch back once the command has been terminated.
         Multiple settings can be specified.
         Override a setting and execute a command or script with the new set of specified setting(s). When it is done executed, the setting will revert to default.
-        Setting overrides should be specified as follows: `[module][setting]=attr`. Adding single or double quotes in between the different parameters is also a valid option.
+        Setting overrides should be specified as follows: `setting=attr`. Adding single or double quotes in between the different parameters is also a valid option.
         """
         if greedy.script:
             code = clean_code(replace_vars(greedy.script))
@@ -329,7 +329,7 @@ class RootOver(Root):
         """Temporarily change a setting's value. Settings will be reverted once the bot has been restarted.
         Command execution after setting specification isn't available on this mode. Check out `dev override setting|settings` for that.
         Multiple settings can be specified.
-        A setting format should be specified as follows: `[module]=attr`. Adding single or double quotes in between the different parameters is also a valid option.
+        A setting format should be specified as follows: `setting=attr`. Adding single or double quotes in between the different parameters is also a valid option.
         """
         changed = []  # a formatted version of the settings that were changed
         raw_changed = {}
