@@ -20,6 +20,6 @@ from dev.config.variables import *
 __all__ = (
     "RootBot",
     "RootManagement",
-    "RootOverride",
+    "RootOver",
     "RootVariables"
 )
