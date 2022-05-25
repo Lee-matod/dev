@@ -160,7 +160,7 @@ class RootInvoke(Root):
     async def root_debug(self, ctx: commands.Context, *, command_string: str):
         """Catch errors when executing a command.
         This command will probably not catch errors with commands that already have an error handler.
-        If `settings["folder"]["path_to_file"]` is specified, any instances of this path will be removed if a traceback is sent. Defaults to the current working directory.
+        If `Settings.PATH_TO_FILE` is specified, any instances of this path will be removed if a traceback is sent. Defaults to the current working directory.
         """
         kwargs = {"content": f"{ctx.prefix}{command_string}", "author": ctx.author, "channel": ctx.channel}
         context: commands.Context = await generate_ctx(ctx, **kwargs)
