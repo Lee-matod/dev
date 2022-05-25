@@ -77,7 +77,7 @@ class OverrideSettingConverter(commands.Converter):
         return self
 
 
-class RootOverride(Root):
+class RootOver(Root):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         self.OVERRIDES: Dict[int, Tuple[str, str, Optional[Callable], Union[str, List[Any]]]] = {}
