@@ -11,7 +11,6 @@ Includes the root command for the dev extension, as well as other commands that 
 """
 
 
-import contextlib
 import discord
 
 from discord.ext import commands
@@ -38,8 +37,7 @@ class RootCommand(Root):
     async def root_exit(self, ctx: commands.Context):
         """Exit the whole code at once. Note that this may cause issues."""
         await ctx.message.add_reaction("👋")
-        with contextlib.suppress(SystemExit):
-            exit()
+        exit()
 
     @root_.command(name="visibility")
     async def root_visibility(self, ctx: commands.Context, toggle: bool = None):
@@ -57,6 +55,12 @@ class RootCommand(Root):
                 return await send(ctx, f"`dev` is already visible.")
             self.root_command.hidden = False
             await ctx.message.add_reaction("☑")
+
+    @root_.error
+    async def root_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.TooManyArguments):
+            return await send(ctx, f"`dev` has no subcommand called `{ctx.message.content.lstrip(ctx.prefix).removeprefix(ctx.command.qualified_name).strip()}`.")
+        raise error
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
