@@ -40,7 +40,9 @@ class RootHTTP(Root):
         `text` = Send the response as text.
         `read` = Read the response and return it.
         """
-        kwargs = self.flag_parser(replace_vars(options))
+        if mode is None:
+            return
+        kwargs = self.flag_parser(replace_vars(options or ''))
         async with aiohttp.ClientSession() as SESSION:
             try:
                 async with SESSION.get(replace_vars(url), allow_redirects=allow_redirects, **kwargs) as request:
