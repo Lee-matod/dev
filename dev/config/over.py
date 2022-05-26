@@ -22,7 +22,6 @@ from typing import (
     Union
 )
 
-import collections.abc
 import contextlib
 import discord
 import inspect
@@ -34,7 +33,7 @@ import textwrap
 from discord.ext import commands
 from datetime import datetime
 
-from dev.converters import CodeblockConverter, convert_str_to_bool, convert_str_to_ids
+from dev.converters import CodeblockConverter, convert_str_to_bool, convert_str_to_ints
 from dev.handlers import ExceptionHandler, replace_vars
 
 from dev.utils.baseclass import Root, root
@@ -61,9 +60,9 @@ class OverrideSettingConverter(commands.Converter):
                 if isinstance(setting, bool):
                     self.default_settings[match.group(1)] = convert_str_to_bool(match.group(2))
                     setattr(Settings, match.group(1).upper(), convert_str_to_bool(match.group(2)))
-                elif isinstance(setting, collections.abc.Collection):
-                    self.default_settings[match.group(1)] = convert_str_to_ids(match.group(2))
-                    setattr(Settings, match.group(1).upper(), convert_str_to_ids(match.group(2)))
+                elif isinstance(setting, set):
+                    self.default_settings[match.group(1)] = set(convert_str_to_ints(match.group(2)))
+                    setattr(Settings, match.group(1).upper(), set(convert_str_to_ints(match.group(2))))
                 else:
                     self.default_settings[match.group(1)] = match.group(2)
                     setattr(Settings, match.group(1).upper(), match.group(2))
@@ -109,7 +108,7 @@ class RootOver(Root):
         self.sort_dict_id("override", "del", id_num if id_num != 0 else len(self.OVERRIDES))
         await ctx.message.add_reaction("☑")
 
-    @root_override.command(name="command", supports_virtual_vars=True, usage="<command_name> <script>")
+    @root_override.command(name="command", virtual_vars=True, usage="<command_name> <script>")
     async def root_override_command(self, ctx: commands.Context, *, command_code: CodeblockConverter):
         r"""Temporarily override a command. All changes will be undone once the bot is restart or the cog is reloaded. This differentiates from its counterpart `dev overwrite` which permanently changes a file.
         Override the script that a specified command executes.
@@ -135,7 +134,7 @@ class RootOver(Root):
                 exec(f"async def func():\n{textwrap.indent(script, '    ')}", local_vars)
                 await local_vars["func"]()
 
-    @root_override.command(name="setting", supports_virtual_vars=True, aliases=["settings"], usage="<setting>... <command_name|script>")
+    @root_override.command(name="setting", virtual_vars=True, aliases=["settings"], usage="<setting>... <command_name|script>")
     async def root_override_setting(self, ctx: commands.Context, *, greedy: OverrideSettingConverter):
         """Temporarily override a (some) setting(s). All changes will be undone once the command has finished executing. This differentiates from its counterpart `dev overwrite` which does not switch back once the command has been terminated.
         Multiple settings can be specified.
@@ -239,7 +238,7 @@ class RootOver(Root):
             self.sort_dict_id("overwrite", "del", id_num if id_num != 0 else len(self.OVERWRITES))
             await ctx.message.add_reaction("☑")
 
-    @root_overwrite.command(name="command", supports_virtual_vars=True, usage=r"<command_name> <script>")
+    @root_overwrite.command(name="command", virtual_vars=True, usage=r"<command_name> <script>")
     async def root_overwrite_command(self, ctx: commands.Context, *, command_code: CodeblockConverter):
         r"""Completely change a command's execution script to be permanently overwritten.
         Script that will be used as the command overwrite should be specified in between \`\`\`.
@@ -346,7 +345,7 @@ class RootOver(Root):
                 if isinstance(setting, bool):
                     setattr(Settings, match.group(1).upper(), convert_str_to_bool(match.group(2)))
                 elif isinstance(setting, (list, tuple, set)):
-                    setattr(Settings, match.group(1).upper(), convert_str_to_ids(match.group(2)))
+                    setattr(Settings, match.group(1).upper(), convert_str_to_ints(match.group(2)))
                 else:
                     setattr(Settings, match.group(1).upper(), match.group(2))
                 changed.append(f"Settings.{match.group(1).upper()}={match.group(2)}")
@@ -371,3 +370,4 @@ class RootOver(Root):
             ordered_dictionary[num + 1] = values[num]
         dictionary.clear()
         dictionary.update(ordered_dictionary)
+        
