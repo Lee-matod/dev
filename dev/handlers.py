@@ -15,6 +15,7 @@ from typing import *
 
 import asyncio
 import discord
+import inspect
 import re
 
 from discord.ext import commands
@@ -25,10 +26,53 @@ from dev.utils.utils import local_globals
 
 
 __all__ = (
+    "BoolInput",
     "ExceptionHandler",
     "Paginator",
     "replace_vars"
 )
+
+
+class BoolInput(discord.ui.View):
+    """Request the user a yes or no answer.
+
+    Parameters
+    ----------
+    author: Union[:class:`discord.Member`, :class:`int`]
+        The author of the message, a.k.a. ctx.author
+
+    func: :class:`callable`[Any, Any]
+        The function that should be executed if the user clicks on the yes button.
+
+    args: :class:`Any`
+        The arguments that should be passed into the function, if any.
+
+    kwargs: :class:`Any`
+        The key-word arguments that should be passed into the function, if any.
+
+    """
+    def __init__(self, author: Union[discord.Member, int], func: Callable[Any, Any], *args: Any, **kwargs: Any):
+        super().__init__()
+        self.func = func
+        self.author: int = author.id if isinstance(author, discord.Member) else author
+        self.args = args
+        self.kwargs = kwargs
+
+    @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
+    async def yes_button(self, interaction: discord.Interaction, _):
+        if interaction.user.id != self.author:
+            return
+        if inspect.isawaitable(self.func):
+            await self.func(*self.args, **self.kwargs)
+        else:
+            self.func(*self.args, **self.kwargs)
+        await interaction.response.edit_message(content="Task has been executed.", view=None)
+
+    @discord.ui.button(label="No", style=discord.ButtonStyle.red)
+    async def no_button(self, interaction: discord.Interaction, _):
+        if interaction.user.id != self.author:
+            return
+        await interaction.response.edit_message(content="Task has been canceled.", view=None)
 
 
 class ExceptionHandler:
@@ -42,8 +86,8 @@ class ExceptionHandler:
     is_debug: :class:`bool`
         Whether the instance of this :class:`ExceptionHandler` is a debugger or not.
 
-    Other Parameters
-    ----------------
+    Attributes
+    ----------
     error: :class:`list[tuple[Exception, str]]`
         The errors that occurred during the lifetime of the process inside the context manager.
 
@@ -66,6 +110,8 @@ class ExceptionHandler:
         self.message = message
         if is_debug:
             setattr(type(self), "debug", is_debug)
+        self.error = self.error
+        self.debug = self.debug
 
     async def __aenter__(self):
         return self
@@ -101,7 +147,7 @@ class ExceptionHandler:
 class Paginator(discord.ui.View):
     """Creates a paginator interface.
 
-    Attributes
+    Parameters
     ----------
     paginator: :class:`commands.Paginator`
         Paginator that this interface will use.
