@@ -56,10 +56,8 @@ class GlobalLocals:
 
 
 class GroupMixin(commands.GroupMixin):
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         super().__init__()
-        self.args = args
-        self.kwargs = kwargs
         self.all_commands: Dict[str, Union[Command, Group]] = {}
         self._add_parent: Dict[Union[Command, Group], str] = {}
 
@@ -118,7 +116,11 @@ class Group(commands.Group):
 
     @property
     def supports_virtual_vars(self) -> bool:
-        return self.kwargs.get("supports_virtual_vars", False)
+        return self.kwargs.get("virtual_vars", False)
+
+    @property
+    def supports_root_placeholder(self):
+        return self.kwargs.get("root_placeholder", False)
 
     def group(
             self,
@@ -167,7 +169,11 @@ class Command(commands.Command):
 
     @property
     def supports_virtual_vars(self) -> bool:
-        return self.kwargs.get("supports_virtual_vars", False)
+        return self.kwargs.get("virtual_vars", False)
+
+    @property
+    def supports_root_placeholder(self):
+        return self.kwargs.get("root_placeholder", False)
 
 
 class Root(commands.Cog):
@@ -203,7 +209,6 @@ class Root(commands.Cog):
 def group(name: str = MISSING, cls=MISSING, **attrs: Any):
     if cls is MISSING:
         cls = Group
-
     return command(name=name, cls=cls, **attrs)
 
 
