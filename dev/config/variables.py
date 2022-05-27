@@ -102,6 +102,3 @@ class RootVariables(Root):
             if name not in local_globals:
                 return await send(ctx, f"No variable called `{name}` found.")
             await ctx.author.send(f"**{name}:** {local_globals[name]}")
-
-        else:
-            await ctx.message.add_reaction("❓")
