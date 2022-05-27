@@ -71,8 +71,8 @@ class LiteralModes(commands.Converter):
         if not self.case_sensitive:
             mode = mode.lower()
         if mode not in self.modes:
-            valid = "\n".join(f"`{mode}`" for mode in self.modes)
-            await ctx.send(f"`{mode}` is not a valid mode ({'case sensitive' if self.case_sensitive else 'not case sensitive'}). Acceptable modes are:\n{valid}")
+            valid = ", ".join(f"`{mode}`" for mode in self.modes)
+            await ctx.send(f"`{mode}` is not a valid mode. Case-sensitive is {'on' if self.case_sensitive else 'off'}. Acceptable modes are:\n{valid}")
             return
         return mode
 
