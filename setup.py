@@ -11,7 +11,7 @@ setup(
     author="Lee-matod",
     url="https://github.com/Lee-matod/dev",
     version="1.0.0a",
-    packages=["dev", "dev.config", "dev.experimental", "dev.flags", "dev.utils"],
+    packages=["dev", "dev.config", "dev.experimental", "dev.flags", "dev.misc", "dev.utils"],
     license="Apache 2.0",
     description="A debugging, testing and editing cog for discord.py",
     long_description=readme,
