@@ -39,7 +39,7 @@ class RootFlags(Root):
             return await send(ctx, f"Command `dev {command_string}` not found.")
         docs = '\n'.join(command.help.split("\n")[1:]) or 'No docs available.'
         embed = discord.Embed(title=command.qualified_name, description=command.short_doc or 'No description found.', color=discord.Color.darker_gray())
-        embed.add_field(name="usage", value=f"dev {command.name}{'|' + '|'.join(alias for alias in command.aliases) if command.aliases else ' '} {command.usage or command.signature}", inline=False)
+        embed.add_field(name="usage", value=f"{ctx.clean_prefix}{command.qualified_name}{'|' + '|'.join(alias for alias in command.aliases) if command.aliases else ' '} {command.usage or command.signature}", inline=False)
         embed.add_field(name="docs", value=docs, inline=False)
         if isinstance(command, commands.Group):
             command_list = [cmd.name for cmd in command.commands if not cmd.hidden]
@@ -60,11 +60,11 @@ class RootFlags(Root):
         params = []
         for name, sign in command.clean_params.items():
             if sign.kind == inspect.Parameter.KEYWORD_ONLY:
-                params.append(f"`*, {name}{'*' if sign.required else ''}`: _{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_{' = ' + str(sign.default) if not isinstance(sign.default, type) else ''}")
+                params.append(f"`*, {name}{'*' if sign.required else ''}`: _{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_{' = ' + str(sign.default) if not isinstance(sign.default, type) else sign.default.__name__ if sign.default.__name__ != '_empty' else ''}")
             elif sign.kind == inspect.Parameter.VAR_POSITIONAL:
-                params.append(f"`*{name}{'*' if sign.required else ''}`: _{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_{' = ' + str(sign.default) if not isinstance(sign.default, type) else ''}")
+                params.append(f"`*{name}{'*' if sign.required else ''}`: _{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_{' = ' + str(sign.default) if not isinstance(sign.default, type) else sign.default.__name__ if sign.default.__name__ != '_empty' else ''}")
             else:  # **kwargs aren't supported in dpy
-                params.append(f"`{name}{'*' if sign.required else ''}`: _{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_{' = ' + str(sign.default) if not isinstance(sign.default, type) else ''}")
+                params.append(f"`{name}{'*' if sign.required else ''}`: _{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_{' = ' + str(sign.default) if not isinstance(sign.default, type) else sign.default.__name__ if sign.default.__name__ != '_empty' else ''}")
         await send(ctx, discord.Embed(title=command_string, description=f"**Type:** `{type(command).__name__}`\n**Command ID:** `{hex(id(command))}`\n**Module:** `{inspect.getmodule(command.callback).__name__}`\n**Cog**: `{command.cog_name}`\n**Signature**\n" + "\n".join(params), color=discord.Color.darker_gray()))
 
     @root.command(name="--source", parent="dev", aliases=["-src", "--sourceFile", "-srcF"], hidden=True)
@@ -74,10 +74,7 @@ class RootFlags(Root):
         The bot's token is hidden as `TOKEN`.
         Alternatively, use `dev --sourceFile|-srcF` to show the command's source code file.
         """
-        if ctx.invoked_with in ["--sourceFile", "-srcF"]:
-            file: bool = True
-        else:
-            file: bool = False
+        file: bool = True if ctx.invoked_with in ["--sourceFile", "-srcF"] else False
         command = self.bot.get_command(command_string)
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
