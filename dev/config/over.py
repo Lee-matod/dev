@@ -26,8 +26,6 @@ import contextlib
 import discord
 import inspect
 import io
-import re
-import shlex
 import textwrap
 
 from discord.ext import commands
@@ -37,36 +35,32 @@ from dev.converters import CodeblockConverter, convert_str_to_bool, convert_str_
 from dev.handlers import ExceptionHandler, replace_vars
 
 from dev.utils.baseclass import Root, root
-from dev.utils.functs import clean_code, generate_ctx, table_creator, send
+from dev.utils.functs import clean_code, flag_parser, generate_ctx, table_creator, send
 from dev.utils.startup import Settings
 
 
 class OverrideSettingConverter(commands.Converter):
     default_settings: Dict[str, Any] = {}
     script: Optional[str] = ""
-    command_string: str = ""
+    command_string: Optional[str] = ""
 
     async def convert(self, ctx: commands.Context, argument: str):
         changed = []
-        setting_patter = re.compile(r"\[?[\"|\']?(.+)[\"|\']?]?=[\"|\']?(.+)[\"|\']?")
-        split_args = shlex.split(argument)
-        for arg in split_args:
-            match = re.match(setting_patter, arg)
-            if match:
-                if not hasattr(Settings, match.group(1).upper()):
-                    return await ctx.message.add_reaction("❗")
-                argument = argument.replace(match.string, "")
-                setting = getattr(Settings, match.group(1).upper())
-                if isinstance(setting, bool):
-                    self.default_settings[match.group(1)] = convert_str_to_bool(match.group(2))
-                    setattr(Settings, match.group(1).upper(), convert_str_to_bool(match.group(2)))
-                elif isinstance(setting, set):
-                    self.default_settings[match.group(1)] = set(convert_str_to_ints(match.group(2)))
-                    setattr(Settings, match.group(1).upper(), set(convert_str_to_ints(match.group(2))))
-                else:
-                    self.default_settings[match.group(1)] = match.group(2)
-                    setattr(Settings, match.group(1).upper(), match.group(2))
-                changed.append(f"Settings.{match.group(1).upper()}={match.group(2)}")
+        new_settings = flag_parser(argument, "=")
+        for key, value in new_settings.items():
+            if not hasattr(Settings, key):
+                return await ctx.message.add_reaction("❗")
+            setting = getattr(Settings, key.upper())
+            if isinstance(setting, bool):
+                self.default_settings[key] = convert_str_to_bool(value)
+                setattr(Settings, key.upper(), convert_str_to_bool(value))
+            elif isinstance(setting, set):
+                self.default_settings[key] = set(convert_str_to_ints(value))
+                setattr(Settings, key.upper(), set(convert_str_to_ints(value)))
+            else:
+                self.default_settings[key] = value
+                setattr(Settings, key.upper(), value)
+            changed.append(f"Settings.{key.upper()}={value}")
         await ctx.send(embed=discord.Embed(title="Settings Changed" if self.default_settings else "Nothing Changed", description="`" + '`\n`'.join(changed) + "`", colour=discord.Color.green() if self.default_settings else discord.Color.red()), delete_after=5)
         argument = argument.strip()
         if argument.startswith("```") and argument.endswith("```"):
@@ -332,23 +326,19 @@ class RootOver(Root):
         """
         changed = []  # a formatted version of the settings that were changed
         raw_changed = {}
-        setting_patter = re.compile(r"\[?[\"|\']?(.+)[\"|\']?]?=[\"|\']?(.+)[\"|\']?")
-        split_args = shlex.split(settings)
-        for arg in split_args:
-            match = re.match(setting_patter, arg)
-            if match:
-                if not hasattr(Settings, match.group(1).upper()):
-                    return await ctx.message.add_reaction("❗")
-                settings = settings.replace(match.string, "")
-                setting = getattr(Settings, match.group(1).upper())
-                raw_changed[match.group(1)] = setting
-                if isinstance(setting, bool):
-                    setattr(Settings, match.group(1).upper(), convert_str_to_bool(match.group(2)))
-                elif isinstance(setting, (list, tuple, set)):
-                    setattr(Settings, match.group(1).upper(), convert_str_to_ints(match.group(2)))
-                else:
-                    setattr(Settings, match.group(1).upper(), match.group(2))
-                changed.append(f"Settings.{match.group(1).upper()}={match.group(2)}")
+        new_settings = flag_parser(settings, "=")
+        for key, value in new_settings.items():
+            if not hasattr(Settings, key.upper()):
+                return await ctx.message.add_reaction("❗")
+            setting = getattr(Settings, key.upper())
+            raw_changed[key] = setting
+            if isinstance(setting, bool):
+                setattr(Settings, key.upper(), convert_str_to_bool(value))
+            elif isinstance(setting, set):
+                setattr(Settings, key.upper(), set(convert_str_to_ints(value)))
+            else:
+                setattr(Settings, key.upper(), value)
+            changed.append(f"Settings.{key.upper()}={value}")
         self.sort_dict_id("overwrite", "add", ("setting", f"Settings that were overwritten: {' | '.join(changed) if changed else 'None'} ‒ {datetime.utcnow().strftime('%b %d, %Y at %H:%M:%S UTC')}", None, raw_changed))
         await send(ctx, discord.Embed(title="Settings Changed" if changed else "Nothing Changed", description="`" + '`\n`'.join(changed) + "`" if changed else "No changes were made to the current version of the settings.", colour=discord.Color.green() if changed else discord.Color.red()))
 
@@ -370,4 +360,3 @@ class RootOver(Root):
             ordered_dictionary[num + 1] = values[num]
         dictionary.clear()
         dictionary.update(ordered_dictionary)
-        
