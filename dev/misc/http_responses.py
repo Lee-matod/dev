@@ -1,3 +1,16 @@
+# -*- coding: utf-8 -*-
+
+"""
+dev.misc.http_responses
+~~~~~~~~~~~~~~~~~~~~~~~
+
+List of HTTP status codes and their respective meanings.
+
+:copyright: Copyright 2022 Lee (Lee-matod)
+:license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
+"""
+
+
 # from: https://developer.mozilla.org/docs/Web/HTTP/Status
 responses = {
   "1": "Informational response",
