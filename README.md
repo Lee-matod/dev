@@ -63,7 +63,7 @@ The full `settings` tree and what they do are shown below. Note that if the wron
 ```python
 FLAG_DELIMITER: str = ": "
 INVOKE_ON_EDIT: Optional[bool] = True
-OWNERS: Optional[Sequence[int]] = []
+OWNERS: Optional[Set[int]] = {}
 PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
 ROOT_FOLDER: Optional[str] = ""
 VIRTUAL_VARS: str = "|%(name)s|"
