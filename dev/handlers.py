@@ -21,8 +21,8 @@ import re
 from discord.ext import commands
 from traceback import format_exception
 
-from dev.utils.startup import virtual_vars_format
-from dev.utils.utils import local_globals
+from dev.utils.startup import Settings
+from dev.utils.utils import escape, local_globals
 
 
 __all__ = (
@@ -269,13 +269,12 @@ def replace_vars(string: str) -> str:
     str
         The converted string with the values of the virtual variables.
     """
-    formatter = virtual_vars_format()
+    formatter = escape(Settings.VIRTUAL_VARS.replace("$var$", "(.+?)"))
     matches = re.finditer(formatter, string)
     if matches:
         for match in matches:
-            var_string, var_name = match.groups()
-            if var_name in local_globals:
-                string = string.replace(var_string, local_globals[var_name])
+            if match.group(1) in local_globals:
+                string = string.replace(match.string, local_globals[match.group(1)])
             else:
                 continue
     return string
