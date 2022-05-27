@@ -59,7 +59,7 @@ class RootVariables(Root):
         super().__init__(bot)
 
     @root.command(name="variable", parent="dev", aliases=["variables", "vars", "var"])
-    async def root_variable(self, ctx: commands.Context, mode: LiteralModes[Literal["content", "exists", "all", "~", "edit", "replace", "delete", "del", "new", "create"]], name: Optional[str]):
+    async def root_variable(self, ctx: commands.Context, mode: LiteralModes[Literal["~", "all", "content", "create", "del", "delete", "edit", "exists", "new", "replace", "value"]], name: Optional[str]):
         """A virtual variable manager.
         This allows you to create temporary variables that can later be used as placeholder texts if you want to hide certain things from the public.
         Note that all variables created using this manager will later be destroyed once the bot restarts.
@@ -98,7 +98,7 @@ class RootVariables(Root):
                 return await ctx.message.add_reaction("❌")
             await ctx.message.add_reaction("☑")
 
-        elif mode == "content":
+        elif mode in ["content", "value"]:
             if name not in local_globals:
                 return await send(ctx, f"No variable called `{name}` found.")
             await ctx.author.send(f"**{name}:** {local_globals[name]}")
