@@ -24,12 +24,13 @@ class RootCommand(Root):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
 
-    @root.group(name="dev", invoke_without_command=True, ignore_extra=False, usage="[--help|--man] [--source|-src [--file]] [--inspect|-i] <command>")
+    @root.group(name="dev", invoke_without_command=True, ignore_extra=False, usage="[--help|--man] [--source|-src|--sourceFile|-srcF] [--inspect|-i] <command>")
     async def root_(self, ctx: commands.Context):
         """Root command for the `dev` extension.
         Execute `dev --help [command]` for more information on a subcommand.
         `--help`|`--man` [command] = Shows a custom made help command.
-        `--source`|`-src` [--file] <command> = Shows the source code of a command.
+        `--source`|`-src` <command> = Shows the source code of a command.
+        `--sourceFile`|`-srcF` <command> = Shows the source file of a command.
         `--inspect`|`-i` <command> = Get the signature of a command.
         """
 
