@@ -34,10 +34,9 @@ class RootHTTP(Root):
         super().__init__(bot)
 
     @root.group(name="http", parent="dev", virtual_vars=True)
-    async def root_http_get(self, ctx: commands.Context, url: str, mode: LiteralModes[Literal["status", "json", "text", "read"]], allow_redirects: bool = False, *, options: str = None):
+    async def root_http_get(self, ctx: commands.Context, url: str, mode: LiteralModes[Literal["json", "read", "status", "text"]], allow_redirects: bool = False, *, options: str = None):
         """View the contents of an url. Response modes can differ.
         **Modes:**
-        `content` = Get the contents of the url.
         `json` = Convert the response to JSON. This isn't always available.
         `read` = Read the response and return it.
         `status` = Return the status code of the website.
