@@ -22,8 +22,7 @@ from dev.utils.baseclass import Group, root
 __all__ = (
     "Settings",
     "set_settings",
-    "setup_",
-    "virtual_vars_format",
+    "setup_"
 )
 
 
@@ -33,7 +32,7 @@ class Settings:
     OWNERS: Optional[Set[int]] = {}
     PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
     ROOT_FOLDER: Optional[str] = ""
-    VIRTUAL_VARS: str = "|%(name)s|"
+    VIRTUAL_VARS: str = "|$var$|"
 
 
 async def set_settings(bot: commands.Bot) -> None:
@@ -72,33 +71,16 @@ def check_types() -> None:
     for module in setting_types:
         received, expected, var = module
         if not isinstance(received, expected):
-            raise ValueError(f"invalid type for Settings.{var}. Expected {expected.__name__} but received {type(received).__name__}")
+            raise ValueError(f"invalid type for Settings.{var}. Expected {expected.__name__!r} but received {type(received).__name__!r}")
 
     if not Settings.VIRTUAL_VARS:
-        raise ValueError(f"Settings.VIRTUAL_VARS cannot be None")
+        raise ValueError("Settings.VIRTUAL_VARS cannot be None")
+
+    elif len([_ for _ in re.finditer(r"\$var\$", Settings.VIRTUAL_VARS)]) != 1:
+        raise ValueError(f"Settings.VIRTUAL_VARS got 0 or more than 1 instance of '$var$', exactly 1 expected")
 
     if not Settings.FLAG_DELIMITER:
-        raise ValueError(f"Settings.FLAG_DELIMITER cannot be None")
-
-
-def virtual_vars_format() -> str:
-    format_style = re.compile(r"(%\(name\)s)")
-    match = re.search(format_style, Settings.VIRTUAL_VARS)
-    compiler = "("
-    added = False
-    for i in range(len(Settings.VIRTUAL_VARS)):
-        if i in range(match.start(), match.end()):
-            if match and not added:
-                compiler += r"(.+?)"
-                added = True
-                continue
-            continue
-        elif Settings.VIRTUAL_VARS[i] in [".", "^", "$", "*", "+", "?", "{", "[", "(", ")", "|"]:
-            compiler += f"\\{Settings.VIRTUAL_VARS[i]}"
-            continue
-        compiler += Settings.VIRTUAL_VARS[i]
-    compiler += ")"
-    return compiler
+        raise ValueError("Settings.FLAG_DELIMITER cannot be None")
 
 
 async def setup_(bot: commands.Bot) -> None:
