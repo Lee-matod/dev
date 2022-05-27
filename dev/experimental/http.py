@@ -23,7 +23,7 @@ from dev.converters import LiteralModes
 from dev.handlers import replace_vars
 
 from dev.utils.baseclass import Root, root
-from dev.utils.functs import send
+from dev.utils.functs import flag_parser, send
 from dev.utils.startup import Settings
 
 
@@ -42,7 +42,7 @@ class RootHTTP(Root):
         """
         if mode is None:
             return
-        kwargs = self.flag_parser(replace_vars(options or ''))
+        kwargs = flag_parser(replace_vars(options or ''), Settings.FLAG_DELIMITER.strip())
         async with aiohttp.ClientSession() as SESSION:
             try:
                 async with SESSION.get(replace_vars(url), allow_redirects=allow_redirects, **kwargs) as request:
@@ -65,28 +65,3 @@ class RootHTTP(Root):
                             await send(ctx, discord.File(filename="response", fp=binary_file))
             except aiohttp.InvalidURL:
                 await send(ctx, "Invalid URL link.")
-
-    @staticmethod
-    def flag_parser(string: str) -> Dict[str, str]:
-        flags: Dict[str, str] = {}
-        keys = []
-        values = []
-        temp_value = []
-        searching_for_value = False
-        for word in string.split():
-            if word.endswith(Settings.FLAG_DELIMITER.strip()) and not temp_value:
-                keys.append(word.removesuffix(Settings.FLAG_DELIMITER.strip()))
-                searching_for_value = True
-            if word.endswith(Settings.FLAG_DELIMITER.strip()) and temp_value:
-                values.append(" ".join(temp_value))
-                temp_value.clear()
-                keys.append(word.removesuffix(Settings.FLAG_DELIMITER.strip()))
-            elif searching_for_value:
-                if not word.endswith(Settings.FLAG_DELIMITER.strip()):
-                    temp_value.append(word)
-        if temp_value:  # clear any temporary values that didn't get assigned to their keys
-            values.append(" ".join(temp_value))
-
-        for i in range(len(keys)):
-            flags[keys[i]] = values[i]
-        return flags
