@@ -32,10 +32,36 @@ from dev.utils.utils import local_globals
 
 __all__ = (
     "clean_code",
+    "flag_parser",
     "generate_ctx",
     "send",
     "table_creator"
 )
+
+
+def flag_parser(string: str, delimiter: str) -> Dict[str, str]:
+    flags: Dict[str, str] = {}
+    keys = []
+    values = []
+    temp_value = []
+    searching_for_value = False
+    for word in string.split():
+        if word.endswith(delimiter) and not temp_value:
+            keys.append(word.removesuffix(delimiter))
+            searching_for_value = True
+        if word.endswith(delimiter) and temp_value:
+            values.append(" ".join(temp_value))
+            temp_value.clear()
+            keys.append(word.removesuffix(delimiter))
+        elif searching_for_value:
+            if not word.endswith(delimiter):
+                temp_value.append(word)
+    if temp_value:  # clear any temporary values that didn't get assigned to their keys
+        values.append(" ".join(temp_value))
+
+    for i in range(len(keys)):
+        flags[keys[i]] = values[i]
+    return flags
 
 
 def table_creator(rows: List[List[Any]], labels: List[str]) -> str:
