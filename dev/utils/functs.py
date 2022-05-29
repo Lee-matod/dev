@@ -21,6 +21,7 @@ from typing import (
 
 import discord
 import io
+import json
 
 from discord.ext import commands
 from copy import copy
@@ -31,7 +32,6 @@ from dev.utils.utils import local_globals
 
 
 __all__ = (
-    "clean_code",
     "flag_parser",
     "generate_ctx",
     "send",
@@ -39,29 +39,31 @@ __all__ = (
 )
 
 
-def flag_parser(string: str, delimiter: str) -> Dict[str, str]:
-    flags: Dict[str, str] = {}
-    keys = []
-    values = []
-    temp_value = []
+def flag_parser(string: str or int, delimiter: str) -> Union[Dict[str, str], str]:
+    keys, values = [], []
+    temp_string = ""
     searching_for_value = False
-    for word in string.split():
-        if word.endswith(delimiter) and not temp_value:
-            keys.append(word.removesuffix(delimiter))
-            searching_for_value = True
-        if word.endswith(delimiter) and temp_value:
-            values.append(" ".join(temp_value))
-            temp_value.clear()
-            keys.append(word.removesuffix(delimiter))
-        elif searching_for_value:
-            if not word.endswith(delimiter):
-                temp_value.append(word)
-    if temp_value:  # clear any temporary values that didn't get assigned to their keys
-        values.append(" ".join(temp_value))
-
-    for i in range(len(keys)):
-        flags[keys[i]] = values[i]
-    return flags
+    for char in string:
+        if char == delimiter:
+            if searching_for_value:
+                values.append(" ".join(temp_string.split()[:-1]))
+                keys.append(temp_string.split()[-1])
+                searching_for_value = False
+                temp_string = ""
+            else:
+                keys.append(temp_string)
+                searching_for_value = True
+                temp_string = ""
+            continue
+        temp_string += char
+    if temp_string:
+        values.append(temp_string)
+    for i in range(len(values)):
+        try:
+            values[i] = json.loads(values[i])
+        except json.JSONDecodeError as error:
+            return f"{error}."
+    return dict(zip(keys, values))
 
 
 def table_creator(rows: List[List[Any]], labels: List[str]) -> str:
@@ -231,37 +233,6 @@ async def generate_ctx(ctx: commands.Context, author: discord.Member, channel: d
     alt_msg.author = author
     alt_msg.channel = channel
     return await ctx.bot.get_context(alt_msg, cls=type(ctx))
-
-
-def clean_code(content: str) -> str:
-    """Clean any codeblock arguments.
-
-    If no codeblocks are found, then it will simply return the normal string without any changes made.
-
-    Example
-    -------
-    Simple string in between backticks (codeblocks) converted to a clean string without any back ticks
-    .. code-block:: python3
-        codeblock: str = "```py" \
-                   "print('Hello World!')" \
-                   "```"
-        clean_codeblock = clean_code(codeblock)
-        print(clean_codeblock)
-
-    Parameters
-    ----------
-    content: :class:`str`
-        The string that should get cleaned.
-
-    Returns
-    -------
-    str
-        The cleaned string without any backticks
-    """
-    if content.startswith("```") and content.endswith("```"):
-        return "\n".join(content.split("\n")[1:-1])
-    else:
-        return content
 
 
 def _revert_virtual_var_value(string: str) -> str:
