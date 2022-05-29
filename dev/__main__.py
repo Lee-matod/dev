@@ -60,7 +60,7 @@ class RootCommand(Root):
     @root_.error
     async def root_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, commands.TooManyArguments):
-            return await send(ctx, f"`dev` has no subcommand called `{ctx.message.content.lstrip(ctx.prefix).removeprefix(ctx.command.qualified_name).strip()}`.")
+            return await send(ctx, f"`dev` has no subcommand called `{ctx.subcommand_passed}`.")
         raise error
 
     @commands.Cog.listener()
