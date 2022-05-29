@@ -35,8 +35,9 @@ from dev.converters import CodeblockConverter, convert_str_to_bool, convert_str_
 from dev.handlers import ExceptionHandler, replace_vars
 
 from dev.utils.baseclass import Root, root
-from dev.utils.functs import clean_code, flag_parser, generate_ctx, table_creator, send
+from dev.utils.functs import flag_parser, generate_ctx, table_creator, send
 from dev.utils.startup import Settings
+from dev.utils.utils import clean_code
 
 
 class OverrideSettingConverter(commands.Converter):
