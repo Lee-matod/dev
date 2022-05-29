@@ -34,7 +34,7 @@ class RootHTTP(Root):
         super().__init__(bot)
 
     @root.group(name="http", parent="dev", virtual_vars=True)
-    async def root_http_get(self, ctx: commands.Context, url: str, mode: LiteralModes[Literal["json", "read", "status", "text"]], allow_redirects: bool = False, *, options: str = None):
+    async def root_http_get(self, ctx: commands.Context, url, mode: LiteralModes[Literal["json", "read", "status", "text"]], allow_redirects: bool = False, *, options: str = None):
         """View the contents of an url. Response modes can differ.
         **Modes:**
         `json` = Convert the response to JSON. This isn't always available.
@@ -45,6 +45,8 @@ class RootHTTP(Root):
         if mode is None:
             return
         kwargs = flag_parser(replace_vars(options or ''), Settings.FLAG_DELIMITER.strip())
+        if isinstance(kwargs, str):
+            return await send(ctx, kwargs)
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(replace_vars(url), allow_redirects=allow_redirects, **kwargs) as request:
