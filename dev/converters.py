@@ -10,6 +10,9 @@ Custom converters that are used in the dev extension.
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 from typing import (
+    Any,
+    Dict,
+    Iterable,
     List,
     Literal,
     Optional,
@@ -18,7 +21,7 @@ from typing import (
 
 from discord.ext import commands
 
-from dev.utils.functs import clean_code
+from dev.utils.utils import clean_code
 
 __all__ = (
     "__previous__",
