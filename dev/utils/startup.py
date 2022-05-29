@@ -27,7 +27,7 @@ __all__ = (
 
 
 class Settings:
-    FLAG_DELIMITER: str = ": "
+    FLAG_DELIMITER: str = "="
     INVOKE_ON_EDIT: bool = True
     OWNERS: Optional[Set[int]] = {}
     PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
@@ -82,9 +82,13 @@ def check_types() -> None:
     if not Settings.FLAG_DELIMITER:
         raise ValueError("Settings.FLAG_DELIMITER cannot be None")
 
+    if Settings.FLAG_DELIMITER.strip() == ":":
+        raise ValueError("Settings.FLAG_DELIMITER cannot be ':' as it may interfere with dictionary parsing")
+
 
 async def setup_(bot: commands.Bot) -> None:
     root_command: Optional[Group] = bot.get_command("dev")
     for cmd, parent in root._add_parent.items():
         root_command.add_command(cmd)
         bot.remove_command(cmd.name)
+        
