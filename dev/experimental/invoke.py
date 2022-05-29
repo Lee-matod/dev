@@ -94,7 +94,7 @@ class NoSendContext(commands.Context):
                 args.append(f"file = filename: {f.filename}"
                             f"       content: {f.fp.read()}")
         if stickers:
-            args.append(f"stickers = {', '.join(f'<{sticker.name}={str(sticker.id)}>' for sticker in stickers)}")
+            args.append(f"stickers = {', '.join(f'<name={sticker.name} id={str(sticker.id)}>' for sticker in stickers)}")
         if delete_after:
             args.append(f"{delete_after = }")
         if nonce:
@@ -102,7 +102,7 @@ class NoSendContext(commands.Context):
         if allowed_mentions:
             args.append(f"{allowed_mentions = }")
         if reference:
-            args.append(f"reference = <{reference.id}={reference.jump_url}>")
+            args.append(f"reference = <id={reference.id} jump_url={reference.jump_url}>")
 
         print("\n".join(args))
 
@@ -128,7 +128,7 @@ class RootInvoke(Root):
     @root.command(name="no_print", parent="dev", aliases=["np", "noprint"])
     async def root_no_print(self, ctx: commands.Context, *, command_string: str):
         """If there are any print statements in the command, they will be ignored and sent via a Discord message.
-        Note that this won't work if the stdout is being redirected to another file.
+        Note that this won't work if the stdout is already being redirected to another file.
         """
         kwargs = {"content": f"{ctx.prefix}{command_string}", "author": ctx.author, "channel": ctx.channel}
         context = await generate_ctx(ctx, **kwargs)
