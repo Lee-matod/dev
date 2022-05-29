@@ -16,12 +16,20 @@ from discord.utils import escape_markdown, escape_mentions
 
 
 __all__ = (
+    "clean_code",
     "escape",
     "local_globals",
     "plural"
 )
 
 local_globals: Dict[Any, Any] = {}  # lmao
+
+
+def clean_code(content: str) -> str:
+    if content.startswith("```") and content.endswith("```"):
+        return "\n".join(content.split("\n")[1:-1])
+    else:
+        return content
 
 
 def escape(content: str):
