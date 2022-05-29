@@ -61,16 +61,15 @@ Settings.VIRTUAL_VARS = "-%(name)s-"
 The full `settings` tree and what they do are shown below. Note that if the wrong type of value is passed, a 
 `ValueError` will be raised
 ```python
-FLAG_DELIMITER: str = ": "
+FLAG_DELIMITER: str = "="
 INVOKE_ON_EDIT: Optional[bool] = True
 OWNERS: Optional[Set[int]] = {}
 PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
 ROOT_FOLDER: Optional[str] = ""
 VIRTUAL_VARS: str = "|%(name)s|"
 ```
-* **FLAG_DELIMITER:** For the moment only used in `dev http`, this setting is used to determine when to separate
-keys and values when specifying any kwargs that should be passed in to the get method. Currently, data types aren't
-supported.
+* **FLAG_DELIMITER:** This setting is used to determine when to separate
+keys and values when specifying any kwargs that should be passed in if the command supports these.
 * **INVOKE_ON_EDIT:** If `True`, then a command will be reinvoked if it is edited.
 * **OWNERS:** A list of user IDs that can override `bot.owner_id(s)` determining who can use the dev extension.
 If none are specified, and the bot is logged in before the extension gets loaded, then it defaults to the ID of the owner of the bot.
