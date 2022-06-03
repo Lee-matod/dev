@@ -16,6 +16,7 @@ from typing import (
     Callable,
     List,
     Tuple,
+    Type,
     TypeVar,
     Optional,
     Union,
@@ -116,7 +117,7 @@ class ExceptionHandler:
     async def __aenter__(self):
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb: TracebackType):
+    async def __aexit__(self, exc_type: Type[Exception], exc_val: Exception, exc_tb: TracebackType):
         if exc_val is None:
             if not self.debug:
                 await self.message.add_reaction("☑")
