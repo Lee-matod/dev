@@ -18,8 +18,13 @@ from dev.config.variables import *
 
 
 __all__ = (
+    "RootConfig",
     "RootBot",
     "RootManagement",
     "RootOver",
     "RootVariables"
 )
+
+
+class RootConfig(RootBot, RootManagement, RootOver, RootVariables):
+    """The front end config cog for the dev extension"""
