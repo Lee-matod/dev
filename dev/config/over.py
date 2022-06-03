@@ -84,7 +84,7 @@ class RootOver(Root):
         if self.OVERRIDES:
             rows = [[k, v[0], v[1]] for k, v in self.OVERRIDES.items()]
             content = table_creator(rows, ["IDs", "Types", "Descriptions"])
-        await send(ctx, content, py_codeblock=True if self.OVERRIDES else False)
+        await send(ctx, f"```py\n{content}\n```")
 
     @root_override.command(name="undo", aliases=["del", "delete"])
     async def root_override_undo(self, ctx: commands.Context, id_num: int = 0):
@@ -168,7 +168,7 @@ class RootOver(Root):
         if self.OVERWRITES:
             rows = [[k, v[0], v[1]] for k, v in self.OVERWRITES.items()]
             content = table_creator(rows, ["IDs", "Types", "Descriptions"])
-        await send(ctx, content, py_codeblock=True if self.OVERWRITES else False)
+        await send(ctx, f"```py\n{content}\n```")
 
     @root_overwrite.command(name="undo", aliases=["del", "delete"])
     async def root_overwrite_undo(self, ctx: commands.Context, id_num: int = 0):
