@@ -16,6 +16,7 @@ from typing import (
     Dict,
     List,
     Sequence,
+    Optional,
     Union
 )
 
@@ -39,7 +40,28 @@ __all__ = (
 )
 
 
-def flag_parser(string: str or int, delimiter: str) -> Union[Dict[str, str], str]:
+def flag_parser(string: str, delimiter: str) -> Union[Dict[str, str], str]:
+    """Converts a string into a dictionary.
+
+    Parameters
+    ----------
+    string: :class:`str`
+        The string that should be converted.
+    delimiter: :class:`str`
+        The characters that separate keys and values.
+
+    Examples
+    --------
+    .. codeblock:: python3
+        >>> my_string = 'key=value abc=foo bar'
+        >>> flag_parser(my_string, '=')
+        ... {'key': 'value', 'abc': 'foo bar'}
+
+    Returns
+    -------
+    dict
+        The converted dictionary.
+    """
     keys, values = [], []
     temp_string = ""
     searching_for_value = False
@@ -95,63 +117,43 @@ def table_creator(rows: List[List[Any]], labels: List[str]) -> str:
     return "\n".join(table_str.split("\n")[:-2])
 
 
-async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed, discord.File]], discord.Embed, discord.File, discord.ui.View, str], **options: bool) -> Union[discord.Message, Dict[str, Any]]:
-    """Evaluates how to send a discord message.
+async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed, discord.File]], discord.Embed, discord.File, discord.ui.View, str], **options) -> Optional[discord.Message]:
+    """Evaluates how to safely send a discord message.
+
+    This replaces the bot's token with '[token]' and converts any values of variables back to their keys.
 
     Parameters
     ----------
     ctx: :class:`commands.Context`
-        The context in which the command was invoked on.
+        The context in which the command was invoked on. This is used to send the message and get the bot's token.
     args:
-        Additional arguments that will be sent to :meth:`ctx.send`.
+        Arguments that will be sent to :meth:`ctx.send`. These can be Embeds, Files, Views, or strings. Additionally,
+        Embeds and Files can be inside a list, tuple or set to send multiple of these types.
 
     Returns
     -------
     discord.Message
         The message that was sent. This does not include Pagination messages.
+
+    Raises
+    ------
+    TypeError
+        A list, tuple or set contains more than one type, e.g: [discord.File, discord.File, discord.Embed].
     """
-    py_codeblock = options.get("py_codeblock", False)
+    use_codeblock: bool = options.get("codeblock")
     kwargs = {}
     for arg in args:
         if isinstance(arg, discord.Embed):
-            if arg.description:
-                arg.description = arg.description.replace(ctx.bot.http.token, "TOKEN")
-                arg.description = _revert_virtual_var_value(arg.description)
-                if len(arg.description) > 4085:
-                    paginator = commands.Paginator(prefix="```py\n", suffix="```\n")
-                    for line in arg.description.split("\n"):
-                        paginator.add_line(line.replace("`", "\u200b`"))
-                    arg.description = paginator.pages[0]
-                    await ctx.send(embed=arg, view=Paginator(paginator, ctx.author.id))
-                else:
-                    if py_codeblock:
-                        replacement = arg.description.replace("`", "\u200b`")
-                        arg.description = f'```py\n{replacement}\n```'
-                    if kwargs.get("embed", False):
-                        other_embed = kwargs.pop("embed")
-                        kwargs["embeds"] = [other_embed, arg]
-                    elif kwargs.get("embeds", False):
-                        kwargs["embeds"].append(arg)
-                    else:
-                        kwargs["embed"] = arg
+            arg = _embed_inspector(ctx.bot, arg)
+            return_type = _check_length(arg, 6000)
+            if isinstance(return_type, commands.Paginator):
+                await ctx.send(embed=arg, view=Paginator(return_type, ctx.author.id))
             else:
-                if kwargs.get("embed", False):
-                    other_embed = kwargs.pop("embed")
-                    kwargs["embeds"] = [other_embed, arg]
-                elif kwargs.get("embeds", False):
-                    kwargs["embeds"].append(arg)
-                else:
-                    kwargs["embed"] = arg
+                kwargs["embed"] = arg
 
         elif isinstance(arg, discord.File):
-            string = _revert_virtual_var_value("".join(line.decode('utf-8') for line in arg.fp.readlines()).replace(ctx.bot.http.token, "TOKEN")).encode('utf-8')
-            if kwargs.get("file", False):
-                file = kwargs.pop("file")
-                kwargs["files"] = [file, discord.File(filename=f"{arg.filename}.txt" if "." not in arg.filename else arg.filename, fp=io.BytesIO(string))]
-            elif kwargs.get("files", False):
-                kwargs["files"].append(string)
-            else:
-                kwargs["file"] = discord.File(filename=f"{arg.filename}.txt" if "." not in arg.filename else arg.filename, fp=io.BytesIO(string))
+            string = _revert_virtual_var_value("".join(line.decode('utf-8') for line in arg.fp.readlines()).replace(ctx.bot.http.token, "[token]")).encode('utf-8')
+            kwargs["file"] = discord.File(filename=f"{arg.filename}.txt" if "." not in arg.filename else arg.filename, fp=io.BytesIO(string))
 
         elif isinstance(arg, (list, set, tuple)):
             items = []
@@ -161,30 +163,21 @@ async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed,
                 if isinstance(item, discord.File):
                     if inst_type:
                         if not isinstance(item, inst_type):
-                            raise ValueError
+                            raise TypeError(f"Found multiple types inside a {type(arg).__name__}. Expected {inst_type.__name__} but received {type(item).__name__}")
                     str_type = "files"
                     inst_type = discord.File
-                    string = _revert_virtual_var_value("".join(line.decode('utf-8') for line in item.fp.readlines()).replace(ctx.bot.http.token, "TOKEN")).encode('utf-8')
+                    string = _revert_virtual_var_value("".join(line.decode('utf-8') for line in item.fp.readlines()).replace(ctx.bot.http.token, "[token]")).encode('utf-8')
                     items.append(discord.File(filename=f"{item.filename}.txt" if "." not in item.filename else item.filename, fp=io.BytesIO(string)))
                 elif isinstance(item, discord.Embed):
                     if inst_type:
                         if not isinstance(item, inst_type):
-                            raise ValueError
+                            raise TypeError(f"Found multiple types inside a {type(arg).__name__}. Expected {inst_type.__name__} but received {type(item).__name__}")
                     str_type = "embeds"
                     inst_type = discord.Embed
-                    if item.description:
-                        item.description = _revert_virtual_var_value(item.description.replace(ctx.bot.http.token, "TOKEN"))
-                        if len(item.description) > 4085:
-                            paginator = commands.Paginator(prefix="```py\n", suffix="```\n")
-                            for line in item.description.split("\n"):
-                                paginator.add_line(line.replace("`", "\u200b`"))
-                            item.description = paginator.pages[0]
-                            await ctx.send(embed=item, view=Paginator(paginator, ctx.author.id))
-                        else:
-                            if py_codeblock:
-                                replacement = item.description.replace("`", "\u200b`")
-                                item.description = f'```py\n{replacement}\n```'
-                            items.append(item)
+                    item = _embed_inspector(ctx.bot, item)
+                    return_type = _check_length(item, 6000)
+                    if isinstance(return_type, commands.Paginator):
+                        await ctx.send(embed=item, view=Paginator(return_type, ctx.author.id))
                     else:
                         items.append(item)
             if str_type:
@@ -194,16 +187,12 @@ async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed,
             kwargs["view"] = arg
 
         else:
-            content = _revert_virtual_var_value(str(arg).replace(ctx.bot.http.token, "TOKEN"))
-            if len(content) > 1990:
-                paginator = commands.Paginator(prefix="```py\n", suffix="\n```")
-                for line in content.split("\n"):
-                    paginator.add_line(line)
-                await ctx.send(paginator.pages[0], view=Paginator(paginator, ctx.author.id))
+            content = _revert_virtual_var_value(str(arg)).replace(ctx.bot.http.token, "[token]")
+            content = content if not use_codeblock else f"```py\n{content}\n```"
+            return_type = _check_length(content)
+            if isinstance(return_type, commands.Paginator):
+                await ctx.send(content, view=Paginator(return_type, ctx.author.id))
             else:
-                if py_codeblock:
-                    content = content.replace("`", "\u200b`")
-                    content = f"```py\n{content}\n```"
                 kwargs["content"] = content
     if kwargs:
         return await ctx.send(**kwargs)
@@ -229,10 +218,53 @@ async def generate_ctx(ctx: commands.Context, author: discord.Member, channel: d
         A newly created context.
     """
     alt_msg: discord.Message = copy(ctx.message)
+    # noinspection PyProtectedMember
     alt_msg._update(kwargs)
     alt_msg.author = author
     alt_msg.channel = channel
     return await ctx.bot.get_context(alt_msg, cls=type(ctx))
+
+
+def _embed_inspector(bot: commands.Bot, embed: discord.Embed) -> discord.Embed:
+    if embed.title:
+        embed.title = _revert_virtual_var_value(embed.title).replace(bot.http.token, "[token]")
+    if embed.description:
+        if embed.description.startswith("```") and embed.description.endswith("```"):
+            embed.description = embed.description.split("\n")[0] + "\n" + _revert_virtual_var_value("\n".join(embed.description.split("\n")[1:-1])).replace(bot.http.token, "[token]").replace("``", "`\u200b`") + "```"
+        else:
+            embed.description = _revert_virtual_var_value(embed.description).replace(bot.http.token, "[token]")
+    if embed.author:
+        embed.author.name = _revert_virtual_var_value(embed.author.name).replace(bot.http.token, "[token]")
+    if embed.footer:
+        embed.footer.text = _revert_virtual_var_value(embed.footer.text).replace(bot.http.token, "[token]")
+    if embed.fields:
+        for field in embed.fields:
+            field.name = _revert_virtual_var_value(field.name).replace(bot.http.token, "[token]")
+            if field.value.startswith("```") and field.value.endswith("```"):
+                field.value = field.value.split("\n")[0] + "\n" + _revert_virtual_var_value("\n".join(field.value.split("\n")[1:-1])).replace(bot.http.token, "[token]").replace("``", "`\u200b`") + "```"
+            else:
+                field.value = _revert_virtual_var_value(field.value).replace(bot.http.token, "[token]")
+    return embed
+
+
+def _check_length(content: Union[discord.Embed, str], max_length: int = 2000) -> Union[commands.Paginator, str]:
+    if len(content) > max_length:
+        prefix, suffix = "```py\n", "\n```"
+        if isinstance(content, discord.Embed):
+            if content.description.startswith("```") and content.description.endswith("```"):
+                prefix = content.description.split("\n")[0] + "\n"
+            paginator = commands.Paginator(prefix=prefix, suffix=suffix)
+            for line in content.description.split("\n")[1:-1]:
+                paginator.add_line(line.replace("``", "`\u200b`"))
+            return paginator
+        else:
+            if content.startswith("```") and content.endswith("```"):
+                prefix = content.split("\n")[0] + "\n"
+            paginator = commands.Paginator(prefix=prefix, suffix=suffix)
+            for line in content.split("\n")[1:-1]:
+                paginator.add_line(line.replace("``", "`\u200b`"))
+            return paginator
+    return content
 
 
 def _revert_virtual_var_value(string: str) -> str:
