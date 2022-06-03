@@ -11,7 +11,16 @@ Handlers that are used in the dev extension.
 """
 
 
-from typing import *
+from typing import (
+    Any,
+    Callable,
+    List,
+    Tuple,
+    TypeVar,
+    Optional,
+    Union,
+    TYPE_CHECKING
+)
 
 import asyncio
 import discord
@@ -20,10 +29,17 @@ import re
 
 from discord.ext import commands
 from traceback import format_exception
+from types import TracebackType
 
 from dev.utils.startup import Settings
 from dev.utils.utils import escape, local_globals
 
+
+if TYPE_CHECKING:
+    from typing_extensions import ParamSpec
+    P = ParamSpec("P")
+else:
+    P = TypeVar("P")
 
 __all__ = (
     "BoolInput",
@@ -51,7 +67,7 @@ class BoolInput(discord.ui.View):
         The key-word arguments that should be passed into the function, if any.
 
     """
-    def __init__(self, author: Union[discord.Member, int], func: Callable[Any, Any], *args: Any, **kwargs: Any):
+    def __init__(self, author: Union[discord.Member, int], func: Callable[P, Any], *args: Any, **kwargs: Any):
         super().__init__()
         self.func = func
         self.author: int = author.id if isinstance(author, discord.Member) else author
@@ -81,52 +97,30 @@ class ExceptionHandler:
     Parameters
     ----------
     message: :class:`discord.Message`
-        The message that the reactions will be added to.
-
-    is_debug: :class:`bool`
-        Whether the instance of this :class:`ExceptionHandler` is a debugger or not.
-
-    Attributes
-    ----------
-    error: :class:`list[tuple[Exception, str]]`
-        The errors that occurred during the lifetime of the process inside the context manager.
-
-    debug: :class:`bool`
-        Whether debug mode is currently enabled.
-        ``True`` if debug mode is enabled, this also means that ``error`` will be modified.
+        The message that the reactions will be added to
 
     Returns
     -------
-    self
+    ExceptionHandler
         When entering the context manager, the instance of it is returned.
-
-    bool
-        When exiting the context manager, a boolean is returned. ``True`` if errors occurred during runtime.
     """
-    error: List[Tuple[Exception, str]] = []
+    error: List[Tuple[str, str]] = []
     debug: bool = False
 
-    def __init__(self, message: discord.Message, *, is_debug: bool = False):
+    def __init__(self, message: discord.Message, *, send_traceback: bool = False):
         self.message = message
-        if is_debug:
-            setattr(type(self), "debug", is_debug)
-        self.error = self.error
-        self.debug = self.debug
+        self.send_traceback = send_traceback
+        if send_traceback:
+            ExceptionHandler.debug = True
 
     async def __aenter__(self):
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb: TracebackType):
         if exc_val is None:
             if not self.debug:
                 await self.message.add_reaction("☑")
             return False
-
-        error = "".join(format_exception(exc_type, exc_val, exc_tb))
-        if self.debug:
-            previous: List[Tuple[Exception, str]] = getattr(type(self), "error")
-            previous.append((exc_val, error))
-            setattr(type(self), "error", previous)
 
         if isinstance(exc_val, (EOFError, IndentationError, SyntaxError)):
             await self.message.add_reaction("💢")
@@ -135,13 +129,22 @@ class ExceptionHandler:
         elif isinstance(exc_val, (AssertionError, ImportError, UnboundLocalError)):
             await self.message.add_reaction("❓")
         elif isinstance(exc_val, (AttributeError, IndexError, KeyError, NameError, TypeError, UnicodeError, ValueError, commands.CommandInvokeError)):
+            if isinstance(exc_val, commands.CommandInvokeError):
+                exc_val = exc_val.original
             await self.message.add_reaction("❗")
         elif isinstance(exc_val, ArithmeticError):
             await self.message.add_reaction("⁉")
         else:  # error doesn't fall under any other category
             await self.message.add_reaction("‼")
 
+        if self.debug:
+            ExceptionHandler.error.append((exc_val.__class__.__name__, "".join(format_exception(exc_type, exc_val, exc_tb))))
         return True
+
+    @staticmethod
+    def cleanup():
+        ExceptionHandler.error = []
+        ExceptionHandler.debug = False
 
 
 class Paginator(discord.ui.View):
@@ -264,6 +267,7 @@ def replace_vars(string: str) -> str:
     ----------
     string: :class:`str`
         The string that should get converted.
+
     Returns
     -------
     str
