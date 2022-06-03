@@ -84,7 +84,7 @@ class LiteralModes(commands.Converter):
             raise TypeError(f"LiteralModes[...[, bool]] expected a maximum of 2 attributes, got {len(item)}")
         item, case_sensitive = item
         # can't use isinstance with typing.Literal
-        if type(item) != type(Literal[...]):  # type: ignore
+        if type(item) != type(Literal[...]):  # type: ignore # noqa: E721
             raise TypeError(f"LiteralModes[...[, bool]] expected a typing.Literal to be passed, not {item.__name__ if isinstance(item, type) else item.__class__.__name__}")
         if any(i for i in item.__args__ if isinstance(i, type)):
             raise TypeError("LiteralModes[...[, bool]] should only have literals, not types")
