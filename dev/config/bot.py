@@ -65,7 +65,7 @@ class RootBot(Root):
             successful = []
             unsuccessful = []
             start = time.perf_counter()
-            for ext in list(self.bot.extensions).copy():
+            for ext in list(self.bot.extensions):
                 try:
                     await self.bot.reload_extension(ext)
                     successful.append(ext)
