@@ -167,23 +167,19 @@ class RootInvoke(Root):
         if not context.command:
             return await send(ctx, f"Command `{context.invoked_with}` not found.")
 
-        async with ExceptionHandler(ctx.message, is_debug=True) as handler:
+        async with ExceptionHandler(ctx.message, send_traceback=True) as handler:
             await context.command.invoke(context)
         if handler.error:
-            embeds = []
-            for error in handler.error:
-                exc_val, tb = error
-                embeds.append(discord.Embed(title=exc_val.__class__.__name__, description=tb.replace(Settings.PATH_TO_FILE, ""), color=discord.Color.red()))
-            await send(ctx, embeds, py_codeblock=True)
+            embeds = [discord.Embed(title=exc[0], description=f"```py\n{exc[1].replace(Settings.PATH_TO_FILE, '')}\n```", color=discord.Color.red()) for exc in handler.error]
+            handler.cleanup()
+            await send(ctx, embeds)
         else:
             await ctx.message.add_reaction("☑")
-        setattr(type(handler), "error", [])
-        setattr(type(handler), "debug", False)
 
     @root.command(name="execute", parent="dev", aliases=["exec", "execute!", "exec!"])
-    async def root_execute(self, ctx: commands.Context, attrs: commands.Greedy[Union[discord.Member, discord.TextChannel, discord.Thread]], *, command_attr: str):
+    async def root_execute(self, ctx: commands.Context, attrs: commands.Greedy[Union[discord.Member, discord.TextChannel, discord.Thread, discord.Role]], *, command_attr: str):
         """Execute a command with custom attributes.
-        Attributes support types are `discord.Member`, `discord.TextChannel` and `discord.Thread`. These will override the current context, thus executing the command as another user or text channel.
+        Attributes support types are `discord.Member`, `discord.Role`, `discord.TextChannel` and `discord.Thread`. These will override the current context, thus executing the command as another user, text channel and/or with another role.
         Command checks can be optionally disabled by adding an exclamation mark at the end of the `execute` command.
         """
         kwargs = {"content": f"{ctx.prefix}{command_attr}", "author": ctx.author, "channel": ctx.channel}
@@ -192,6 +188,9 @@ class RootInvoke(Root):
                 kwargs["author"] = attr
             elif isinstance(attr, (discord.TextChannel, discord.Thread)):
                 kwargs["channel"] = attr
+            elif isinstance(attr, discord.Role):
+                # noinspection PyProtectedMember
+                kwargs["author"]._roles.add(attr.id)
         context: commands.Context = await generate_ctx(ctx, **kwargs)
         if not context.command:
             return await ctx.send(f"Command `{context.invoked_with}` not found.")
