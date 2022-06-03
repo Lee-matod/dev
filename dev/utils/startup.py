@@ -88,7 +88,7 @@ def check_types() -> None:
 
 async def setup_(bot: commands.Bot) -> None:
     root_command: Optional[Group] = bot.get_command("dev")
+    # noinspection PyProtectedMember
     for cmd, parent in root._add_parent.items():
         root_command.add_command(cmd)
         bot.remove_command(cmd.name)
-        
