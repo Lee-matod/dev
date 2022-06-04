@@ -12,6 +12,7 @@ Functions and variables that will get executed once the dev extension is loaded.
 
 import re
 import os
+import pathlib
 
 from discord.ext import commands
 from typing import Optional, Set
@@ -84,6 +85,13 @@ def check_types() -> None:
 
     if Settings.FLAG_DELIMITER.strip() == ":":
         raise ValueError("Settings.FLAG_DELIMITER cannot be ':' as it may interfere with dictionary parsing")
+
+    if Settings.ROOT_FOLDER:
+        root_folder = pathlib.Path(Settings.ROOT_FOLDER)
+        if not root_folder.exists():
+            raise ValueError(f"Path {Settings.ROOT_FOLDER!r} does not exist")
+        elif root_folder.is_file():
+            raise ValueError(f"Path {Settings.ROOT_FOLDER!r} is a file, not a directory")
 
 
 async def setup_(bot: commands.Bot) -> None:
