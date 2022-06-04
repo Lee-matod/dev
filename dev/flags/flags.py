@@ -65,7 +65,7 @@ class RootFlags(Root):
                 params.append(f"`*{name}{'*' if sign.required else ''}`: _{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_{' = ' + str(sign.default) if not isinstance(sign.default, type) else sign.default.__name__ if sign.default.__name__ != '_empty' else ''}")
             else:  # **kwargs aren't supported in dpy
                 params.append(f"`{name}{'*' if sign.required else ''}`: _{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_{' = ' + str(sign.default) if not isinstance(sign.default, type) else sign.default.__name__ if sign.default.__name__ != '_empty' else ''}")
-        await send(ctx, discord.Embed(title=command_string, description=f"**Type:** `{type(command).__name__}`\n**Command ID:** `{hex(id(command))}`\n**Module:** `{inspect.getmodule(command.callback).__name__}`\n**Cog**: `{command.cog_name}`\n**Signature**\n" + "\n".join(params), color=discord.Color.darker_gray()))
+        await send(ctx, discord.Embed(title=command_string, description=f"**Type:** `{type(command).__name__}`\n**Uses:** `{self.command_uses.get(command.qualified_name, 0)}`\n**Command ID:** `{hex(id(command))}`\n**Module:** `{inspect.getmodule(command.callback).__name__}`\n**Cog**: `{command.cog_name}`\n**Signature**\n" + ("\n".join(params) or '`None`'), color=discord.Color.darker_gray()))
 
     @root.command(name="--source", parent="dev", aliases=["-src", "--sourceFile", "-srcF"], hidden=True)
     async def root_source(self, ctx: commands.Context, *, command_string: str = ""):
