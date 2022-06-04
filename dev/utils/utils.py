@@ -36,5 +36,8 @@ def escape(content: str):
     return escape_markdown(escape_mentions(content))
 
 
-def plural(amount: int, singular: str) -> str:
-    return f"{amount} {singular}" if amount == 1 else f"{amount} {singular}s" if not singular.endswith("s") else f"{amount} {singular}'"
+def plural(amount: int, singular: str, include_amount: bool = True) -> str:
+    _plural = singular + ("s" if not singular.endswith("s") else "'")
+    if singular == "is":
+        _plural = "are"
+    return f"{amount if include_amount else ''} {singular}".strip() if amount == 1 else f"{amount if include_amount else ''} {_plural}".strip()
