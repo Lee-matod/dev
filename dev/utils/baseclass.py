@@ -180,6 +180,7 @@ class Root(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.root_command = root.all_commands.get("dev", None)
+        self.command_uses: Dict[str, int] = {}
         self.CALLBACKS: Dict[
             int,  # ID
             Tuple[
