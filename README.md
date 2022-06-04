@@ -59,10 +59,10 @@ Settings.INVOKE_ON_EDIT = False
 Settings.VIRTUAL_VARS = "-%(name)s-"
 ```
 The full `settings` tree and what they do are shown below. Note that if the wrong type of value is passed, a 
-`ValueError` will be raised
+`ValueError` exception will be raised.
 ```python
 FLAG_DELIMITER: str = "="
-INVOKE_ON_EDIT: Optional[bool] = True
+INVOKE_ON_EDIT: bool = True
 OWNERS: Optional[Set[int]] = {}
 PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
 ROOT_FOLDER: Optional[str] = ""
