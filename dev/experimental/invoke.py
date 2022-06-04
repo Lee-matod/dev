@@ -183,6 +183,7 @@ class RootInvoke(Root):
         Command checks can be optionally disabled by adding an exclamation mark at the end of the `execute` command.
         """
         kwargs = {"content": f"{ctx.prefix}{command_attr}", "author": ctx.author, "channel": ctx.channel}
+        roles = []
         for attr in attrs:
             if isinstance(attr, discord.Member):
                 kwargs["author"] = attr
@@ -191,12 +192,21 @@ class RootInvoke(Root):
             elif isinstance(attr, discord.Role):
                 # noinspection PyProtectedMember
                 kwargs["author"]._roles.add(attr.id)
+                roles.append(attr.id)
         context: commands.Context = await generate_ctx(ctx, **kwargs)
         if not context.command:
+            for role in roles:
+                # noinspection PyProtectedMember
+                del kwargs["author"]._roles[role]
             return await ctx.send(f"Command `{context.invoked_with}` not found.")
-        if ctx.invoked_with.endswith("!"):
-            return await context.command.reinvoke(context)
-        await context.command.invoke(context)
+        try:
+            if ctx.invoked_with.endswith("!"):
+                return await context.command.reinvoke(context)
+            await context.command.invoke(context)
+        finally:
+            for index, _ in enumerate(roles):
+                # noinspection PyProtectedMember
+                del kwargs["author"]._roles[-index]
 
     @root.command(name="reinvoke", parent="dev", aliases=["invoke"])
     async def root_reinvoke(self, ctx: commands.Context, skip_message: Optional[int] = 0, author: Optional[discord.Member] = None, *, flags: ReinvokeFlags):
