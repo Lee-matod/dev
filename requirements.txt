@@ -1,3 +1,4 @@
 aiohttp>=3.7.4,<4
 discord.py >= 2.0.0a
 setuptools>=45.2.0
+psutil>=5.9.1
