@@ -101,7 +101,7 @@ class RootManagement(Root):
         with open(directory, "r") as file:
             await send(ctx, discord.File(fp=io.BytesIO(file.read().encode('utf-8')), filename=directory.split("/")[-1]))
 
-    @root_files.command(name="delete", aliases=["del", "remove"], require_var_positional=True, root_placeholder=True)
+    @root_files.command(name="delete", aliases=["del", "remove", "rm"], require_var_positional=True, root_placeholder=True)
     async def root_files_delete(self, ctx: commands.Context, *, directory: str):
         """Delete an existing file.
         Use `!` at the beginning of the directory to ignore the current working directory.
@@ -113,11 +113,11 @@ class RootManagement(Root):
         path.unlink()
         await ctx.message.add_reaction("☑")
 
-    @root.group(name="folders", parent="dev", aliases=["folder"])
+    @root.group(name="folders", parent="dev", aliases=["folder", "dir", "directory"])
     async def root_folders(self, ctx: commands.Context):
         """Everything related to folder management."""
 
-    @root_folders.command(name="new", aliases=["create"], require_var_positional=True, root_placeholder=True)
+    @root_folders.command(name="new", aliases=["create", "mkdir"], require_var_positional=True, root_placeholder=True)
     async def root_folders_new(self, ctx: commands.Context, *, directory: str):
         """Create a new folder.
         The folder's name cannot already exist.
@@ -159,7 +159,7 @@ class RootManagement(Root):
         tree.append("```")
         await send(ctx, "\n".join(tree))
 
-    @root_folders.command(name="delete", aliases=["del", "remove"], require_var_positional=True, root_placeholder=True)
+    @root_folders.command(name="delete", aliases=["del", "remove", "rmdir", "rm"], require_var_positional=True, root_placeholder=True)
     async def root_folders_delete(self, ctx: commands.Context, *, directory):
         """Delete an already existing folder.
         If the folder is not empty, a prompt will pop up asking if you're sure you want to delete the directory.
@@ -170,7 +170,10 @@ class RootManagement(Root):
         if not path.exists():
             return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
         if path.iterdir():
-            await send(ctx, f":warning: The directory that you specified is not empty. Deleting it will delete all files and folders inside it. Do you want to proceed?", BoolInput(ctx.author, shutil.rmtree, path.name))  # thank you aperture!
+            async def func():
+                shutil.rmtree(path.name)  # thank you aperture!
+                await ctx.message.add_reaction("☑")
+            await send(ctx, f":warning: The directory that you specified is not empty. Deleting it will delete all files and folders inside it. Do you want to proceed?", BoolInput(ctx.author, func))
         else:
             path.rmdir()
             await ctx.message.add_reaction("☑")
