@@ -49,6 +49,8 @@ class OverrideSettingConverter(commands.Converter):
         changed = []
         new_settings = flag_parser(argument, "=")
         for key, value in new_settings.items():
+            if key.startswith("__") and key.endswith("__"):
+                continue
             if not hasattr(Settings, key):
                 return await ctx.message.add_reaction("❗")
             setting = getattr(Settings, key.upper())
@@ -329,6 +331,8 @@ class RootOver(Root):
         raw_changed = {}
         new_settings = flag_parser(settings, "=")
         for key, value in new_settings.items():
+            if key.startswith("__") and key.endswith("__"):
+                continue
             if not hasattr(Settings, key.upper()):
                 return await ctx.message.add_reaction("❗")
             setting = getattr(Settings, key.upper())
