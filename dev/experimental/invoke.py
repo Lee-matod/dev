@@ -166,7 +166,6 @@ class RootInvoke(Root):
         context: commands.Context = await generate_ctx(ctx, **kwargs)
         if not context.command:
             return await send(ctx, f"Command `{context.invoked_with}` not found.")
-
         async with ExceptionHandler(ctx.message, send_traceback=True) as handler:
             await context.command.invoke(context)
         if handler.error:
