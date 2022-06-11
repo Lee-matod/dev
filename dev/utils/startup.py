@@ -10,6 +10,7 @@ Functions and variables that will get executed once the dev extension is loaded.
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 
+import contextlib
 import re
 import os
 import pathlib
@@ -28,10 +29,11 @@ __all__ = (
 
 
 class Settings:
+    ALLOW_GLOBAL_USES: bool = False
     FLAG_DELIMITER: str = "="
     INVOKE_ON_EDIT: bool = True
     OWNERS: Optional[Set[int]] = {}
-    PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
+    PATH_TO_FILE: Optional[str] = os.getcwd()
     ROOT_FOLDER: Optional[str] = ""
     VIRTUAL_VARS: str = "|$var$|"
 
@@ -52,11 +54,9 @@ async def set_settings(bot: commands.Bot) -> None:
         No user IDs were specified.
     """
     if not Settings.OWNERS:
-        try:
+        with contextlib.suppress(AttributeError):
             data = await bot.application_info()
             Settings.OWNERS = {data.owner.id}
-        except AttributeError:
-            pass
     check_types()
 
 
@@ -67,6 +67,7 @@ def check_types() -> None:
         [Settings.OWNERS, set, "OWNERS"],
         [Settings.PATH_TO_FILE, str, "PATH_TO_FILE"],
         [Settings.ROOT_FOLDER, str, "ROOT_FOLDER"],
+        [Settings.ALLOW_GLOBAL_USES, bool, "ALLOW_GLOBAL_USES"],
         [Settings.VIRTUAL_VARS, str, "VIRTUAL_VARS"]
     )
     for module in setting_types:
