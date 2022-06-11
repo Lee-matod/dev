@@ -4,7 +4,7 @@
 dev.config
 ~~~~~~~~~~
 
-Configuration-based commands used to mainly reconfigure and edit the bot.
+Configuration, reconfiguration and editing commands.
 
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
@@ -27,4 +27,4 @@ __all__ = (
 
 
 class RootConfig(RootBot, RootManagement, RootOver, RootVariables):
-    """The front end config cog for the dev extension"""
+    """The front end config cog for the dev extension."""
