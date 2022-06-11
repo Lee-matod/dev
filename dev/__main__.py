@@ -30,9 +30,9 @@ class RootCommand(Root):
         super().__init__(bot)
         self.load_time = str(time.time()).split(".")[0]
 
-    @root.group(name="dev", invoke_without_command=True, ignore_extra=False, usage="[--help|--man] [--source|-src|--sourceFile|-srcF] [--inspect|-i] <command>")
+    @root.group(name="dev", invoke_without_command=True, global_use=True, ignore_extra=False, usage="[--help|--man] [--source|-src|--sourceFile|-srcF] [--inspect|-i] <command>")
     async def root_(self, ctx: commands.Context):
-        """Root command for the `dev` extension.
+        """Root command for the `dev` extension. This gives a briefing of the dev extension, as well as process statistics.
         Execute `dev --help [command]` for more information on a subcommand.
         `--help`|`--man` [command] = Shows a custom made help command.
         `--source`|`-src` <command> = Shows the source code of a command.
@@ -41,18 +41,12 @@ class RootCommand(Root):
         """
         process = psutil.Process()
         version = sys.version.replace("\n", "")
-        files = []
-        for _, _, file in os.walk(os.getcwd()):
-            for f in file:
-                files.append(f)
         description = f"dev is a simple debugging, testing and editing extension for discord.py. " \
                       f"It features a total of {plural(len(root.all_commands), 'command')} which were loaded <t:{self.load_time}:R>.\n" \
                       f"\nThis process (`{process.name()} {str(__file__).split('/')[-1]}`) is currently running on Python version `{version}` on a `{sys.platform}` machine, " \
                       f"with discord version `{discord.__version__}` and dev version `{sys.modules['dev'].__version__}`.\n" \
-                      f"\nRunning with a PID of `{os.getpid()}` and {plural(process.num_threads(), 'thread')} which are using " \
-                      f"`{round((psutil.getloadavg()[2] / os.cpu_count()) * 100, 2)}%` of CPU power and `{round(process.memory_percent(), 2)}%` of memory.\n" \
-                      f"A total of {plural(len(files), 'file')} are to be found in the current working directory, {len([file for file in files if file.endswith('.py')])} of which are Python files " \
-                      f"and {(pyc_len := len([file for file in files if '.cpython-' in file]))} of which {plural(pyc_len, 'is', False)} CPython {plural(pyc_len, 'file', False)}."
+                      f"Running with a PID of `{os.getpid()}` and {plural(process.num_threads(), 'thread')} which are using " \
+                      f"`{round((psutil.getloadavg()[2] / os.cpu_count()) * 100, 2)}%` of CPU power and `{round(process.memory_percent(), 2)}%` of memory.\n"
         await send(ctx, description)
 
     @root_.command(name="exit", aliases=["quit", "kys"])
