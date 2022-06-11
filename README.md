@@ -61,13 +61,15 @@ Settings.VIRTUAL_VARS = "-%(name)s-"
 The full `settings` tree and what they do are shown below. Note that if the wrong type of value is passed, a 
 `ValueError` exception will be raised.
 ```python
+ALLOW_GLOBAL_USES: bool = False
 FLAG_DELIMITER: str = "="
 INVOKE_ON_EDIT: bool = True
 OWNERS: Optional[Set[int]] = {}
-PATH_TO_FILE: Optional[str] = f"{os.getcwd()}"
+PATH_TO_FILE: Optional[str] = os.getcwd()
 ROOT_FOLDER: Optional[str] = ""
 VIRTUAL_VARS: str = "|%(name)s|"
 ```
+* **ALLOW_GLOBAL_USES:** Commands aren't considered very harmful or dangerous can be excecuted by every user. If this setting is enabled, then commands that are considered as 'not harmful' can be called by any user. This defaults to `False`.
 * **FLAG_DELIMITER:** This setting is used to determine when to separate
 keys and values when specifying any kwargs that should be passed in if the command supports these.
 * **INVOKE_ON_EDIT:** If `True`, then a command will be reinvoked if it is edited.
