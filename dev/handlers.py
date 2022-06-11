@@ -9,8 +9,6 @@ Handlers that are used in the dev extension.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-
-
 from typing import (
     Any,
     Callable,
@@ -24,6 +22,7 @@ from typing import (
 )
 
 import asyncio
+import contextlib
 import discord
 import inspect
 import re
@@ -34,7 +33,6 @@ from types import TracebackType
 
 from dev.utils.startup import Settings
 from dev.utils.utils import escape, local_globals
-
 
 if TYPE_CHECKING:
     from typing_extensions import ParamSpec
@@ -120,32 +118,33 @@ class ExceptionHandler:
     async def __aexit__(self, exc_type: Type[Exception], exc_val: Exception, exc_tb: TracebackType):
         if exc_val is None:
             if not self.debug:
-                await self.message.add_reaction("☑")
+                with contextlib.suppress(discord.NotFound):
+                    await self.message.add_reaction("☑")
             return False
-
-        if isinstance(exc_val, (EOFError, IndentationError, SyntaxError)):
-            await self.message.add_reaction("💢")
-        elif isinstance(exc_val, (TimeoutError, asyncio.TimeoutError)):
-            await self.message.add_reaction("⏰")
-        elif isinstance(exc_val, (AssertionError, ImportError, UnboundLocalError)):
-            await self.message.add_reaction("❓")
-        elif isinstance(exc_val, (AttributeError, IndexError, KeyError, NameError, TypeError, UnicodeError, ValueError, commands.CommandInvokeError)):
-            if isinstance(exc_val, commands.CommandInvokeError):
-                exc_val = exc_val.original
-            await self.message.add_reaction("❗")
-        elif isinstance(exc_val, ArithmeticError):
-            await self.message.add_reaction("⁉")
-        else:  # error doesn't fall under any other category
-            await self.message.add_reaction("‼")
+        with contextlib.suppress(discord.NotFound):
+            if isinstance(exc_val, (EOFError, IndentationError, SyntaxError)):
+                await self.message.add_reaction("💢")
+            elif isinstance(exc_val, (TimeoutError, asyncio.TimeoutError)):
+                await self.message.add_reaction("⏰")
+            elif isinstance(exc_val, (AssertionError, ImportError, UnboundLocalError)):
+                await self.message.add_reaction("❓")
+            elif isinstance(exc_val, (AttributeError, IndexError, KeyError, NameError, TypeError, UnicodeError, ValueError, commands.CommandInvokeError)):
+                if isinstance(exc_val, commands.CommandInvokeError):
+                    exc_val = exc_val.original
+                await self.message.add_reaction("❗")
+            elif isinstance(exc_val, ArithmeticError):
+                await self.message.add_reaction("⁉")
+            else:  # error doesn't fall under any other category
+                await self.message.add_reaction("‼")
 
         if self.debug:
             ExceptionHandler.error.append((exc_val.__class__.__name__, "".join(format_exception(exc_type, exc_val, exc_tb))))
         return True
 
-    @staticmethod
-    def cleanup():
-        ExceptionHandler.error = []
-        ExceptionHandler.debug = False
+    @classmethod
+    def cleanup(cls):
+        cls.error = []
+        cls.debug = False
 
 
 class Paginator(discord.ui.View):
