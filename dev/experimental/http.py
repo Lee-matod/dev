@@ -22,11 +22,10 @@ from typing import Literal
 from dev.converters import LiteralModes
 from dev.handlers import replace_vars
 
-from dev.misc.http_responses import responses
-
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import flag_parser, send
 from dev.utils.startup import Settings
+from dev.utils.utils import responses
 
 
 class RootHTTP(Root):
