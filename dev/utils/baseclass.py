@@ -115,6 +115,16 @@ class Group(commands.Group):
         self.kwargs = kwargs
 
     @property
+    def global_use(self) -> bool:
+        return self.kwargs.get("global_use", False)
+
+    @global_use.setter
+    def global_use(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError(f"Expected bool type but received {type(value).__name__}")
+        self.kwargs["global_use"] = value
+
+    @property
     def supports_virtual_vars(self) -> bool:
         return self.kwargs.get("virtual_vars", False)
 
@@ -137,6 +147,7 @@ class Group(commands.Group):
             kwargs.setdefault('parent', self)
             result = group(name=name, cls=cls, **kwargs)(func)
             self.add_command(result)
+            root.all_commands[result.qualified_name] = result
             return result
         return decorator
 
@@ -155,6 +166,7 @@ class Group(commands.Group):
             kwargs.setdefault('parent', self)
             result = command(name=name, cls=cls, **kwargs)(func)
             self.add_command(result)
+            root.all_commands[result.qualified_name] = result
             return result
 
         return decorator
@@ -166,6 +178,16 @@ class Command(commands.Command):
         list(args).append(func)
         self.args = args
         self.kwargs = kwargs
+
+    @property
+    def global_use(self) -> bool:
+        return self.kwargs.get("global_use", False)
+
+    @global_use.setter
+    def global_use(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError(f"Expected bool type but received {type(value).__name__}")
+        self.kwargs["global_use"] = value
 
     @property
     def supports_virtual_vars(self) -> bool:
@@ -196,15 +218,14 @@ class Root(commands.Cog):
                     cmd.cog = self
 
     def cog_check(self, ctx) -> bool:
-        from dev.utils.startup import Settings
+        from dev.utils.startup import Settings  # circular import
 
-        if Settings.OWNERS:
-            if ctx.author.id in Settings.OWNERS:
+        if isinstance(ctx.command, (Command, Group)):
+            if ctx.command.global_use and Settings.ALLOW_GLOBAL_USES:
                 return True
-            raise commands.NotOwner("You either do not own this bot or are not listed in the override owner list.")
-        elif ctx.author.id in ctx.bot.owner_ids or ctx.author.id == ctx.bot.owner_id:
+        if ctx.author.id in Settings.OWNERS or ctx.bot.is_owner(ctx.author):
             return True
-        raise commands.NotOwner("You either do not own this bot or are not listed in the override owner list.")
+        raise commands.NotOwner("You have to own this bot to be able to use this command")
 
 
 def group(name: str = MISSING, cls=MISSING, **attrs: Any):
