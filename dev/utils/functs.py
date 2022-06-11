@@ -33,11 +33,24 @@ from dev.utils.utils import local_globals
 
 
 __all__ = (
+    "all_commands",
     "flag_parser",
     "generate_ctx",
     "send",
     "table_creator"
 )
+
+
+def all_commands(command_list: set) -> List[Union[commands.Command, commands.Group]]:
+    command_count = []
+    for command in command_list:
+        if isinstance(command, commands.Group):
+            command_count.append(command)
+            for cmd in all_commands(command.commands):
+                command_count.append(cmd)
+        else:
+            command_count.append(command)
+    return command_count
 
 
 def flag_parser(string: str, delimiter: str) -> Union[Dict[str, str], str]:
@@ -55,7 +68,7 @@ def flag_parser(string: str, delimiter: str) -> Union[Dict[str, str], str]:
     .. codeblock:: python3
         >>> my_string = 'key=value abc=foo bar'
         >>> flag_parser(my_string, '=')
-        ... {'key': 'value', 'abc': 'foo bar'}
+        {'key': 'value', 'abc': 'foo bar'}
 
     Returns
     -------
