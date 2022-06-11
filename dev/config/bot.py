@@ -20,7 +20,7 @@ from typing import Literal
 from dev.converters import convert_str_to_ints, LiteralModes
 
 from dev.utils.baseclass import Root, root
-from dev.utils.functs import send
+from dev.utils.functs import all_commands, send
 from dev.utils.utils import escape, plural
 
 
@@ -28,32 +28,43 @@ class RootBot(Root):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
 
-    @root.group(name="bot", parent="dev", invoke_without_command=True)
+    @root.group(name="bot", parent="dev", invoke_without_command=True, global_use=True)
     async def root_bot(self, ctx: commands.Context):
-        """Check bot statistics."""
-        is_autosharded = ", automatically sharded" if isinstance(self.bot, commands.AutoShardedBot) else (", manually sharded" if self.bot.shard_count else '')
-        shards = f"{self.bot.shard_count or ''} {plural(self.bot.shard_count, 'shard') if self.bot.shard_count else 'no shards'} ({self.bot.shard_id or '0'} of {self.bot.shard_count or '0'}{is_autosharded})"
-        owners = (f"<@!{'>, <@!'.join(f'{owner}' for owner in self.bot.owner_ids)}> being my owners" if self.bot.owner_ids else f"<@!{self.bot.owner_id}> being my owner") or 'no owners'
-        prefix = f"`{escape(ctx.clean_prefix)}` being my prefix (case insensitive=`{self.bot.case_insensitive}`, strip after prefix=`{self.bot.strip_after_prefix}`)"
-
-        guilds = plural(len(self.bot.guilds), "guild")
-        channels = plural(len([channel for channel in self.bot.get_all_channels()]), "channel")
-        users = plural(len(self.bot.users), "user")
-        real_user, bot_user = plural(len([user for user in self.bot.users if not user.bot]), "real user"), plural(len([user for user in self.bot.users if user.bot and user.bot != self.bot.user]), "bot")
-
-        cmds = plural(len(self.bot.commands), "command")
-        cogs = plural(len(self.bot.extensions), "extension")
-
-        latency = round(self.bot.latency * 1000, 2)
-        *intents, intent = (f"`{intent.replace('_', ' ')}` intent is set to `{getattr(self.bot.intents, intent, None)}`" for intent in ["members", "message_content", "presences"])
-
-        embed = discord.Embed(title=self.bot.user, description=self.bot.description or 'No description.', color=discord.Color.blurple())
+        """Get a briefing of the bot's characteristics"""
+        embed = discord.Embed(title=self.bot.user, description=self.bot.description or '', color=discord.Color.blurple())
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-        embed.set_footer(text=f"{self.bot.user.id}")
-        embed.add_field(name="Bot", value=f"Running with {shards}. {owners}, and {prefix}.", inline=False)
-        embed.add_field(name="Visibility", value=f"Seeing a total of {guilds}, {channels}, and {users}: {real_user} and {bot_user}.", inline=False)
-        embed.add_field(name="Commands", value=f"A total of {cmds} and {cogs} are up for use.", inline=False)
-        embed.add_field(name="Information", value=f"Running with an average latency of {latency} ms. {', '.join(intents)} and {intent}.", inline=False)
+        mapping = {True: "enabled", False: "disabled", None: "unknown"}
+        bot_field = f""
+        visibility_field = (f"This bot can see {plural(len(self.bot.guilds), 'guild')}, "
+                            f"{plural(len([c for c in self.bot.get_all_channels() if not isinstance(c, discord.CategoryChannel)]), 'channel')} "
+                            f"and {plural(len(self.bot.users), 'account')}, "
+                            f"{len([user for user in self.bot.users if not user.bot])} of which are users.")
+        commands_field = (f"There is a total of {len(all_commands(self.bot.commands))} commands "
+                          f"and {len(self.bot.extensions)} loaded {plural(len(self.bot.extensions), 'extension', False)}.")
+        information_field = (f"This bot is running with an average websocket latency of {round(self.bot.latency * 1000, 2)}ms. "
+                             f"Members intent is {mapping.get(self.bot.intents.members)}, "
+                             f"message content intent is {mapping.get(self.bot.intents.message_content)} "
+                             f"and presences intent is {mapping.get(self.bot.intents.presences)}.")
+        if self.bot.owner_ids:
+            bot_field += (f"<@!{'>, <@!'.join(f'{owner}' for owner in self.bot.owner_ids)}> are the owners of this bot. "
+                          f"The prefix of this bot is `{escape(ctx.prefix)}` "
+                          f"(case insensitive is {mapping.get(self.bot.case_insensitive)} "
+                          f"and strip after prefix is {mapping.get(self.bot.strip_after_prefix)}) ")
+        elif self.bot.owner_id:
+            bot_field += (f"<@!{self.bot.owner_id}> is the owner of this bot. "
+                          f"The prefix of this bot is `{escape(ctx.prefix)}` "
+                          f"(case insensitive is {mapping.get(self.bot.case_insensitive)} "
+                          f"and strip after prefix is {mapping.get(self.bot.strip_after_prefix)}) ")
+        if isinstance(self.bot, commands.AutoShardedBot):
+            bot_field += f"and it's automatically sharded: shards {self.bot.shard_id} of {self.bot.shard_count} "
+        elif self.bot.shard_count:
+            bot_field += f"and it's manually sharded: shards {self.bot.shard_id} of {self.bot.shard_count} "
+        else:
+            bot_field += "and it's not sharded."
+        embed.add_field(name="Bot", value=bot_field, inline=False)
+        embed.add_field(name="Visibility", value=visibility_field, inline=False)
+        embed.add_field(name="Commands", value=commands_field, inline=False)
+        embed.add_field(name="Information", value=information_field, inline=False)
         await send(ctx, embed)
 
     @root_bot.command(name="reload")
