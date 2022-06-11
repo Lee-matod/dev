@@ -22,7 +22,7 @@ from dev.handlers import *
 
 from dev.config import RootConfig
 from dev.experimental import RootExperimental
-from dev.flags import RootFlags
+from dev.misc import RootMisc
 
 from dev.utils.baseclass import *
 from dev.utils.functs import *
@@ -51,7 +51,7 @@ __all__ = (
 )
 
 
-class Dev(RootCommand, RootConfig, RootExperimental, RootFlags):
+class Dev(RootCommand, RootConfig, RootExperimental, RootMisc):
     """The frontend root cog of the dev extension."""
 
 
