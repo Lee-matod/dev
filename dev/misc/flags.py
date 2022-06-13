@@ -17,6 +17,8 @@ import inspect
 from discord.ext import commands
 from typing import Union, TYPE_CHECKING
 
+from dev.types import BotT
+
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 
@@ -26,7 +28,7 @@ if TYPE_CHECKING:
 
 
 class RootFlags(Root):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: BotT):
         super().__init__(bot)
 
     @root.command(name="--help", aliases=["--man"], parent="dev", hidden=True, global_use=True)
