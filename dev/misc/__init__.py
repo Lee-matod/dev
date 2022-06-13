@@ -17,10 +17,5 @@ from dev.misc.search import *
 
 __all__ = (
     "RootFlags",
-    "RootMisc",
     "RootSearch"
 )
-
-
-class RootMisc(RootFlags, RootSearch):
-    """The front end misc cog for the dev extension."""
