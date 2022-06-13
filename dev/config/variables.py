@@ -14,9 +14,10 @@ A virtual variable manager directly implemented to the dev extension.
 import discord
 
 from discord.ext import commands
-from typing import Literal, Optional
+from typing import Literal
 
 from dev.converters import LiteralModes
+from dev.types import BotT
 
 from dev.utils.functs import send
 from dev.utils.baseclass import Root, root
@@ -55,11 +56,11 @@ class ModalSubmitter(discord.ui.View):
 
 
 class RootVariables(Root):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: BotT):
         super().__init__(bot)
 
     @root.command(name="variable", parent="dev", aliases=["variables", "vars", "var"])
-    async def root_variable(self, ctx: commands.Context, mode: LiteralModes[Literal["~", "all", "content", "create", "del", "delete", "edit", "exists", "new", "replace", "value"]], name: Optional[str]):
+    async def root_variable(self, ctx: commands.Context, mode: LiteralModes[Literal["~", "all", "content", "create", "del", "delete", "edit", "exists", "new", "replace", "value"]], name: str = None):
         """A virtual variable manager.
         This allows you to create temporary variables that can later be used as placeholder texts if you want to hide certain things from the public.
         Note that all variables created using this manager will later be destroyed once the bot restarts.
