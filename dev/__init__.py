@@ -20,9 +20,9 @@ from dev.__main__ import *
 from dev.converters import *
 from dev.handlers import *
 
-from dev.config import RootConfig
-from dev.experimental import RootExperimental
-from dev.misc import RootMisc
+from dev.config import RootBot, RootManagement, RootOver, RootVariables
+from dev.experimental import RootHTTP, RootInvoke, RootPython
+from dev.misc import RootFlags, RootSearch
 
 from dev.utils.baseclass import *
 from dev.utils.functs import *
@@ -31,6 +31,7 @@ from dev.utils.utils import *
 
 
 __all__ = (
+    "__previous__",
     "BoolInput",
     "CodeblockConverter",
     "Command",
@@ -38,20 +39,26 @@ __all__ = (
     "ExceptionHandler",
     "GlobalLocals",
     "Group",
+    "GroupMixin",
     "LiteralModes",
     "Paginator",
     "Root",
     "Settings",
+    "all_commands",
+    "clean_code",
     "convert_str_to_bool",
     "convert_str_to_ints",
+    "escape",
     "flag_parser",
+    "generate_ctx",
+    "plural",
     "replace_vars",
     "root",
     "send"
 )
 
 
-class Dev(RootCommand, RootConfig, RootExperimental, RootMisc):
+class Dev(RootBot, RootCommand, RootFlags, RootHTTP, RootInvoke, RootManagement, RootOver, RootPython, RootSearch, RootVariables):
     """The frontend root cog of the dev extension."""
 
 
