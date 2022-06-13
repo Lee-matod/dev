@@ -17,12 +17,7 @@ from dev.experimental.python import *
 
 
 __all__ = (
-    "RootExperimental",
     "RootHTTP",
     "RootInvoke",
     "RootPython"
 )
-
-
-class RootExperimental(RootHTTP, RootInvoke, RootPython):
-    """The front end experimental cog for the dev extension."""
