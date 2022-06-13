@@ -11,8 +11,9 @@ Command invocation or reinvocation with changeable execution attributes.
 """
 import io
 from typing import (
-    Sequence,
+    List,
     Optional,
+    Sequence,
     Union
 )
 
@@ -22,6 +23,7 @@ import discord
 from discord.ext import commands
 
 from dev.handlers import ExceptionHandler
+from dev.types import BotT
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import generate_ctx, send
@@ -52,9 +54,9 @@ class NoSendContext(commands.Context):
         mention_author: Optional[bool] = None,
         view: Optional[discord.ui.View] = None,
         suppress_embeds: bool = False,
-        ephemeral: bool = False,
-    ) -> None:
-        args = [f"{tts = }", f"{suppress_embeds = }", f"{ephemeral = }", f"{mention_author = }"]
+        ephemeral: bool = False
+    ):
+        args: List[str] = [f"{tts = }", f"{suppress_embeds = }", f"{ephemeral = }", f"{mention_author = }"]
         embed_format = "embed = title: {0.title}\n" \
                        "        description: {0.description}\n" \
                        "        color: {0.color}\n" \
@@ -108,7 +110,7 @@ class NoSendContext(commands.Context):
 
 
 class RootInvoke(Root):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: BotT):
         super().__init__(bot)
 
     @root.command(name="no_send", parent="dev", aliases=["ns", "nosend"])
