@@ -16,6 +16,7 @@ from typing import (
     Dict,
     List,
     Sequence,
+    Set,
     Optional,
     Union
 )
@@ -27,6 +28,7 @@ import json
 from discord.ext import commands
 from copy import copy
 
+from dev.types import BotT, GroupMixinT
 from dev.handlers import Paginator
 
 from dev.utils.utils import local_globals
@@ -41,7 +43,21 @@ __all__ = (
 )
 
 
-def all_commands(command_list: set) -> List[Union[commands.Command, commands.Group]]:
+def all_commands(command_list: Set[GroupMixinT]) -> List[GroupMixinT]:
+    """Retrieve all commands that are currently available.
+
+    Unlike :meth:`commands.Bot.commands`, group subcommands are also returned.
+
+    Parameters
+    ----------
+    command_list: Set[Union[:class:`commands.Command`, :class:`commands.Group`]]
+        A set of commands, groups or both.
+
+    Returns
+    -------
+    List[Union[:class:`commands.Command`, :class:`commands.Group`]]
+        The full list of all the commands that were found within ``command_list``.
+    """
     command_count = []
     for command in command_list:
         if isinstance(command, commands.Group):
@@ -53,15 +69,11 @@ def all_commands(command_list: set) -> List[Union[commands.Command, commands.Gro
     return command_count
 
 
-def flag_parser(string: str, delimiter: str) -> Union[Dict[str, str], str]:
+def flag_parser(string: str, delimiter: str) -> Union[Dict[str, Any], str]:
     """Converts a string into a dictionary.
 
-    Parameters
-    ----------
-    string: :class:`str`
-        The string that should be converted.
-    delimiter: :class:`str`
-        The characters that separate keys and values.
+    This works similarly to :class:`commands.FlagConverter`, only that it can
+    take an arbitrary number of flags and prefix aren't supported.
 
     Examples
     --------
@@ -70,10 +82,17 @@ def flag_parser(string: str, delimiter: str) -> Union[Dict[str, str], str]:
         >>> flag_parser(my_string, '=')
         {'key': 'value', 'abc': 'foo bar'}
 
+    Parameters
+    ----------
+    string: :class:`str`
+        The string that should be converted.
+    delimiter: :class:`str`
+        The characters that separate keys and values.
+
     Returns
     -------
-    dict
-        The converted dictionary.
+    Union[Dict[:class:`str`, Any], :class:`str`]
+        The parsed string dictionary or a string if :class:`json.JSONDecodeError` was raised during parsing.
     """
     keys, values = [], []
     temp_string = ""
@@ -130,31 +149,52 @@ def table_creator(rows: List[List[Any]], labels: List[str]) -> str:
     return "\n".join(table_str.split("\n")[:-2])
 
 
-async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed, discord.File]], discord.Embed, discord.File, discord.ui.View, str], **options) -> Optional[discord.Message]:
+async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed, discord.File]], discord.Embed, discord.File, discord.ui.View, str], **options: Any) -> Optional[discord.Message]:
     """Evaluates how to safely send a discord message.
 
-    This replaces the bot's token with '[token]' and converts any values of variables back to their keys.
+    `content`, `embed`, `embeds`, `file`, `files` and `view` are all positional arguments instead of keywords.
+    Everything else that is available in :meth:`commands.Context.send` remain as keyword arguments.
+
+    This replaces the bot's token with '[token]' and converts any instances of a virtual variable's value back
+    to its respective key.
+
+    See Also
+    --------
+    :meth:`discord.ext.commands.Context.send`
+        View a list of all possible arguments and keyword arguments that are available to be passed into this function.
 
     Parameters
     ----------
     ctx: :class:`commands.Context`
-        The context in which the command was invoked on. This is used to send the message and get the bot's token.
-    args:
-        Arguments that will be sent to :meth:`ctx.send`. These can be Embeds, Files, Views, or strings. Additionally,
-        Embeds and Files can be inside a list, tuple or set to send multiple of these types.
+        The invocation context in which the command was invoked.
+    args: Union[Sequence[Union[:class:`discord.Embed`, :class:`discord.File`]], :class:`discord.Embed`, :class:`discord.File`, :class:`discord.ui.View`, :class:`str`]
+        Arguments that will be passed to :meth:`commands.Context.send`.
+        Embeds and files can be inside a list, tuple or set to send multiple of these types.
+    options:
+        Keyword arguments that will be passed to :meth:`commands.Context.send` as well as the option that specifies if
+        the message is a codeblocks.
 
     Returns
     -------
-    discord.Message
-        The message that was sent. This does not include Pagination messages.
+    Optional[:class:`discord.Message`]
+        The message that was sent. This does not include pagination messages.
 
     Raises
     ------
     TypeError
-        A list, tuple or set contains more than one type, e.g: [discord.File, discord.File, discord.Embed].
+        A list, tuple or set contains more than one type, e.g: [File, File, Embed].
     """
     use_codeblock: bool = options.get("codeblock")
-    kwargs = {}
+    kwargs = {
+        "delete_after": options.get("delete_after"),
+        "nonce": options.get("nonce"),
+        "allowed_mentions": options.get("allowed_mentions"),
+        "reference": options.get("reference"),
+        "mention_author": options.get("mention_author"),
+        "stickers": options.get("stickers"),
+        "tts": options.get("tts", False),
+        "suppress_embeds": options.get("suppress_embeds", False)
+    }
     for arg in args:
         if isinstance(arg, discord.Embed):
             arg = _embed_inspector(ctx.bot, arg)
@@ -211,24 +251,24 @@ async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed,
         return await ctx.send(**kwargs)
 
 
-async def generate_ctx(ctx: commands.Context, author: discord.Member, channel: discord.TextChannel, **kwargs) -> commands.Context:
-    """Create a custom context with changeable attributes.
+async def generate_ctx(ctx: commands.Context, author: discord.abc.User, channel: discord.TextChannel, **kwargs: Any) -> commands.Context:
+    """Create a custom context with changeable attributes such as author or channel.
 
     Parameters
     ----------
     ctx: :class:`commands.Context`
-        The default context in which the command was invoked on.
-    author: :class:`discord.Member`
-        A new author that the generated context should have.
+        The invocation context in which the command was invoked.
+    author: :class:`discord.abc.User`
+        The author that the generated context should have.
     channel: :class:`discord.TextChannel`
-        A new text channel that the generated context should have.
+        The text channel that the generated context should have.
     kwargs:
         Any other additional attributes that the generated context should have.
 
     Returns
     -------
-    commands.Context
-        A newly created context.
+    :class:`commands.Context`
+        A newly created context with the given attributes.
     """
     alt_msg: discord.Message = copy(ctx.message)
     # noinspection PyProtectedMember
@@ -238,7 +278,7 @@ async def generate_ctx(ctx: commands.Context, author: discord.Member, channel: d
     return await ctx.bot.get_context(alt_msg, cls=type(ctx))
 
 
-def _embed_inspector(bot: commands.Bot, embed: discord.Embed) -> discord.Embed:
+def _embed_inspector(bot: BotT, embed: discord.Embed) -> discord.Embed:
     if embed.title:
         embed.title = _revert_virtual_var_value(embed.title).replace(bot.http.token, "[token]")
     if embed.description:
