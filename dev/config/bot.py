@@ -18,6 +18,7 @@ from discord.ext import commands
 from typing import Literal
 
 from dev.converters import convert_str_to_ints, LiteralModes
+from dev.types import BotT
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import all_commands, send
@@ -25,7 +26,7 @@ from dev.utils.utils import escape, plural
 
 
 class RootBot(Root):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: BotT):
         super().__init__(bot)
 
     @root.group(name="bot", parent="dev", invoke_without_command=True, global_use=True)
