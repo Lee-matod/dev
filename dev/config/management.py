@@ -20,6 +20,7 @@ import shutil
 from discord.ext import commands
 
 from dev.handlers import BoolInput
+from dev.types import BotT
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
@@ -27,7 +28,7 @@ from dev.utils.startup import Settings
 
 
 class RootManagement(Root):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: BotT):
         super().__init__(bot)
         self.cwd: str = os.getcwd() + "/"
 
