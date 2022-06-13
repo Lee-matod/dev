@@ -9,6 +9,8 @@ Custom converters that are used in the dev extension.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
+
+
 from typing import (
     List,
     Literal,
@@ -32,32 +34,35 @@ __all__ = (
 class LiteralModes(commands.Converter):
     """A custom converter that checks if a given argument falls under a typing.Literal list.
 
+    Examples
+    --------
+    .. codeblock:: python3
+
+        @bot.command()
+        async def foo(ctx: commands.Context, arg: LiteralModes[typing.Literal["bar", "ABC"], True]):
+            ...
+
+        @bot.command()
+        async def bar(ctx: commands.Context, arg: LiteralModes[typing.Literal["foo"]]):
+            ...
+
     Parameters
     ----------
     modes: :class:`Literal[...]`
-        A list of modes that should be accepted.
+        The list of strings that should be accepted.
 
     case_sensitive: :class:`bool`
         Whether the modes should be case-sensitive. Defaults to ``False``
 
-    Examples
-    --------
-    .. codeblock:: python3
-        async def foo(ctx: commands.Context, arg: LiteralModes[typing.Literal["bar", "ABC"], True]):
-            ...
-
-        async def bar(ctx: commands.Context, arg: LiteralModes[typing.Literal["foo"]]):
-            ...
-
     Returns
     -------
     Optional[str]
-        The argument that was passed if it was found in the list of acceptable modes, else None.
+        The argument that was passed if it was found in the list of acceptable modes, else ``None``.
 
     Raises
     ------
     TypeError
-        Invalid format was passed to the class.
+        An invalid format was passed to the class.
     """
 
     def __init__(self, modes: Literal[...], case_sensitive: bool):  # type: ignore
@@ -68,6 +73,21 @@ class LiteralModes(commands.Converter):
             self.modes = [mode for mode in map(str, modes.__args__)]
 
     async def convert(self, ctx: commands.Context, mode: str) -> Optional[str]:
+        """The method that converts the argument passed in.
+
+        Parameters
+        ----------
+        ctx: :class:`Context`
+            The invocation context in which the argument is being using on.
+        mode: :class:`str`
+            The string that should get checked if it falls under any of the specified modes.
+
+        Returns
+        -------
+        Optional[str]
+            The mode that was accepted, if it falls under any of the specified modes.
+        """
+
         if not self.case_sensitive:
             mode = mode.lower()
         if mode not in self.modes:
@@ -94,14 +114,15 @@ class LiteralModes(commands.Converter):
 
 
 class CodeblockConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument: str) -> Tuple[str, str]:
+    async def convert(self, ctx: commands.Context, argument: str) -> Tuple[Optional[str], Optional[str]]:
         """A custom converter that identifies and separates normal string arguments from codeblocks.
 
         Codeblock cleaning should be done later on as this does not automatically return the clean code.
+        E.g: The second string of the returned tuple will start with and end with 3 codeblock back ticks.
 
         Returns
         -------
-        Tuple[str, str]
+        Tuple[Optional[:class:`str`], Optional[:class:`str`]]
             A tuple with the arguments and codeblocks.
         """
 
@@ -121,28 +142,56 @@ class CodeblockConverter(commands.Converter):
         return arguments.strip(), codeblock
 
 
-async def __previous__(ctx: commands.Context, code: str, /) -> str:
+async def __previous__(ctx: commands.Context, command_name: str, arg: str, /) -> str:
+    """|coro|
+    Searches for instances of a string containing the '__previous__' placeholder text and
+    replaces it with the contents of the last same-type command that was sent stripping the
+    actual command name and prefix.
+
+    This cycle continues for a limit of 25 messages, and automatically breaks if no
+    '__previous__' instance was found in the current message.
+
+    This function removes codeblocks from the message if the whole message was a codeblock.
+
+    All parameters are positional-only.
+
+    Parameters
+    ----------
+    ctx: :class:`commands.Context`
+        The invocation context in which the argument is being using on.
+    command_name: :class:`str`
+        The fully qualified command name that is being searched for.
+    arg: :class:`str`
+        The string that should be parsed.
+
+    Returns
+    -------
+    str
+        The fully parsed argument. Note that this may return the string without replacing '__previous__'
+        if no commands where found in the last 25 messages.
+    """
+
     previous = "__previous__"
-    if "__previous__" in code:
+    if "__previous__" in arg:
         skip = 0  # if we don't do this, then ctx.message would be the first message and would probably break everything
-        async for message in ctx.message.channel.history(limit=100):
+        async for message in ctx.message.channel.history(limit=25):
             if skip:
                 if message.author == ctx.author:
-                    if message.content.startswith(f"{ctx.prefix}dev py"):
-                        previous = previous.replace("__previous__", clean_code(message.content.lstrip(f"{ctx.prefix}dev py").strip()))
-                    elif message.content.startswith(f"{ctx.prefix}dev python"):
-                        previous = previous.replace("__previous__", clean_code(message.content.lstrip(f"{ctx.prefix}dev python").strip()))
+                    if message.content.startswith(f"{ctx.prefix}{command_name}"):
+                        previous = previous.replace("__previous__", clean_code(message.content.lstrip(f"{ctx.prefix}{command_name}").strip()))
                     if "__previous__" not in previous:
                         # No need to continue iterating through messages
                         # if '__previous__' isn't requested anymore
                         break
             else:
                 skip += 1
-    return code.replace("__previous__", previous)
+    return arg.replace("__previous__", previous)
 
 
 def convert_str_to_ints(content: str) -> List[int]:
-    """Converts a string to a list of integers
+    """Converts a string to a list of integers.
+    Integer separation is determined whenever a non-numeric character appears when iterating
+    through the characters of `content`.
 
     Parameters
     ----------
@@ -167,13 +216,18 @@ def convert_str_to_ints(content: str) -> List[int]:
     return int_list
 
 
-def convert_str_to_bool(content: str) -> bool:
-    """Similar to the :class:`bool` typehint in commands, this converts a string to a boolean.
+def convert_str_to_bool(content: str, *, additional_yes: Optional[List[str]] = None, additional_no: Optional[List[str]] = None) -> bool:
+    """Similar to the :class:`bool` typehint in commands, this converts a string to a boolean
+    with the added functionality of optionally appending new true/false statements.
 
     Parameters
     ----------
     content: :class:`str`
         The string that should get converted to a boolean.
+    additional_yes: List[:class:`str`]
+        A list of additional valid true answers.
+    additional_no
+        A list of additional valid false answers.
 
     Returns
     -------
@@ -182,12 +236,14 @@ def convert_str_to_bool(content: str) -> bool:
 
     Raises
     ------
-    commands.BadBoolArgument
-        The argument that was passed could not be identified under any category.
+    BadBoolArgument
+        The argument that was passed could not be identified under any true or false statement.
     """
-    if content.lower() in ["y", "yes", "1", "true", "t", "enable", "on"]:
+    additional_yes = additional_yes or []
+    additional_no = additional_no or []
+    if content.lower() in ["y", "yes", "1", "true", "t", "enable", "on", *additional_yes]:
         return True
-    elif content.lower() in ["n", "no", "0", "false", "f", "disable", "off"]:
+    elif content.lower() in ["n", "no", "0", "false", "f", "disable", "off", additional_no]:
         return False
     else:
         raise commands.BadBoolArgument(content)
