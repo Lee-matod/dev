@@ -16,7 +16,7 @@ Baseclasses for command registration are also included here, as well as cog-rela
 >> ### all_commands
 >> A dictionary of all registered commands and their qualified names.
 >>> #### Type
->>> Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), Union[[Command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup), [Group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup)]]
+>>> Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), Union[[Command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclasscommand), [Group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup)]]
 
 > ### `class` dev.utils.baseclass.Group
 > A subclasses of [commands.Group](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Group) 
