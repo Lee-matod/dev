@@ -17,6 +17,8 @@ import discord
 from discord.ext import commands
 from typing import List, Optional, Tuple
 
+from dev.types import BotT
+
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import all_commands, send
 
@@ -73,7 +75,7 @@ class Dropdown(discord.ui.View):
 
 
 class RootSearch(Root):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: BotT):
         super().__init__(bot)
 
     @root.command(name="search", parent="dev", require_var_positional=True, global_use=True)
