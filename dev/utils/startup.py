@@ -10,13 +10,14 @@ Functions and variables that will get executed once the dev extension is loaded.
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 
-import contextlib
 import re
 import os
 import pathlib
 
 from discord.ext import commands
 from typing import Optional, Set
+
+from dev.types import BotT
 
 from dev.utils.baseclass import Group, root
 
@@ -29,6 +30,29 @@ __all__ = (
 
 
 class Settings:
+    """
+    ALLOW_GLOBAL_USES: :class:`bool`
+        If commands that have their ``global_use`` property set True are allowed to be invoked.
+        Defaults to ``False``.
+    FLAG_DELIMITER: :class:`str`
+        The flag delimiter to be used when parsing strings to dictionaries.
+        Defaults to ``=``.
+    INVOKE_ON_EDIT: :class:`bool`
+        If commands that are edited should get reinvoked.
+        Defaults to ``True``.
+    OWNERS: Optional[Set[:class:`int`]]
+        A set of user IDs that can additionally use this extension.
+    PATH_TO_FILE: Optional[:class:`str`]
+        A path directory that will be removed if found inside a message.
+        Defaults to your current working directory.
+    ROOT_FOLDER: Optional[:class:`str`]
+        The path that will replace the ``|root|`` text placeholder.
+    VIRTUAL_VARS: :class:`str`
+        The format in which virtual vars should be specified. The actual place where the
+        variable's name will be should be defined as ``$var$``.
+        Defaults to ``|$var$|``.
+    """
+
     ALLOW_GLOBAL_USES: bool = False
     FLAG_DELIMITER: str = "="
     INVOKE_ON_EDIT: bool = True
@@ -38,25 +62,13 @@ class Settings:
     VIRTUAL_VARS: str = "|$var$|"
 
 
-async def set_settings(bot: commands.Bot) -> None:
-    """Set owner IDs that will be able to use the extension upon loading.
-
-    Calls :meth:`check_types` if no issues were found.
-
-    Parameters
-    ----------
-    bot: :clss:`commands.Bot`
-        Check if there are any already specified owner IDs within the bot build.
-
-    Raises
-    ------
-    TypeError
-        No user IDs were specified.
-    """
+async def set_settings(bot: BotT) -> None:
     if not Settings.OWNERS:
-        with contextlib.suppress(AttributeError):
+        try:
             data = await bot.application_info()
             Settings.OWNERS = {data.owner.id}
+        except AttributeError:
+            Settings.OWNERS = set()
     check_types()
 
 
@@ -94,9 +106,14 @@ def check_types() -> None:
         elif root_folder.is_file():
             raise ValueError(f"Path {Settings.ROOT_FOLDER!r} is a file, not a directory")
 
+    if Settings.PATH_TO_FILE:
+        path = pathlib.Path(Settings.PATH_TO_FILE)
+        if not path.exists():
+            raise ValueError(f"Path {Settings.PATH_TO_FILE!r} does not exist")
 
-async def setup_(bot: commands.Bot) -> None:
-    root_command: Optional[Group] = bot.get_command("dev")
+
+async def setup_(bot: BotT) -> None:
+    root_command: Group = bot.get_command("dev")  # type: ignore
     # noinspection PyProtectedMember
     for cmd, parent in root._add_parent.items():
         root_command.add_command(cmd)
