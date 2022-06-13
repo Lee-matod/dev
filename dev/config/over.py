@@ -13,7 +13,6 @@ Override or overwrite certain aspects and functions of the bot.
 
 from typing import (
     Any,
-    Callable,
     Dict,
     List,
     Literal,
@@ -30,7 +29,9 @@ import textwrap
 
 from discord.ext import commands
 from datetime import datetime
+from typing_extensions import Self
 
+from dev.types import BotT, Callback
 from dev.converters import CodeblockConverter, convert_str_to_bool, convert_str_to_ints
 from dev.handlers import ExceptionHandler, replace_vars
 
@@ -42,17 +43,18 @@ from dev.utils.utils import clean_code
 
 class OverrideSettingConverter(commands.Converter):
     default_settings: Dict[str, Any] = {}
-    script: Optional[str] = ""
-    command_string: Optional[str] = ""
+    script: str = ""
+    command_string: str = ""
 
-    async def convert(self, ctx: commands.Context, argument: str):
+    async def convert(self, ctx: commands.Context, argument: str) -> Optional[Self]:
         changed = []
         new_settings = flag_parser(argument, "=")
         for key, value in new_settings.items():
             if key.startswith("__") and key.endswith("__"):
                 continue
             if not hasattr(Settings, key):
-                return await ctx.message.add_reaction("❗")
+                await ctx.message.add_reaction("❗")
+                return
             setting = getattr(Settings, key.upper())
             if isinstance(setting, bool):
                 self.default_settings[key] = convert_str_to_bool(value)
@@ -74,10 +76,10 @@ class OverrideSettingConverter(commands.Converter):
 
 
 class RootOver(Root):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: BotT):
         super().__init__(bot)
-        self.OVERRIDES: Dict[int, Tuple[str, str, Optional[Callable], Union[str, List[Any]]]] = {}
-        self.OVERWRITES: Dict[int, Tuple[str, str, Optional[Callable], Union[str, List[Any]]]] = {}
+        self.OVERRIDES: Dict[int, Tuple[str, str, Optional[Callback], Union[str, List[Any]]]] = {}
+        self.OVERWRITES: Dict[int, Tuple[str, str, Optional[Callback], Union[str, List[Any]]]] = {}
 
     @root.group(name="override", parent="dev", invoke_without_command=True)
     async def root_override(self, ctx: commands.Context):
