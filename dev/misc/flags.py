@@ -15,9 +15,7 @@ import discord
 import inspect
 
 from discord.ext import commands
-from typing import Union, TYPE_CHECKING
-
-from dev.types import BotT
+from typing import Optional, Union, TYPE_CHECKING
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
@@ -28,11 +26,9 @@ if TYPE_CHECKING:
 
 
 class RootFlags(Root):
-    def __init__(self, bot: BotT):
-        super().__init__(bot)
 
     @root.command(name="--help", aliases=["--man"], parent="dev", hidden=True, global_use=True)
-    async def root_help(self, ctx: commands.Context, *, command_string: str = ""):
+    async def root_help(self, ctx: commands.Context, *, command_string: Optional[str] = ""):
         """Help command made exclusively made for the `dev` extensions.
         Flags are hidden, but they can still be accessed and attributes can still be viewed using their respective commands.
         """
@@ -51,7 +47,7 @@ class RootFlags(Root):
         embed.set_footer(text=f"Supports Variables: {command.supports_virtual_vars}. Supports Root Placeholder: {command.supports_root_placeholder}")
         return await send(ctx, embed)
 
-    @root.command(name="--inspect", aliases=["-i"], parent="dev", hidden=True, global_use=True)
+    @root.command(name="--inspect", aliases=["-i"], parent="dev", hidden=True, global_use=True, require_var_positional=True)
     async def root_types(self, ctx: commands.Context, *, command_string: str):
         """Inspect a command.
         This is not exclusive to the `dev` extension.
@@ -78,7 +74,7 @@ class RootFlags(Root):
         await send(ctx, discord.Embed(title=command_string, description="\n".join(command_summary) + f"\n**Signature**\n" + ("\n".join(params) or '`None`'), color=discord.Color.darker_gray()))
 
     @root.command(name="--source", parent="dev", aliases=["-src", "--sourceFile", "-srcF"], hidden=True)
-    async def root_source(self, ctx: commands.Context, *, command_string: str = ""):
+    async def root_source(self, ctx: commands.Context, *, command_string: Optional[str] = ""):
         """View the source code of a command.
         This is not exclusive to the `dev` extension.
         The bot's token is hidden as `TOKEN`.
