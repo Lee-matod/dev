@@ -9,7 +9,7 @@ Baseclasses for command registration are also included here, as well as cog-rela
 ## command registration
 
 > ### `class` dev.utils.baseclass.GroupMixin
-> A subclasses of [GroupMixin](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.GroupMixin) 
+> A subclasses of [commands.GroupMixin](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.GroupMixin) 
 > that overrides command registering functionality. You would usually want to create an instance of this class and 
 > start registering your commands from there.
 > 
@@ -38,6 +38,8 @@ Baseclasses for command registration are also included here, as well as cog-rela
 >>> [bool](https://docs.python.org/3/library/functions.html#bool)
 
 > ### `class` dev.utils.baseclass.Command
+> A subclasses of [commands.Command](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Command)
+> which adds a few extra properties for commands.
 >> ### `property` global_use
 >> Check whether this command is allowed to be invoked by any user.
 >>> #### Type
@@ -76,7 +78,7 @@ Baseclasses for command registration are also included here, as well as cog-rela
 >> ### root_command
 >> The root command (`dev`) of the extension.
 >>> #### Type
->>> Optional[Group]
+>>> Optional[[Group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup)]
 >
 >> ### CALLBACKS
 >> Saved callbacks and source codes from command overrides or overwrites.
