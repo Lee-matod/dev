@@ -12,14 +12,60 @@ These are some utility functions and classes that didn't fall under any other ca
 >> - __locals(Optional[Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), Any]]) – Local scope variables. 
 >> Acts the same way as [locals](https://docs.python.org/3/library/functions.html#locals). Defaults to `None`
 >
+>> ### Supported Operations
+>>> #### bool(x)
+>>> Whether both global and local dictionaries are empty.
+>>
+>>> #### len(x)
+>>> Returns the added length of both global and local dictionaries.
+>>
+>>> #### del x[y]
+>>> Deletes a `y` from the global scope, local scope, or both.  
+>>> Raises [KeyError](https://docs.python.org/3/library/exceptions.html#KeyError) if no global or local variable was 
+>>> found
+>>
+>>> #### x[y]
+>>> Gets the global and/or local value of `y`.  
+>>> Raises [KeyError](https://docs.python.org/3/library/exceptions.html#KeyError) if no global or local variable was 
+>>> found
+> 
+>> ### get(item, default=None)
+>> Get an item from either the global scope or the locals scope.  
+>> Items found in the global scope will be returned before checking locals.  
+>> It's best to use this when you are just trying to get a value without worrying about the scope.
+>>> #### Parameters
+>>> - item([str](https://docs.python.org/3/library/stdtypes.html#str)) – The item that should be searched for in the 
+>>> scopes.
+>>> - default(Any) – An argument that should be returned if no value was found. Defaults to ``None``
+>>
+>>> #### Returns
+>>> Any – The value of the item that was found, if it was found.
+>
+>> ### items()
+>> Returns a list of all global and local scopes with their respective key-value pairs.
+>>> #### Returns
+>>> Tuple[List[[str](https://docs.python.org/3/library/stdtypes.html#str)], List[Any]] – A joined list of global and 
+> local variables from the current scope.
+> 
+>> ### keys()
+>> Returns a list of keys of all global and local scopes.
+>>> #### Returns
+>>> Tuple[List[[str](https://docs.python.org/3/library/stdtypes.html#str)], List[[str](https://docs.python.org/3/library/stdtypes.html#str)]] – 
+>>> A list of a global and local's keys from the current scope.
+> 
 >> ### update(__new_globals=None, __new_locals=None, /)
 >> Update the current instance of variables with new ones.
 >>
->>> ##### Parameters
+>>> #### Parameters
 >>> - __new_globals(Optional[Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), Any]]) – New instances of 
 >>> global variables.
 >>> - __new_locals(Optional[Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), Any]]) – New instances of 
 >>> local variables.
+>
+>> ### values()
+>> Returns a list of values of all global and local scopes.
+>>> #### Returns
+>>> Tuple[List[Any], List[Any]] – A list of a global and local's values from the current scope.
 
 > ### dev.utils.functs.all_commands(command_list)
 > Retrieve all commands that are currently available. 
