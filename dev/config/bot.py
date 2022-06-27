@@ -15,10 +15,10 @@ import discord
 import time
 
 from discord.ext import commands
-from typing import Literal
+from typing import Literal, Optional
 
-from dev.converters import convert_str_to_ints, LiteralModes
-from dev.types import BotT
+from dev.converters import LiteralModes, convert_str_to_ints
+from dev.handlers import optional_raise
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import all_commands, send
@@ -26,8 +26,6 @@ from dev.utils.utils import escape, plural
 
 
 class RootBot(Root):
-    def __init__(self, bot: BotT):
-        super().__init__(bot)
 
     @root.group(name="bot", parent="dev", invoke_without_command=True, global_use=True)
     async def root_bot(self, ctx: commands.Context):
@@ -105,7 +103,7 @@ class RootBot(Root):
         return await send(ctx, embed)
 
     @root_bot.command(name="edit")
-    async def root_bot_edit(self, ctx: commands.Context, attr: LiteralModes[Literal["prefix", "owner", "owners"]], *, value: str = None):
+    async def root_bot_edit(self, ctx: commands.Context, attr: LiteralModes[Literal["prefix", "owner", "owners"]], *, value: Optional[str] = None):
         """Edit any attributed of the bot.
         **Text Placeholders**
         `__existent__` = Keep already existent values of the specified attribute and add new ones (if specified).
@@ -148,7 +146,7 @@ class RootBot(Root):
             self.bot.owner_ids = set(ids)
             await send(ctx, f"Successfully changed `{attr}` to `{'`, `'.join(str(owner) for owner in self.bot.owner_ids) or 'None'}`")
 
-    @root_bot.command(name="enable")
+    @root_bot.command(name="enable", require_var_positional=True)
     async def root_bot_enable(self, ctx: commands.Context, *, command_name: str):
         """Enable a command.
         It is not recommended to disable this command using `dev bot disable`.
@@ -161,7 +159,7 @@ class RootBot(Root):
         command.enabled = True
         await ctx.message.add_reaction("☑")
 
-    @root_bot.command(name="disable")
+    @root_bot.command(name="disable", require_var_positional=True)
     async def root_bot_disable(self, ctx: commands.Context, *, command_name: str):
         """Disable a command.
         It is not recommended to disable the `dev bot enable` command.
@@ -181,3 +179,9 @@ class RootBot(Root):
         """Closes the bot."""
         await ctx.message.add_reaction("👋")
         await self.bot.close()
+
+    @root_bot.error
+    async def root_bot_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.TooManyArguments):
+            return await send(ctx, f"`dev bot` has no subcommand called `{ctx.subcommand_passed}`.")
+        optional_raise(ctx, error)
