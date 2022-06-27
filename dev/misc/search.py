@@ -17,8 +17,6 @@ import discord
 from discord.ext import commands
 from typing import List, Optional, Tuple
 
-from dev.types import BotT
-
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import all_commands, send
 
@@ -55,10 +53,11 @@ class Dropdown(discord.ui.View):
         self.embed = embed
         self.message: Optional[discord.Message] = None
 
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        return self.ctx.author == interaction.user
+
     @discord.ui.select(options=options)
     async def callback(self, interaction: discord.Interaction, select: discord.ui.Select):
-        if interaction.user != self.ctx.author:
-            return
         for option in select.options:
             if option.value != select.values[0]:
                 option.default = False
@@ -71,13 +70,10 @@ class Dropdown(discord.ui.View):
     async def on_timeout(self) -> None:
         for child in self.children:
             child.disabled = True
-        await self.message.edit(view=None)
+        await self.message.edit(view=self)
 
 
 class RootSearch(Root):
-    def __init__(self, bot: BotT):
-        super().__init__(bot)
-
     @root.command(name="search", parent="dev", require_var_positional=True, global_use=True)
     async def root_search(self, ctx: commands.Context, *, query: str):
         channels = match(query, [(channel.name, channel.mention) for channel in ctx.guild.channels])
