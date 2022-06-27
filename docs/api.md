@@ -17,7 +17,10 @@ are the classes that can be type hinted.
 
 > ### `class` dev.converters.CodeblockConverter
 > This subclasses `discord.ext.commands.Converter`.  
-> A custom converter that identifies and separates normal string arguments from codeblocks.
+> A custom converter that identifies and separates normal string arguments from codeblocks.  
+> Codeblock cleaning should be done later on as this does not automatically return the clean code.  
+> E.g: The second string of the returned tuple will start with and end with 3 codeblock back ticks.  
+> This may return just the argument without any formatting if an IndexError is raised during runtime.
 >> ### Example Usage
 >> ```python
 >> @bot.command()
@@ -34,9 +37,9 @@ are the classes that can be type hinted.
 >>> - argument([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should get converted.
 >>
 >>> #### Returns
->>> Tuple[[str](https://docs.python.org/3/library/stdtypes.html#str), 
-> [str](https://docs.python.org/3/library/stdtypes.html#str)] – Any arguments that were found before the codeblock and 
-> the actual codeblock, if found.
+>>> Union[Tuple[Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)], 
+> Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)]], [str](https://docs.python.org/3/library/stdtypes.html#str)] – 
+> A tuple with the arguments and codeblocks or just the argument if IndexError was raised during parsing.
  
 > ### `class` dev.converters.LiteralModes(modes, case_sensitive)
 > This subclasses `discord.ext.commands.Converter`.  
@@ -71,10 +74,10 @@ are the classes that can be type hinted.
 >>> any of the specified modes.
 
 > ### *await* dev.converters.\_\_previous\_\_(ctx, command_name, arg, /)
-> Searches for instances of a string containing the '\__previous\__' placeholder text and replaces it with the contents 
+> Searches for instances of a string containing the '\_\_previous\_\_' placeholder text and replaces it with the contents 
 > of the last same-type command that was sent stripping the actual command name and prefix.
 >
-> This cycle continues for a limit of 25 messages, and automatically breaks if no '\__previous\__' instance was found in 
+> This cycle continues for a limit of 25 messages, and automatically breaks if no '\_\_previous\_\_' instance was found in 
 > the current message. 
 > 
 > This function removes codeblocks from the message if the whole message was a codeblock.
@@ -86,17 +89,19 @@ are the classes that can be type hinted.
 >
 >> #### Returns
 >> [str](https://docs.python.org/3/library/stdtypes.html#str) – The fully parsed argument. Note that this may return the 
->> string without replacing '\__previous\__' if no commands where found in the last 25 messages.
+>> string without replacing '\_\_previous\_\_' if no commands where found in the last 25 messages.
 
-> ### dev.converters.convert_str_to_bool(content, *, additional_yes=None, additional_no=None)
+> ### dev.converters.convert_str_to_bool(content, default=None, *, additional_true=None, additional_false=None)
 > Similar to the [bool](https://docs.python.org/3/library/functions.html#bool) typehint in commands, this converts a 
 > string to a boolean with the added functionality of optionally appending new true/false statements.
 >> #### Parameters
 >> - content([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should get converted to a
 >> boolean.
->> - additional_yes(List[[str](https://docs.python.org/3/library/stdtypes.html#str)]) – A list of additional valid true 
+>> - default(Optional[[bool](https://docs.python.org/3/library/functions.html#bool)]) – An optional boolean that gets 
+>> returned instead of raising BadBoolArgument exception.
+>> - additional_true(List[[str](https://docs.python.org/3/library/stdtypes.html#str)]) – A list of additional valid true 
 >> answers.
->> - additional_no(List[[str](https://docs.python.org/3/library/stdtypes.html#str)]) – A list of additional valid false 
+>> - additional_false(List[[str](https://docs.python.org/3/library/stdtypes.html#str)]) – A list of additional valid false 
 >> answers.
 >
 >> #### Returns
@@ -209,7 +214,7 @@ or allowing pagination.
 >> embed should be passed here.
 
 > ### dev.handlers.replace_vars(string)
-> Replaces any instance of a virtual variables with their respective values and return it the parsed string. 
+> Replaces any instance of a virtual variables with their respective values and return it the parsed string.
 > 
 > Instances of the variables will not get converted if a value is not found.
 >> #### Parameters
@@ -248,5 +253,3 @@ or allowing pagination.
 >> #### Raises
 >> [TypeError](https://docs.python.org/3/library/exceptions.html#TypeError) – A list, tuple or set contains more than 
 >> one type, e.g: [File, File, Embed].
-
-
