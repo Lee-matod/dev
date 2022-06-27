@@ -23,7 +23,6 @@ import discord
 from discord.ext import commands
 
 from dev.handlers import ExceptionHandler
-from dev.types import BotT
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import generate_ctx, send
@@ -110,10 +109,8 @@ class NoSendContext(commands.Context):
 
 
 class RootInvoke(Root):
-    def __init__(self, bot: BotT):
-        super().__init__(bot)
 
-    @root.command(name="no_send", parent="dev", aliases=["ns", "nosend"])
+    @root.command(name="no_send", parent="dev", aliases=["ns", "nosend"], require_var_positional=True)
     async def root_no_send(self, ctx: commands.Context, *, command_string: str):
         """Instead of sending a message via `ctx.send`, the message will be redirected to stdout.
         Note that this won't work for all types of `discord.abc.Messageable`, only for `ctx.send`.
@@ -127,7 +124,7 @@ class RootInvoke(Root):
             return await send(ctx, f"Command `{context.invoked_with}` not found.")
         await context.command.reinvoke(context)
 
-    @root.command(name="no_print", parent="dev", aliases=["np", "noprint"])
+    @root.command(name="no_print", parent="dev", aliases=["np", "noprint"], require_var_positional=True)
     async def root_no_print(self, ctx: commands.Context, *, command_string: str):
         """If there are any print statements in the command, they will be ignored and sent via a Discord message.
         Note that this won't work if the stdout is already being redirected to another file.
@@ -143,7 +140,7 @@ class RootInvoke(Root):
         if resp:
             await send(ctx, discord.Embed(title="Output", description=resp, colour=discord.Color.blurple()))
 
-    @root.command(name="repeat", parent="dev", aliases=["repeat!"])
+    @root.command(name="repeat", parent="dev", aliases=["repeat!"], require_var_positional=True)
     async def root_repeat(self, ctx: commands.Context, amount: int, *, command_string: str):
         """Call a command `amount` times.
         Checks can be optionally bypassed by using `repeat!` instead of `repeat`.
@@ -158,7 +155,7 @@ class RootInvoke(Root):
             else:
                 await context.command.invoke(context)
 
-    @root.command(name="debug", parent="dev", aliases=["dbg"])
+    @root.command(name="debug", parent="dev", aliases=["dbg"], require_var_positional=True)
     async def root_debug(self, ctx: commands.Context, *, command_string: str):
         """Catch errors when executing a command.
         This command will probably not catch errors with commands that already have an error handler.
@@ -177,7 +174,7 @@ class RootInvoke(Root):
         else:
             await ctx.message.add_reaction("☑")
 
-    @root.command(name="execute", parent="dev", aliases=["exec", "execute!", "exec!"])
+    @root.command(name="execute", parent="dev", aliases=["exec", "execute!", "exec!"], require_var_positional=True)
     async def root_execute(self, ctx: commands.Context, attrs: commands.Greedy[Union[discord.Member, discord.TextChannel, discord.Thread, discord.Role]], *, command_attr: str):
         """Execute a command with custom attributes.
         Attributes support types are `discord.Member`, `discord.Role`, `discord.TextChannel` and `discord.Thread`. These will override the current context, thus executing the command as another user, text channel and/or with another role.
