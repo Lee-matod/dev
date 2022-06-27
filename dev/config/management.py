@@ -18,6 +18,7 @@ import pathlib
 import shutil
 
 from discord.ext import commands
+from typing import Optional
 
 from dev.handlers import BoolInput
 from dev.types import BotT
@@ -33,7 +34,7 @@ class RootManagement(Root):
         self.cwd: str = os.getcwd() + "/"
 
     @root.command(name="cwd", parent="dev", aliases=["change_cwd"], root_placeholder=True)
-    async def root_files_cwd(self, ctx: commands.Context, *, new_cwd: str = None):
+    async def root_files_cwd(self, ctx: commands.Context, *, new_cwd: Optional[str] = None):
         """Change the current working directory that the bot should focus on.
         Don't specify `new_cwd` to get the current working directory.
         """
@@ -50,7 +51,7 @@ class RootManagement(Root):
         """Everything related to file management."""
 
     @root_files.command(name="upload", aliases=["new", "create"], root_placeholder=True)
-    async def root_files_upload(self, ctx: commands.Context, attachment: discord.Attachment, *, directory: str = None):
+    async def root_files_upload(self, ctx: commands.Context, attachment: discord.Attachment, *, directory: Optional[str] = None):
         """Create a new file.
         If `directory` is None, then it will be set to the current working directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
@@ -144,7 +145,7 @@ class RootManagement(Root):
         await ctx.message.add_reaction("☑")
 
     @root_folders.command(name="tree", aliases=["tree!"], root_placeholder=True)
-    async def root_folders_tree(self, ctx: commands.Context, *, directory: str = None):
+    async def root_folders_tree(self, ctx: commands.Context, *, directory: Optional[str] = None):
         """Get the files and folders inside a given directory.
         If `directory` is None, then it will show the tree of the current working directory.
         Execute `tree!` instead of `tree` to show the full path of the files and folders.
@@ -161,7 +162,7 @@ class RootManagement(Root):
         await send(ctx, "\n".join(tree))
 
     @root_folders.command(name="delete", aliases=["del", "remove", "rmdir", "rm"], require_var_positional=True, root_placeholder=True)
-    async def root_folders_delete(self, ctx: commands.Context, *, directory):
+    async def root_folders_delete(self, ctx: commands.Context, *, directory: str):
         """Delete an already existing folder.
         If the folder is not empty, a prompt will pop up asking if you're sure you want to delete the directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
