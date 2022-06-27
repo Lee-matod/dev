@@ -31,7 +31,7 @@ from copy import copy
 from dev.types import BotT, GroupMixinT
 from dev.handlers import Paginator
 
-from dev.utils.utils import local_globals
+from dev.utils.baseclass import Root
 
 
 __all__ = (
@@ -322,6 +322,8 @@ def _check_length(content: Union[discord.Embed, str], max_length: int = 2000) ->
 
 def _revert_virtual_var_value(string: str) -> str:
     # For security reasons, when using await send(), this gets automatically called
-    for var_name, var_value in local_globals.items():
-        string = string.replace(var_value, var_name)
+    for name, value in Root.scope.globals.items():
+        string = string.replace(value, name)
+    for name, value in Root.scope.locals.items():
+        string = string.replace(value, name)
     return string
