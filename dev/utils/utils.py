@@ -11,19 +11,16 @@ Basic utilities that will be used with the dev extension.
 """
 
 
-from typing import Any, Dict
+from typing import Dict
 from discord.utils import escape_markdown, escape_mentions
 
 
 __all__ = (
     "clean_code",
     "escape",
-    "local_globals",
     "plural",
     "responses"
 )
-
-local_globals: Dict[Any, Any] = {}  # lmao
 
 
 responses: Dict[str, str] = {
