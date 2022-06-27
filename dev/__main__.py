@@ -18,6 +18,9 @@ import sys
 import time
 
 from discord.ext import commands
+from typing import Optional
+
+from dev.handlers import optional_raise
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
@@ -56,7 +59,7 @@ class RootCommand(Root):
         exit()
 
     @root_.command(name="visibility")
-    async def root_visibility(self, ctx: commands.Context, toggle: bool = None):
+    async def root_visibility(self, ctx: commands.Context, toggle: Optional[bool] = None):
         """Toggle whether the dev command is hidden."""
         if toggle:
             if self.root_command.hidden:
@@ -76,7 +79,7 @@ class RootCommand(Root):
     async def root_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, commands.TooManyArguments):
             return await send(ctx, f"`dev` has no subcommand called `{ctx.subcommand_passed}`.")
-        raise error
+        optional_raise(ctx, error)
 
     @commands.Cog.listener()
     async def on_command(self, ctx: commands.Context):
