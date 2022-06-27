@@ -14,14 +14,12 @@ A virtual variable manager directly implemented to the dev extension.
 import discord
 
 from discord.ext import commands
-from typing import Literal
+from typing import Literal, Optional
 
 from dev.converters import LiteralModes
-from dev.types import BotT
 
 from dev.utils.functs import send
 from dev.utils.baseclass import Root, root
-from dev.utils.utils import local_globals
 
 
 class ValueSubmitter(discord.ui.Modal):
@@ -34,8 +32,8 @@ class ValueSubmitter(discord.ui.Modal):
         self.value.default = default
 
     async def on_submit(self, interaction: discord.Interaction):
-        local_globals[self.name] = self.value.value
-        await interaction.response.send_message(f"Successfully {'created a new variable called' if self.new else 'edited'} `{self.name}`")
+        Root.scope.update({self.name: self.value.value})
+        await interaction.response.edit_message(content=f"Successfully {'created a new variable called' if self.new else 'edited'} `{self.name}`", view=None)
 
 
 class ModalSubmitter(discord.ui.View):
@@ -46,22 +44,19 @@ class ModalSubmitter(discord.ui.View):
         self.author = author
         self.default = default
 
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        return self.author == interaction.user
+
     @discord.ui.button(label="Submit Variable Value", style=discord.ButtonStyle.gray)
-    async def submit_value(self, interaction: discord.Interaction, button: discord.Button):
-        if interaction.user.id != self.author.id:
-            return
+    async def submit_value(self, interaction: discord.Interaction, _):  # 'button' is not being used
         await interaction.response.send_modal(ValueSubmitter(self.name, self.new, self.default))
-        button.disabled = True
-        await interaction.message.edit(view=self)
 
 
 class RootVariables(Root):
-    def __init__(self, bot: BotT):
-        super().__init__(bot)
 
     @root.command(name="variable", parent="dev", aliases=["variables", "vars", "var"])
-    async def root_variable(self, ctx: commands.Context, mode: LiteralModes[Literal["~", "all", "content", "create", "del", "delete", "edit", "exists", "new", "replace", "value"]], name: str = None):
-        """A virtual variable manager.
+    async def root_variable(self, ctx: commands.Context, mode: LiteralModes[Literal["~", "all", "content", "create", "del", "delete", "edit", "exists", "new", "replace", "value"]], name: Optional[str] = None):
+        """A virtual scope manager.
         This allows you to create temporary variables that can later be used as placeholder texts if you want to hide certain things from the public.
         Note that all variables created using this manager will later be destroyed once the bot restarts.
         **Modes:**
@@ -75,31 +70,37 @@ class RootVariables(Root):
         if mode is None:
             return
         if mode in ["new", "create"]:
-            if name in local_globals:
+            glob, loc = Root.scope.keys()
+            if name in [*glob, *loc]:
                 return await send(ctx, f"A variable called `{name}` already exists.")
             await send(ctx, ModalSubmitter(name, True, ctx.author))
 
         elif mode in ["delete", "del"]:
-            if local_globals.get(name, False):
-                del local_globals[name]
+            if Root.scope.get(name, False):
+                del Root.scope[name]
                 return await send(ctx, f"Successfully deleted the variable `{name}`.")
             await send(ctx, f"No variable called `{name}` found.")
 
         elif mode in ["edit", "replace"]:
-            if name not in local_globals:
+            glob, loc = Root.scope.keys()
+            if name not in [*glob, *loc]:
                 return await send(ctx, f"No variable called `{name}` found.")
-            await send(ctx, ModalSubmitter(name, False, ctx.author, local_globals[name]))
+            glob, loc = Root.scope[name]
+            await send(ctx, ModalSubmitter(name, False, ctx.author, glob or loc))
 
         elif mode in ["all", "~"]:
-            variables = '\n'.join(f"+ {var}" for var in local_globals) if local_globals else "- No variables found."
+            variables = '\n'.join(f"+ {var}" for var in Root.scope.keys()) if Root.scope else "- No variables found."
             await send(ctx, f"```diff\n{variables}\n```")
 
         elif mode == "exists":
-            if name not in local_globals:
+            glob, loc = Root.scope.keys()
+            if name not in [*glob, *loc]:
                 return await ctx.message.add_reaction("❌")
             await ctx.message.add_reaction("☑")
 
         elif mode in ["content", "value"]:
-            if name not in local_globals:
+            glob, loc = Root.scope.keys()
+            if name not in [*glob, *loc]:
                 return await send(ctx, f"No variable called `{name}` found.")
-            await ctx.author.send(f"**{name}:** {local_globals[name]}")
+            glob, loc = Root.scope[name]
+            await ctx.author.send(f"**{name}:** {glob or loc}")
