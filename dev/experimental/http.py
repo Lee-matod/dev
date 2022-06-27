@@ -17,11 +17,10 @@ import io
 import json
 
 from discord.ext import commands
-from typing import Literal
+from typing import Literal, Optional
 
 from dev.converters import LiteralModes
 from dev.handlers import replace_vars
-from dev.types import BotT
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import flag_parser, send
@@ -30,11 +29,9 @@ from dev.utils.utils import responses
 
 
 class RootHTTP(Root):
-    def __init__(self, bot: BotT):
-        super().__init__(bot)
 
     @root.group(name="http", parent="dev", virtual_vars=True)
-    async def root_http_get(self, ctx: commands.Context, url: str, mode: LiteralModes[Literal["json", "read", "status", "text"]], allow_redirects: bool = False, *, options: str = None):
+    async def root_http_get(self, ctx: commands.Context, url: str, mode: LiteralModes[Literal["json", "read", "status", "text"]], allow_redirects: bool = False, *, options: Optional[str] = None):
         """View the contents of a URL. Response modes can differ.
         **Modes:**
         `json` = Convert the response to JSON. This isn't always available.
