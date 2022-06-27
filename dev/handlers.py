@@ -15,10 +15,8 @@ from typing import (
     List,
     Tuple,
     Type,
-    TypeVar,
     Optional,
-    Union,
-    TYPE_CHECKING
+    Union
 )
 
 import asyncio
@@ -31,20 +29,17 @@ from discord.ext import commands
 from traceback import format_exception
 from types import TracebackType
 
+from dev.utils.baseclass import Root
 from dev.utils.startup import Settings
-from dev.utils.utils import escape, local_globals
+from dev.utils.utils import escape
 
-if TYPE_CHECKING:
-    from typing_extensions import ParamSpec
-    P = ParamSpec("P")
-else:
-    P = TypeVar("P")
 
 __all__ = (
     "BoolInput",
     "ExceptionHandler",
     "Paginator",
-    "replace_vars"
+    "replace_vars",
+    "optional_raise"
 )
 
 
@@ -71,9 +66,9 @@ class BoolInput(discord.ui.View):
         The keyword arguments that should be passed into the function once it gets executed, if any.
     """
 
-    def __init__(self, author: Union[discord.abc.User, int], func: Callable[P, Any], *args: Any, **kwargs: Any):
+    def __init__(self, author: Union[discord.abc.User, int], func: Callable[..., Any], *args: Any, **kwargs: Any):
         super().__init__()
-        self.func = func
+        self.func: Callable[..., Any] = func
         self.author: int = author.id if isinstance(author, discord.Member) else author
         self.args = args
         self.kwargs = kwargs
@@ -119,8 +114,8 @@ class ExceptionHandler:
     debug: bool = False
 
     def __init__(self, message: discord.Message, *, send_traceback: bool = False):
-        self.message = message
-        self.send_traceback = send_traceback
+        self.message: discord.Message = message
+        self.send_traceback: bool = send_traceback
         if send_traceback:
             ExceptionHandler.debug = True
 
@@ -186,12 +181,12 @@ class Paginator(discord.ui.View):
         If the message is an embed, then the embed should be passed here.
     """
 
-    def __init__(self, paginator: commands.Paginator, owner: int, *, embed: discord.Embed = None):
+    def __init__(self, paginator: commands.Paginator, owner: int, *, embed: Optional[discord.Embed] = None):
         super().__init__()
-        self.paginator = paginator
-        self.display_page = 0
-        self.owner = owner
-        self.embed = embed  # type: ignore
+        self.paginator: commands.Paginator = paginator
+        self.display_page: int = 0
+        self.owner: int = owner
+        self.embed: discord.Embed = embed  # type: ignore
 
     @discord.ui.button(emoji="⏪", style=discord.ButtonStyle.primary, disabled=True)
     async def first_page(self, interaction: discord.Interaction, _) -> Optional[discord.Message]:  # 'button' is not being used
@@ -285,6 +280,18 @@ class Paginator(discord.ui.View):
         self.current_stop.label = self.display_page + 1
 
 
+def optional_raise(ctx: commands.Context, error: commands.CommandError, /):
+    # we have to somehow check if the on_command_error event was overridden,
+    # the most logical way I could think of was checking if the functions were the same
+    # which is the aim of this bit. Do note however, that this might fail under certain circumstances
+    events = True if ctx.bot.on_command_error.__code__.co_code != commands.Bot.on_command_error.__code__.co_code else False  # type: ignore
+    listeners = ctx.bot.extra_events.get("on_command_error")
+    if events or listeners:
+        ctx.bot.dispatch("on_command_error", ctx, error)
+    else:
+        raise error
+
+
 def replace_vars(string: str) -> str:
     """Replaces any instance of a virtual variables with their respective values and return it the parsed string.
 
@@ -301,11 +308,13 @@ def replace_vars(string: str) -> str:
         The converted string with the values of the virtual variables.
     """
     formatter = escape(Settings.VIRTUAL_VARS.replace("$var$", "(.+?)"))
-    matches = re.finditer(formatter, string)
+    matches = re.finditer(re.compile(formatter), string)
     if matches:
         for match in matches:
-            if match.group(1) in local_globals:
-                string = string.replace(match.string, local_globals[match.group(1)])
-            else:
-                continue
+            glob, loc = Root.scope.keys()
+            if match.group(1) in [*glob, *loc]:
+                var = Settings.VIRTUAL_VARS.replace("$var$", match.group(1))
+                glob, loc = Root.scope[match.group(1)]
+                string = string.replace(var, glob or loc, 1)
+
     return string
