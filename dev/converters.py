@@ -15,7 +15,8 @@ from typing import (
     List,
     Literal,
     Optional,
-    Tuple
+    Tuple,
+    Union
 )
 
 from discord.ext import commands
@@ -66,11 +67,11 @@ class LiteralModes(commands.Converter):
     """
 
     def __init__(self, modes: Literal[...], case_sensitive: bool):  # type: ignore
-        self.case_sensitive = case_sensitive
+        self.case_sensitive: bool = case_sensitive
         if not case_sensitive:
-            self.modes = [mode.lower() for mode in map(str, modes.__args__)]
+            self.modes: Literal[...] = [mode.lower() for mode in map(str, modes.__args__)]  # type: ignore
         else:
-            self.modes = [mode for mode in map(str, modes.__args__)]
+            self.modes: Literal[...] = [mode for mode in map(str, modes.__args__)]  # type: ignore
 
     async def convert(self, ctx: commands.Context, mode: str) -> Optional[str]:
         """The method that converts the argument passed in.
@@ -114,7 +115,7 @@ class LiteralModes(commands.Converter):
 
 
 class CodeblockConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument: str) -> Tuple[Optional[str], Optional[str]]:
+    async def convert(self, ctx: commands.Context, argument: str) -> Union[Tuple[Optional[str], Optional[str]], str]:
         """A custom converter that identifies and separates normal string arguments from codeblocks.
 
         Codeblock cleaning should be done later on as this does not automatically return the clean code.
@@ -122,21 +123,24 @@ class CodeblockConverter(commands.Converter):
 
         Returns
         -------
-        Tuple[Optional[:class:`str`], Optional[:class:`str`]]
-            A tuple with the arguments and codeblocks.
+        Union[Tuple[Optional[:class:`str`], Optional[:class:`str`]], :class:`str`]
+            A tuple with the arguments and codeblocks or just the argument if IndexError was raised during parsing.
         """
 
         start: Optional[int] = None
         end: Optional[int] = None
 
         for i in range(len(argument)):
-            if "".join([argument[i], argument[i + 1], argument[i + 2]]) == "```":
-                start = i
-            i += 1
-            if "".join([argument[-i], argument[-(i + 1)], argument[-(i + 2)]]) == "```":
-                end = -(i - 1) if i != 1 else None
-            if start is not None and end is not None:
-                break
+            try:
+                if "".join([argument[i], argument[i + 1], argument[i + 2]]) == "```":
+                    start = i
+                i += 1
+                if "".join([argument[-i], argument[-(i + 1)], argument[-(i + 2)]]) == "```":
+                    end = -(i - 1) if i != 1 else None
+                if start is not None and end is not None:
+                    break
+            except IndexError:
+                return argument
         codeblock = argument[start:end]
         arguments = argument[:start]
         return arguments.strip(), codeblock
@@ -210,13 +214,13 @@ def convert_str_to_ints(content: str) -> List[int]:
             ints += char
         if not char.isnumeric() and ints:
             int_list.append(int(ints))
-            _id = ""
+            ints = ""
     if ints.isnumeric():  # clear any extra integers
         int_list.append(int(ints))
     return int_list
 
 
-def convert_str_to_bool(content: str, *, additional_yes: Optional[List[str]] = None, additional_no: Optional[List[str]] = None) -> bool:
+def convert_str_to_bool(content: str, default: Optional[bool] = None, *, additional_true: Optional[List[str]] = None, additional_false: Optional[List[str]] = None) -> bool:
     """Similar to the :class:`bool` typehint in commands, this converts a string to a boolean
     with the added functionality of optionally appending new true/false statements.
 
@@ -224,9 +228,11 @@ def convert_str_to_bool(content: str, *, additional_yes: Optional[List[str]] = N
     ----------
     content: :class:`str`
         The string that should get converted to a boolean.
-    additional_yes: List[:class:`str`]
+    default: Optional[:class:`bool`]
+        An optional boolean that gets returned instead of raising BadBoolArgument exception.
+    additional_true: Optional[List[:class:`str`]]
         A list of additional valid true answers.
-    additional_no
+    additional_false: Optional[List[:class:`str`]]
         A list of additional valid false answers.
 
     Returns
@@ -239,11 +245,13 @@ def convert_str_to_bool(content: str, *, additional_yes: Optional[List[str]] = N
     BadBoolArgument
         The argument that was passed could not be identified under any true or false statement.
     """
-    additional_yes = additional_yes or []
-    additional_no = additional_no or []
-    if content.lower() in ["y", "yes", "1", "true", "t", "enable", "on", *additional_yes]:
+    additional_true: List[str] = additional_true or []
+    additional_false: List[str] = additional_false or []
+    if content.lower() in ["y", "yes", "1", "true", "t", "enable", "on", *[t.lower() for t in additional_true]]:
         return True
-    elif content.lower() in ["n", "no", "0", "false", "f", "disable", "off", additional_no]:
+    elif content.lower() in ["n", "no", "0", "false", "f", "disable", "off", *[f.lower() for f in additional_false]]:
         return False
+    elif default is not None:
+        return default
     else:
         raise commands.BadBoolArgument(content)
