@@ -14,7 +14,6 @@ import re
 import os
 import pathlib
 
-from discord.ext import commands
 from typing import Optional, Set
 
 from dev.types import BotT
