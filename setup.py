@@ -18,6 +18,6 @@ setup(
     long_description_content_type="text/markdown",
     include_package_data=True,
     install_requires=requirements,
-    dependency_links=["git+ssh://git@github.com/Rapptz/discord.py.git#egg=discord"]
+    dependency_links=["git+ssh://git@github.com/Rapptz/discord.py.git#egg=discord"],
     python_requires=">=3.8.0",
 )
