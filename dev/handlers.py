@@ -112,7 +112,7 @@ class ExceptionHandler:
         An optional, argument-less function that is called whenever an exception is raised inside the context manager.
         This function *can* be a coroutine.
     save_traceback: :class:`bool`
-        Whether to send a traceback if an exception is raised.
+        Whether to save a traceback if an exception is raised.
         Defaults to ``False``.
 
     Raises
