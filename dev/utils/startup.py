@@ -37,7 +37,7 @@ class Settings:
         Defaults to ``=``.
     INVOKE_ON_EDIT: :class:`bool`
         If commands that are edited should get reinvoked.
-        Defaults to ``True``.
+        Defaults to ``False``.
     OWNERS: Optional[Set[:class:`int`]]
         A set of user IDs that can additionally use this extension.
     PATH_TO_FILE: Optional[:class:`str`]
