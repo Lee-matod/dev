@@ -11,11 +11,11 @@ Direct bot reconfiguration and attributes manager.
 """
 
 
-import discord
 import time
-
-from discord.ext import commands
 from typing import Literal, Optional
+
+import discord
+from discord.ext import commands
 
 from dev.converters import LiteralModes, convert_str_to_ints
 from dev.handlers import optional_raise
