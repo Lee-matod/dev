@@ -2,7 +2,7 @@ from setuptools import setup
 
 with open("requirements.txt") as file:
     requirements = file.read().splitlines()[1:]
-    requirements.append("discord @ git+git@github.com/Rapptz/discord.py.git@master#egg=discord")
+    requirements.append("discord @ git+https://github.com/Rapptz/discord.py@master")
 
 with open("README.md", "r") as file:
     readme = file.read()
