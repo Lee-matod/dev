@@ -11,13 +11,13 @@ HTTP requests and response evaluator.
 """
 
 
-import aiohttp
-import discord
 import io
 import json
-
-from discord.ext import commands
 from typing import Literal, Optional
+
+import aiohttp
+import discord
+from discord.ext import commands
 
 from dev.converters import LiteralModes
 from dev.handlers import replace_vars
