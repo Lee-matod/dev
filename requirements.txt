@@ -1,4 +1,4 @@
-discord @ git+ssh://git@github.com/Rapptz/discord.py/tree/master/discord@master#egg=discord
+git+https://github.com/Rapptz/discord.py
 aiohttp>=3.7.4,<4
 setuptools>=45.2.0
 psutil>=5.9.1
