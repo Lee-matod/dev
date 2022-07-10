@@ -13,7 +13,6 @@ Functions and variables that will get executed once the dev extension is loaded.
 import re
 import os
 import pathlib
-
 from typing import Optional, Set
 
 from dev.types import BotT
@@ -54,7 +53,7 @@ class Settings:
 
     ALLOW_GLOBAL_USES: bool = False
     FLAG_DELIMITER: str = "="
-    INVOKE_ON_EDIT: bool = True
+    INVOKE_ON_EDIT: bool = False
     OWNERS: Optional[Set[int]] = {}
     PATH_TO_FILE: Optional[str] = os.getcwd()
     ROOT_FOLDER: Optional[str] = ""
@@ -64,14 +63,16 @@ class Settings:
 async def set_settings(bot: BotT) -> None:
     if not Settings.OWNERS:
         try:
-            data = await bot.application_info()
-            Settings.OWNERS = {data.owner.id}
+            if bot.application.owner:
+                Settings.OWNERS = {bot.application.owner.id}
+            elif bot.application.team:
+                Settings.OWNERS = {owner.id for owner in bot.application.team.members}
         except AttributeError:
             Settings.OWNERS = set()
-    check_types()
+    check_types(bot)
 
 
-def check_types() -> None:
+def check_types(bot: BotT) -> None:
     setting_types = (
         [Settings.FLAG_DELIMITER, str, "FLAG_DELIMITER"],
         [Settings.INVOKE_ON_EDIT, bool, "INVOKE_ON_EDIT"],
@@ -81,6 +82,9 @@ def check_types() -> None:
         [Settings.ALLOW_GLOBAL_USES, bool, "ALLOW_GLOBAL_USES"],
         [Settings.VIRTUAL_VARS, str, "VIRTUAL_VARS"]
     )
+    if not all((bot.owner_id, bot.owner_ids, Settings.OWNERS)):
+        raise ValueError("For security reasons, an owner ID must be set")
+
     for module in setting_types:
         received, expected, var = module
         if not isinstance(received, expected):
