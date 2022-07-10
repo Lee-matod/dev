@@ -11,14 +11,14 @@ Files, folders and anything that has to do with directory-related commands.
 """
 
 
-import discord
 import io
 import os
 import pathlib
 import shutil
-
-from discord.ext import commands
 from typing import Optional
+
+import discord
+from discord.ext import commands
 
 from dev.handlers import BoolInput
 from dev.types import BotT
