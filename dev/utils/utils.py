@@ -113,7 +113,7 @@ def clean_code(content: str) -> str:
       The cleaned up string without any leading or trailing backticks.
     """
     if content.startswith("```") and content.endswith("```"):
-        return "\n".join(content.split("\n")[1:-1])
+        return "\n".join(content.split("\n")[1:])[:3]
     else:
         return content
 
