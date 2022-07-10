@@ -1,8 +1,7 @@
 from setuptools import setup
 
 with open("requirements.txt") as file:
-    requirements = file.read().splitlines()[1:]
-    requirements.append("discord @ git+https://github.com/Rapptz/discord.py@master")
+    requirements = file.read().splitlines()[1:]  # exclude discord.py
 
 with open("README.md", "r") as file:
     readme = file.read()
@@ -19,5 +18,6 @@ setup(
     long_description_content_type="text/markdown",
     include_package_data=True,
     install_requires=requirements,
+    dependency_links=["git+ssh://git@github.com/Rapptz/discord.py.git#egg=discord"]
     python_requires=">=3.8.0",
 )
