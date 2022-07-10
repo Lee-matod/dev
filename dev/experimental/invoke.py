@@ -9,7 +9,8 @@ Command invocation or reinvocation with changeable execution attributes.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-import io
+
+
 from typing import (
     List,
     Optional,
@@ -17,9 +18,10 @@ from typing import (
     Union
 )
 
+import io
 import contextlib
-import discord
 
+import discord
 from discord.ext import commands
 
 from dev.handlers import ExceptionHandler
@@ -165,7 +167,7 @@ class RootInvoke(Root):
         context: commands.Context = await generate_ctx(ctx, **kwargs)
         if not context.command:
             return await send(ctx, f"Command `{context.invoked_with}` not found.")
-        async with ExceptionHandler(ctx.message, send_traceback=True) as handler:
+        async with ExceptionHandler(ctx.message, save_traceback=True) as handler:
             await context.command.invoke(context)
         if handler.error:
             embeds = [discord.Embed(title=exc[0], description=f"```py\n{exc[1].replace(Settings.PATH_TO_FILE, '')}\n```", color=discord.Color.red()) for exc in handler.error]
