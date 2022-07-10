@@ -79,8 +79,3 @@ Baseclasses for command registration are also included here, as well as cog-rela
 >> The root command (`dev`) of the extension.
 >>> #### Type
 >>> Optional[[Group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup)]
->
->> ### CALLBACKS
->> Saved callbacks and source codes from command overrides or overwrites.
->>> #### Type
->>> Dict[[int](https://docs.python.org/3/library/functions.html#int), Tuple[[str](https://docs.python.org/3/library/stdtypes.html#str), [commands.Command.callback](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Command.callback), [str](https://docs.python.org/3/library/stdtypes.html#str)]]
