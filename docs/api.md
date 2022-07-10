@@ -172,7 +172,7 @@ or allowing pagination.
 >> - args – The arguments that should be passed into the function once it gets executed, if any.
 >> - kwargs – The keyword arguments that should be passed into the function once it gets executed, if any.
 
-> ### `class` *async with* dev.handlers.ExceptionHandler(message, *, send_traceback)
+> ### `class` *async with* dev.handlers.ExceptionHandler(message, /, on_error, *, save_traceback)
 > Handle any exceptions in an async context manager.
 >  If any exceptions are raised during the process' lifetime, the bot will try to add
 >   reactions depending on the exception value.
@@ -186,7 +186,9 @@ or allowing pagination.
 >> #### Parameters
 >> - message([Message](https://discordpy.readthedocs.io/en/latest/api.html#discord.Message)) – The message that the 
 >> reactions will be added to.
->> - send_traceback([bool](https://docs.python.org/3/library/functions.html#bool)) – Whether to send a traceback if an 
+>> - on_error(Callable[[], Any]) – An optional, argument-less function that is called whenever an exception is raised 
+>> inside the context manager. This function *can* be a coroutine.
+>> - save_traceback([bool](https://docs.python.org/3/library/functions.html#bool)) – Whether to save a traceback if an 
 >> exception is raised. Defaults to ``False``.
 >
 >> #### `classmethod` cleanup
@@ -253,3 +255,5 @@ or allowing pagination.
 >> #### Raises
 >> [TypeError](https://docs.python.org/3/library/exceptions.html#TypeError) – A list, tuple or set contains more than 
 >> one type, e.g: [File, File, Embed].
+
+
