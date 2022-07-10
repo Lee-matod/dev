@@ -12,10 +12,10 @@ Search commands.
 
 
 import difflib
-import discord
-
-from discord.ext import commands
 from typing import List, Optional, Tuple
+
+import discord
+from discord.ext import commands
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import all_commands, send
