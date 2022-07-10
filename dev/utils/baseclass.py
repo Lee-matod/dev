@@ -9,7 +9,7 @@ Basic classes that will be used within the dev extension.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-
+from __future__ import annotations
 
 from typing import (
     Any,
@@ -17,14 +17,18 @@ from typing import (
     Dict,
     Optional,
     List,
+    Literal,
     Tuple,
-    Type
+    Type,
+    TypeVar,
+    Union
 )
-
-from dev.types import BotT, Callback, CommandT, GroupT, GroupMixinT
 
 from discord.ext import commands
 from discord.utils import MISSING
+
+from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
+from dev.types import AnyCommand, BotT, Callback, CommandT, CommandObj, GroupT
 
 
 __all__ = (
@@ -35,6 +39,8 @@ __all__ = (
     "Root",
     "root"
 )
+
+CST = TypeVar("CST", CommandRegistration, SettingRegistration)
 
 
 class GlobalLocals:
@@ -174,8 +180,8 @@ class GroupMixin(commands.GroupMixin):
 
     def __init__(self):
         super().__init__()
-        self.all_commands: Dict[str, GroupMixinT] = {}
-        self._add_parent: Dict[GroupMixinT, str] = {}
+        self.all_commands: Dict[str, AnyCommand] = {}
+        self._add_parent: Dict[AnyCommand, str] = {}
 
     def group(
             self,
@@ -355,29 +361,60 @@ class Root(commands.Cog):
         The root command (`dev`) of the extension.
     command_uses: Dict[:class:`str`, :class:`int`]
         A dictionary that keeps track of the amount of times a command has been used.
-    CALLBACKS: Dict[:class:`int`, Tuple[:class:`str`, Callable[[:class:`Cog`, :class:`Context`, Any], Coroutine[Any, Any, Any]], :class:`str`]]
-        Saved callbacks and source codes from command overrides or overwrites.
     """
 
     scope: GlobalLocals = GlobalLocals()
 
     def __init__(self, bot: BotT):
+        from dev.utils.functs import all_commands  # circular import
+
         self.bot: BotT = bot
         self.root_command: Optional[Group] = root.all_commands.get("dev")
         self.command_uses: Dict[str, int] = {}
-        self.CALLBACKS: Dict[
-            int,  # ID
-            Tuple[
-                str,  # command name
-                Callback,  # original callback
-                str  # new source code
-            ]
-        ] = {}
+        self.registrations: Dict[int, CST] = {}
+        self._base_registrations: Tuple[BaseCommandRegistration, ...] = tuple([BaseCommandRegistration(cmd) for cmd in all_commands(self.bot.commands)])
 
         for kls in type(self).__mro__:
             for key, cmd in kls.__dict__.items():
                 if isinstance(cmd, (Command, Group)):
                     cmd.cog = self
+
+    def get_base_command(self, command_name: str, /) -> BaseCommandRegistration:
+        return [cmd for cmd in self._base_registrations if cmd.qualified_name == command_name][0]
+
+    def filter_register_type(self, predicate: str, /) -> List[CST]:
+        return [register for register in self.registrations.values() if register.register_type == predicate]
+
+    def filter_over_type(self, predicate: str, /) -> List[CST]:
+        return [register for register in self.registrations.values() if register.over_type == predicate]
+
+    def to_register(self, command_string: str, /) -> List[CommandObj]:
+        return [register for register in self.registrations.values() if register.command.qualified_name == command_string] or [cmd for cmd in self._base_registrations if cmd.qualified_name == command_string]
+
+    def update_register(self, register: CST, mode: Literal["add", "del"], /) -> CST:
+        if mode not in ("add", "del"):
+            raise ValueError(f"Invalid mode submitted: {mode!r}")
+        values = []
+        if mode == "del" and register not in self.registrations.values():
+            raise IndexError("Registration cannot be deleted because it does not exist")
+        for k, v in self.registrations.items():
+            if mode == "del":
+                if v == register:
+                    continue
+            values.append(v)
+        if mode == "add":
+            values.append(register)
+        registrations: Dict[int, Union[CommandRegistration, SettingRegistration]] = {}
+        for index, rgs in enumerate(values, start=1):
+            registrations[index] = rgs
+        self.registrations.clear()
+        self.registrations.update(registrations)
+        return register
+
+    def cog_load(self) -> None:
+        from dev.utils.functs import all_commands  # circular import
+
+        self._base_registrations: Tuple[BaseCommandRegistration, ...] = tuple([BaseCommandRegistration(cmd) for cmd in all_commands(self.bot.commands)])
 
     async def cog_check(self, ctx: commands.Context) -> bool:
         """A cog check that is called every time a dev command is invoked.
