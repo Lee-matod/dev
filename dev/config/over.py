@@ -9,140 +9,33 @@ Override or overwrite certain aspects and functions of the bot.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-
-
 from typing import (
     Any,
     Dict,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Union
+    Optional
 )
 
+import ast
 import contextlib
-import discord
 import inspect
 import io
 import textwrap
 
+import discord
 from discord.ext import commands
-from datetime import datetime
 from typing_extensions import Self
 
-from dev.types import AnyUser, BotT, Callback, GroupMixinT
+from dev.types import AnyCommand
 from dev.converters import CodeblockConverter, convert_str_to_bool, convert_str_to_ints
 from dev.handlers import ExceptionHandler, replace_vars, optional_raise
+from dev.registrations import CommandRegistration, SettingRegistration
+
+from dev.config._views import CodeView, SettingView
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import flag_parser, generate_ctx, table_creator, send
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code
-
-
-class SettingEditor(discord.ui.Modal):
-    def __init__(self, author: AnyUser, setting: str):
-        self.author = author
-        self.setting = setting
-        self.setting_obj = getattr(Settings, setting)
-        self.item = discord.ui.TextInput(label=setting.replace("_", " ").title(), default=", ".join([str(i) for i in self.setting_obj]) if isinstance(self.setting_obj, set) else self.setting_obj) if not isinstance(self.setting_obj, bool) else discord.ui.Select(options=[discord.SelectOption(label="True", value="True", default=True if self.setting_obj else False), discord.SelectOption(label="False", value="False", default=False if self.setting_obj else True)])
-        super().__init__(title=f"{setting.replace('_', ' ').title()} Editor")
-        self.add_item(self.item)
-
-    async def on_submit(self, interaction: discord.Interaction) -> None:
-        if isinstance(self.item, discord.ui.TextInput):
-            value = self.item.value
-        else:
-            value = self.item.values[0]
-
-        if isinstance(self.setting_obj, bool):
-            setattr(Settings, self.setting, convert_str_to_bool(value))
-        elif isinstance(self.setting_obj, set):
-            setattr(Settings, self.setting, set(convert_str_to_ints(value)))
-        else:
-            setattr(Settings, self.setting, value)
-        await interaction.response.edit_message(view=SettingView(self.author))
-
-
-class SettingView(discord.ui.View):
-    def __init__(self, author: AnyUser):
-        super().__init__()
-        self.author = author
-
-        class Button(discord.ui.Button):
-            def __init__(self, **kwargs):
-                super().__init__(**kwargs)
-                if setting in ("Allow Global Uses", "Invoke on Edit"):
-                    self.style = discord.ButtonStyle.green if getattr(Settings, setting.replace(" ", "_").upper()) else discord.ButtonStyle.red
-                else:
-                    self.style = discord.ButtonStyle.blurple
-
-            async def callback(self, interaction: discord.Interaction):
-                await interaction.response.send_modal(SettingEditor(author, self.label.replace(" ", "_").upper()))
-
-        for setting in ("Allow Global Uses", "Flag Delimiter", "Invoke on Edit", "Owners", "Path to File", "Root Folder", "Virtual Vars"):
-            self.add_item(Button(label=setting))
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return self.author == interaction.user
-
-
-class CodeEditor(discord.ui.Modal):
-    code = discord.ui.TextInput(label="Code Inspection for 'command'", style=discord.TextStyle.long)
-
-    def __init__(self, command: GroupMixinT, lines: str, ctx: commands.Context, callbacks: Dict[int, Tuple[str, Callback, str]], overs: Dict[int, Tuple[str, str, Optional[Callback], Union[str, List[Any]]]]):
-        self.code.label = self.code.label.replace("command", command.name)
-        self.code.default = lines
-        super().__init__(title=f"{command.name}'s Script")
-        self.command: GroupMixinT = command
-        self.ctx: commands.Context = ctx
-        self.callbacks: Dict[int, Tuple[str, Callback, str]] = callbacks
-        self.overs: Dict[int, Tuple[str, str, Optional[Callback], Union[str, List[Any]]]] = overs
-
-    async def on_submit(self, interaction: discord.Interaction):
-        self.callbacks[len(self.overs)] = (self.command.qualified_name, self.command.callback, self.code.value)
-        local_vars: Dict[str, Any] = {
-            "discord": discord,
-            "commands": commands,
-            "bot": self.ctx.bot,
-        }
-        with contextlib.redirect_stdout(io.StringIO()):
-            async with ExceptionHandler(self.ctx.message):
-                exec(f"async def func():\n{textwrap.indent(self.code.value, '    ')}", local_vars)
-                await local_vars["func"]()
-        await interaction.response.edit_message(content=f"Successfully edited `{self.command.name}`'s callback", view=None)
-
-
-class CodeView(discord.ui.View):
-    def __init__(
-            self,
-            ctx: commands.Context,
-            command: Optional[GroupMixinT] = None,
-            lines: Optional[str] = None,
-            callbacks: Optional[Dict[int, Tuple[str, Callback, str]]] = None,
-            overs: Optional[Dict[int, Tuple[str, str, Optional[Callback], Union[str, List[Any]]]]] = None
-    ):
-        super().__init__()
-        self.ctx: commands.Context = ctx
-        self.command: GroupMixinT = command
-        self.lines: str = lines
-        self.callbacks: Dict[int, Tuple[str, Callback, str]] = callbacks
-        self.overs: Dict[int, Tuple[str, str, Optional[Callback], Union[str, List[Any]]]] = overs
-        self.callback_length: int = len(callbacks)
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return self.ctx.author == interaction.user
-
-    @discord.ui.button(label="View Code", style=discord.ButtonStyle.blurple)
-    async def view_code(self, interaction: discord.Interaction, _):  # 'button' is not being used
-        await interaction.response.send_modal(CodeEditor(self.command, self.lines, self.ctx, self.callbacks, self.overs))
-
-    async def on_timeout(self) -> None:
-        # check if any changes where done, else fall back to the original callback
-        if len(self.callbacks) != self.callback_length:
-            self.callbacks[len(self.overs)] = (self.command.qualified_name, self.command.callback, self.lines)
-            self.ctx.bot.add_command(self.command)
 
 
 class OverrideSettingConverter(commands.Converter):
@@ -154,7 +47,7 @@ class OverrideSettingConverter(commands.Converter):
         changed = []
         new_settings = flag_parser(argument, "=")
         for key, value in new_settings.items():
-            if key.startswith("__") and key.endswith("__"):  # you sneaky dude, I ain't gonna let you break it that easily
+            if key.startswith("__") and key.endswith("__"):  # you sneaky person, I ain't gonna let you break it that easily
                 continue
             if not hasattr(Settings, key):
                 await ctx.message.add_reaction("❗")
@@ -178,38 +71,69 @@ class OverrideSettingConverter(commands.Converter):
             self.command_string = argument
         return self
 
+    def back_to_default(self):
+        for module, value in self.default_settings.items():
+            setattr(Settings, module, value)
+
 
 class RootOver(Root):
-    def __init__(self, bot: BotT):
-        super().__init__(bot)
-        self.OVERRIDES: Dict[int, Tuple[str, str, Optional[Callback], Union[str, List[Any]]]] = {}
-        self.OVERWRITES: Dict[int, Tuple[str, str, Optional[Callback], Union[str, List[Any]]]] = {}
 
     @root.group(name="override", parent="dev", invoke_without_command=True, ignore_extra=False)
     async def root_override(self, ctx: commands.Context):
         """Get a table of overrides that have been made with their respective IDs."""
-        content = "No overrides have been made."
-        if self.OVERRIDES:
-            rows = [[k, v[0], v[1]] for k, v in self.OVERRIDES.items()]
-            content = table_creator(rows, ["IDs", "Types", "Descriptions"])
-        await send(ctx, f"```py\n{content}\n```")
+        if overrides := self.filter_register_type("override"):
+            rows = [[index, rgs.qualified_name, f"Date modified: {rgs.created_at}"] for index, rgs in enumerate(overrides, start=1)]
+            return await send(ctx, f"```py\n{table_creator(rows, ['IDs', 'Names', 'Descriptions'])}\n```")
+        await send(ctx, "No overrides have been made.")
 
-    @root_override.command(name="undo", aliases=["del", "delete"])
+    @root_override.command(name="undo")
     async def root_override_undo(self, ctx: commands.Context, id_num: int = 0):
-        """Undoes or deletes an override."""
+        """Undo an override.
+        If the specified override ID is not the last override that a command went through, then it will simply get deleted.
+        """
+        if not (overrides := self.filter_register_type("override")):
+            return await send(ctx, "No overrides have been made.")
         try:
-            position, args = list(self.OVERRIDES.items())[id_num - 1]
-            _, desc, callback, command_string = args
+            if id_num < 0:
+                raise IndexError
+            override = overrides[id_num - 1]
         except IndexError:
             return await send(ctx, f"Override with ID of `{id_num}` not found.")
-        del self.CALLBACKS[id_num if id_num != 0 else len(self.CALLBACKS)]
+        self.update_register(override, "del")
         if ctx.invoked_with in ("delete", "del"):
-            self.sort_dict_id("override", "del", id_num if id_num != 0 else len(self.OVERRIDES))
-            return await send(ctx, f"Deleted the override with the ID number of `{id_num if id_num != 0 else len(self.OVERRIDES)}`.\n{desc}")
-        command: GroupMixinT = self.bot.get_command(command_string)
-        command.callback = callback
-        self.sort_dict_id("override", "del", id_num if id_num != 0 else len(self.OVERRIDES))
+            return await send(ctx, f"Deleted the override with the ID number of `{id_num if id_num != 0 else len(overrides)}` (command: `{override.qualified_name}`).")
+        command: AnyCommand = self.bot.get_command(override.qualified_name)
+        command.callback = self.to_register(override.qualified_name)[-1].callback
         await ctx.message.add_reaction("☑")
+
+    @root_override.command(name="changes")
+    async def root_override_changes(self, ctx: commands.Context, id_num: int = 0):
+        """View the changes that were made between overrides.
+        Setting overrides will not be shown as they are reverted to default once the command has finished doing the task.
+        """
+        if not (overrides := self.filter_register_type("override")):
+            return await send(ctx, "No overrides have been made.")
+        try:
+            if id_num < 0:
+                raise IndexError
+            override = overrides[id_num - 1]
+        except IndexError:
+            return await send(ctx, f"Override with ID of `{id_num}` not found.")
+        current_index: int = list(self.registrations.values()).index(override)
+        previous_index: Optional[int] = None
+        for position, rgs in enumerate(self.registrations.values()):
+            if rgs.qualified_name == override.qualified_name and position < current_index:
+                previous_index = position
+            elif position == current_index:
+                break
+        if previous_index is not None:
+            previous_script = self.to_register(override.qualified_name)[previous_index].source
+        else:
+            previous_script = inspect.getsource(self.get_base_command(override.qualified_name).callback)
+        if previous_script == override.source:
+            return await send(ctx, "No changes were made.")
+        return await send(ctx, [discord.Embed(title="Previous Source Code", description=f"```py\n{previous_script}\n```", color=discord.Color.red()),
+                                discord.Embed(title="Current Source Code", description=f"```py\n{override.source}\n```", color=discord.Color.green())])
 
     @root_override.command(name="command", virtual_vars=True, usage="<command_name> <script>", require_var_positional=True)
     async def root_override_command(self, ctx: commands.Context, *, command_code: CodeblockConverter):
@@ -220,27 +144,47 @@ class RootOver(Root):
         command_string, script = command_code if isinstance(command_code, tuple) else (command_code, None)
         if not command_string:
             return await send(ctx, "Malformed arguments were given.")
-        command: GroupMixinT = self.bot.get_command(command_string)
-        lines = "".join(inspect.getsourcelines(command.callback)[0]) if command_string not in [name[0] for name in self.CALLBACKS.values()] else [line[2] for line in self.CALLBACKS.values() if line[0] == command_string][0]
+        command: AnyCommand = self.bot.get_command(command_string)
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
+        lines = self.to_register(command_string)[-1].source
         if not script and len(lines) > 4000:
-            return await send(ctx, "The command's script exceeds the 4000 maximum character limit.")
-        self.sort_dict_id("override", "add", ("command", f"Command that was overridden: {command_string} ‒ {datetime.utcnow().strftime('%b %d, %Y at %H:%M:%S UTC')}", command.callback, command_string))
-        self.bot.remove_command(command_string)
+            return await send(ctx, "The command's source code exceeds the 4000 maximum character limit.")
         if not script:
-            return await send(ctx, CodeView(ctx, command, lines, self.CALLBACKS, self.OVERRIDES))
+            return await send(ctx, CodeView(ctx, command, self))
+        self.bot.remove_command(command_string)
         script = clean_code(replace_vars(script))
-        self.CALLBACKS[len(self.OVERRIDES)] = (command.qualified_name, command.callback, script)
         local_vars: Dict[str, Any] = {
             "discord": discord,
             "commands": commands,
             "bot": self.bot,
         }
         with contextlib.redirect_stdout(io.StringIO()):
-            async with ExceptionHandler(ctx.message):
-                exec(f"async def func():\n{textwrap.indent(script, '    ')}", local_vars)
-                await local_vars["func"]()
+            async with ExceptionHandler(ctx.message, lambda: self.bot.add_command(command)):
+                parsed = ast.parse(script)
+                if any([isinstance(x, ast.FunctionDef) for x in parsed.body]):
+                    self.bot.add_command(command)
+                    return await send(ctx, "There should only be 1 function in the script: the command callback.")
+                if len([x for x in parsed.body if isinstance(x, ast.AsyncFunctionDef)]) > 1:
+                    self.bot.add_command(command)
+                    return await send(ctx, "Cannot have more than 1 asynchronous function definition in the script.")
+                if not isinstance(parsed.body[-1], ast.AsyncFunctionDef):
+                    self.bot.add_command(command)
+                    return await send(ctx, "The last expression of the script should be an asynchronous function.")
+                func: ast.AsyncFunctionDef = parsed.body[-1]  # type: ignore
+                body = textwrap.indent("\n".join(script.split("\n")[len(func.decorator_list) + 1:]), "\t")
+                parameters = script.split("\n")[func.lineno - 1][len(f"async def {func.name}("):]
+                upper = "\n".join(script.split("\n")[:func.lineno - 1])
+                exec(f"async def func():\n\t{upper}\n\tasync def {func.name}({parameters}\n{body}\n\treturn {func.name}", local_vars)
+                obj = await local_vars["func"]()
+                if not isinstance(obj, (commands.Command, commands.Group)):
+                    self.bot.add_command(command)
+                    return await send(ctx, "The asynchronous function of the script should be a decorated function returning an instance of either `commands.Command` or `commands.Group`.")
+                if obj.name != command_string:
+                    self.bot.remove_command(obj.qualified_name)
+                    self.bot.add_command(command)
+                    return await send(ctx, "The command's name cannot be changed.")
+                self.update_register(CommandRegistration(obj, "override", source=f"{upper.lstrip()}\nasync def {func.name}({parameters}\n{body}\n"), "add")
 
     @root_override.command(name="setting", virtual_vars=True, aliases=["settings"], usage="<setting>... <command_name|script>", require_var_positional=True)
     async def root_override_setting(self, ctx: commands.Context, *, greedy: OverrideSettingConverter):
@@ -258,56 +202,58 @@ class RootOver(Root):
                 "ctx": ctx
             }
             with contextlib.redirect_stdout(io.StringIO()):
-                async with ExceptionHandler(ctx.message):
+                async with ExceptionHandler(ctx.message, greedy.back_to_default):
                     exec(f"async def func():\n{textwrap.indent(code, '    ')}", local_vars)
                     await local_vars["func"]()
-                for module, value in greedy.default_settings.items():
-                    setattr(Settings, module, value)
+                greedy.back_to_default()
         elif greedy.command_string:
             kwargs = {"content": f"{ctx.prefix}{greedy.command_string}", "author": ctx.author, "channel": ctx.channel}
             context = await generate_ctx(ctx, **kwargs)
             if not context.command:
-                for module, value in greedy.default_settings.items():
-                    setattr(Settings, module, value)
+                greedy.back_to_default()
                 return await ctx.send(f"Command `{context.invoked_with}` not found.")
             await context.command.invoke(context)
-            for module, value in greedy.default_settings.items():
-                setattr(Settings, module, value)
+            greedy.back_to_default()
 
     @root.group(name="overwrite", parent="dev", invoke_without_command=True, ignore_extra=False)
     async def root_overwrite(self, ctx: commands.Context):
         """Get a table of overwrites that have been made with their respective IDs."""
-        content = "No overwrites have been made."
-        if self.OVERWRITES:
-            rows = [[k, v[0], v[1]] for k, v in self.OVERWRITES.items()]
-            content = table_creator(rows, ["IDs", "Types", "Descriptions"])
-        await send(ctx, f"```py\n{content}\n```")
+        if overwrites := self.filter_register_type("overwrite"):
+            rows = [[index, rgs.over_type, f"{rgs} ‒ {rgs.created_at}"] for index, rgs in enumerate(overwrites, start=1)]
+            return await send(ctx, f"```py\n{table_creator(rows, ['IDs', 'Types', 'Descriptions'])}\n```")
+        await send(ctx, "No overwrites have been made.")
 
-    @root_overwrite.command(name="undo", aliases=["del", "delete"])
+    @root_overwrite.command(name="undo")
     async def root_overwrite_undo(self, ctx: commands.Context, id_num: int = 0):
-        """Undoes or deletes an overwrite."""
+        """Undoes or deletes an overwrite.
+        If the specified overwrite ID is not the last override that a command went through, then it will simply get deleted.
+        However, settings will get converted back to the value of the previous overwrite, unlike commands.
+        """
+        if not (overwrites := self.filter_register_type("overwrite")):
+            return await send(ctx, "No overwrites have been made.")
         try:
-            position, args = list(self.OVERWRITES.items())[id_num - 1]
-            _type, desc, callback, arg = args
+            if id_num < 0:
+                raise IndexError
+            overwrite = overwrites[id_num - 1]
         except IndexError:
             return await send(ctx, f"Overwrite with ID of `{id_num}` not found.")
         if ctx.invoked_with in ("delete", "del"):
-            self.sort_dict_id("overwrite", "del", id_num if id_num != 0 else len(self.OVERWRITES))
-            return await send(ctx, f"Deleted the override with the ID number of `{id_num if id_num != 0 else len(self.OVERWRITES)}`.\n{desc}")
-        if _type == "command":
-            directory = inspect.getsourcefile(callback)
-            lines, _ = inspect.getsourcelines(callback)
-
+            self.update_register(overwrite, "del")
+            return await send(ctx, f"Deleted the override with the ID number of `{id_num if id_num != 0 else len(overwrites)}`.\n{overwrite}")
+        if overwrite.over_type == "command":
+            directory = inspect.getsourcefile(overwrite.callback)
+            lines = [line + "\n" for line in overwrite.source.split("\n")]
             with open(directory, "r") as f:
                 read_lines = f.readlines()
                 rev_read_lines = read_lines.copy()
                 rev_read_lines.reverse()
             # find what lines we have to edit
-            start_counter, end_counter = 0, len(lines)
+            start_counter, end_counter = 0, len(lines) - 1
             start, end = None, None
-            # sometimes there could be a repeated line of code which is why we have to make sure there's the correct
-            # difference between the start and end lines of the file and the one's we're searching for
-            while not all((end, start)):
+            # sometimes there could be a repeated line of code which may raise a false positive,
+            # this is why we have to make sure there's the correct difference between the start
+            # and end lines of the file and the one's we're searching for
+            while start is None and end is None:
                 if read_lines[start_counter] == lines[0]:
                     start = start_counter
                 if read_lines[end_counter] == lines[-1]:
@@ -316,12 +262,13 @@ class RootOver(Root):
                 end_counter += 1
             if None in (start, end):
                 return await send(ctx, f"Couldn't find the correct source lines for the command.")
-
+            self.update_register(overwrite, "del")
+            old_lines = self.to_register(overwrite.qualified_name)[-1].source
             # make sure that we have the correct amount of lines necessary to include the new script
-            if len(arg.split("\n")) > len(lines):
+            if len(old_lines.split("\n")) > len(lines):
                 with open(directory, "w") as f:
-                    read_lines[end] = read_lines[end] + "\n" * (len(arg.split("\n")) - len(lines))
-                    end += len(arg.split("\n")) - len(lines)
+                    read_lines[end] = read_lines[end] + "\n" * (len(old_lines.split("\n")) - len(lines))
+                    end += len(old_lines.split("\n")) - len(lines)
                     f.writelines(read_lines)
                 with open(directory, "r") as f:
                     # since we edited the file, we have to get our new set of lines
@@ -331,42 +278,40 @@ class RootOver(Root):
                 count = 0
                 for line in range(start, end + 1):
                     try:
-                        read_lines[line] = arg.split("\n")[count] + "\n" if line != end else arg.split("\n")[count]
+                        read_lines[line] = old_lines.split("\n")[count] + "\n" if line != end else old_lines.split("\n")[count]
                         count += 1
                     except IndexError:
                         # deal with any extra lines, so we don't get a huge whitespace
                         read_lines[line] = ""
                 f.writelines(read_lines)
-            self.sort_dict_id("overwrite", "del", id_num if id_num != 0 else len(self.OVERWRITES))
             await ctx.message.add_reaction("☑")
 
-        elif _type == "setting":
-            for module, option in arg.items():
+        elif overwrite.over_type == "setting":
+            for module, option in overwrite.defaults.items():
                 setattr(Settings, module, option)
-            self.sort_dict_id("overwrite", "del", id_num if id_num != 0 else len(self.OVERWRITES))
+            self.update_register(overwrite, "del")
             await ctx.message.add_reaction("☑")
 
     @root_overwrite.command(name="command", virtual_vars=True, usage=r"<command_name> <script>", require_var_positional=True)
     async def root_overwrite_command(self, ctx: commands.Context, *, command_code: CodeblockConverter):
         r"""Completely change a command's execution script to be permanently overwritten.
         Script that will be used as the command overwrite should be specified in between \`\`\`.
-        This command edit's the command's filed with the new script, therefore changes will be seen once the bot gets restarted.
+        This command edit the command's filed with the new script, therefore changes will be seen once the bot gets restarted.
         """
         command_string, script = command_code
         if not command_string or not script:
             return await ctx.send("Malformed arguments were given.")
-        command: GroupMixinT = self.bot.get_command(command_string)
+        command: AnyCommand = self.bot.get_command(command_string)
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
-        source = command.callback
-        if command.qualified_name in [name[0] for name in self.CALLBACKS.values()]:
-            # we find the original callback instead of any changed ones
-            source = [callback[1] for callback in self.CALLBACKS.values() if callback[0] == command.qualified_name][0]
-        directory = inspect.getsourcefile(source)
-        lines, _ = inspect.getsourcelines(source)
-        self.sort_dict_id("overwrite", "add", ("command", f"Command that was overwritten: {command_string} ‒ {datetime.utcnow().strftime('%b %d, %Y at %H:%M:%S UTC')}", command.callback, "".join(lines)))
-
+        callback = self.get_base_command(command_string).callback
+        directory = inspect.getsourcefile(callback)
+        lines, _ = inspect.getsourcelines(callback)
         code = clean_code(replace_vars(script))
+        async with ExceptionHandler(ctx.message):
+            parsed = ast.parse(code)
+            if [type(stmt) for stmt in parsed.body] != [ast.AsyncFunctionDef]:
+                return await send(ctx, "The script should only be an asynchronous function being the command's callback.")
         code = code.split("\n")
         new_code = []
         indentation = 0
@@ -429,6 +374,7 @@ class RootOver(Root):
                     # deal with any extra lines, so we don't get a huge whitespace
                     read_lines[line] = ""
             f.writelines(read_lines)
+        self.update_register(CommandRegistration(command, "overwrite", source=code), "add")
         await ctx.message.add_reaction("☑")
 
     @root_overwrite.command(name="setting", aliases=["settings"])
@@ -440,11 +386,12 @@ class RootOver(Root):
         """
         if settings is None:
             return await send(ctx, SettingView(ctx.author))
+        default = {k: v for k, v in Settings.__dict__.items() if not (k.startswith("__") and k.endswith("__"))}
         changed = []  # a formatted version of the settings that were changed
         raw_changed = {}
         new_settings = flag_parser(settings, "=")
         for key, value in new_settings.items():
-            if key.startswith("__") and key.endswith("__"):
+            if key.startswith("__") and key.endswith("__"):  # sneaky fella, don't try me
                 continue
             if not hasattr(Settings, key.upper()):
                 return await ctx.message.add_reaction("❗")
@@ -457,7 +404,7 @@ class RootOver(Root):
             else:
                 setattr(Settings, key.upper(), value)
             changed.append(f"Settings.{key.upper()}={value}")
-        self.sort_dict_id("overwrite", "add", ("setting", f"Settings that were overwritten: {' | '.join(changed) if changed else 'None'} ‒ {datetime.utcnow().strftime('%b %d, %Y at %H:%M:%S UTC')}", None, raw_changed))
+        self.update_register(SettingRegistration(default, raw_changed), "add")
         await send(ctx, discord.Embed(title="Settings Changed" if changed else "Nothing Changed", description="`" + '`\n`'.join(changed) + "`" if changed else "No changes were made to the current version of the settings.", colour=discord.Color.green() if changed else discord.Color.red()))
 
     @root_override.error
@@ -471,22 +418,3 @@ class RootOver(Root):
         if isinstance(error, commands.TooManyArguments):
             return await send(ctx, f"`dev overwrite` has no subcommand called `{ctx.subcommand_passed}`.")
         optional_raise(ctx, error)
-
-    def sort_dict_id(self, _type: Literal["overwrite", "override"], mode: Literal["del", "add"], arg: Any) -> None:
-        values = []
-        if _type == "override":
-            dictionary = self.OVERRIDES
-        else:
-            dictionary = self.OVERWRITES
-        for k, v in dictionary.items():
-            if mode == "del":
-                if k == arg:
-                    continue
-            values.append(v)
-        if mode == "add":
-            values.append(arg)
-        ordered_dictionary = {}
-        for num in range(len(values)):
-            ordered_dictionary[num + 1] = values[num]
-        dictionary.clear()
-        dictionary.update(ordered_dictionary)
