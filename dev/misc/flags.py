@@ -11,11 +11,11 @@ Flag-like commands for command analysis.
 """
 
 
-import discord
 import inspect
-
-from discord.ext import commands
 from typing import Optional, Union, TYPE_CHECKING
+
+import discord
+from discord.ext import commands
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
@@ -86,13 +86,12 @@ class RootFlags(Root):
             return await send(ctx, f"Command `{command_string}` not found.")
 
         if not file:
-            if command.qualified_name in [name[0] for name in self.CALLBACKS.values()]:
-                return await send(ctx, f"```py\n{[source[2] for source in self.CALLBACKS.values() if source[0] == command.qualified_name][-1]}\n```")
-            lines, _ = inspect.getsourcelines(command.callback)
-            return await send(ctx, f"```py\n{''.join(lines)}\n```")
-        callback = command.callback
-        if command.qualified_name in [value[1] for value in self.CALLBACKS.values()]:
-            callback = [callback[1] for callback in self.CALLBACKS.values() if callback[0] == command.qualified_name][0]
-        directory = inspect.getsourcefile(callback)
+            over = self.to_register(command.qualified_name)
+            try:
+                source = over[-1].source  # type: ignore
+            except AttributeError:
+                source = inspect.getsource(over[-1].callback)
+            return await send(ctx, f"```py\n{source}\n```")
+        directory = inspect.getsourcefile(self.get_base_command(command.qualified_name).callback)
         with open(directory) as source:
             await send(ctx, f"```py\n{''.join(source.readlines())}\n```")
