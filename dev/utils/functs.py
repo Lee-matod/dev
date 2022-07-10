@@ -9,8 +9,6 @@ Basic functions that will be used with the dev extension.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-
-
 from typing import (
     Any,
     Dict,
@@ -21,14 +19,15 @@ from typing import (
     Union
 )
 
-import discord
 import io
 import json
-
-from discord.ext import commands
+import math
 from copy import copy
 
-from dev.types import BotT, GroupMixinT
+import discord
+from discord.ext import commands
+
+from dev.types import BotT, AnyCommand
 from dev.handlers import Paginator
 
 from dev.utils.baseclass import Root
@@ -43,7 +42,7 @@ __all__ = (
 )
 
 
-def all_commands(command_list: Set[GroupMixinT]) -> List[GroupMixinT]:
+def all_commands(command_list: Set[AnyCommand]) -> List[AnyCommand]:
     """Retrieve all commands that are currently available.
 
     Unlike :meth:`commands.Bot.commands`, group subcommands are also returned.
@@ -114,7 +113,7 @@ def flag_parser(string: str, delimiter: str) -> Union[Dict[str, Any], str]:
         values.append(temp_string)
     for i in range(len(values)):
         try:
-            values[i] = json.loads(values[i])
+            values[i] = json.loads(str(values[i]).lower() if values[i] is not None else 'null')
         except json.JSONDecodeError as error:
             return f"{error}."
     return dict(zip(keys, values))
@@ -124,8 +123,18 @@ def table_creator(rows: List[List[Any]], labels: List[str]) -> str:
     table: List[Dict[Any, List[Any]]] = []
     table_str = ""
     for label in labels:
-        if label == "Types":
-            label = " Types "
+        if label == labels[1]:
+            largest = max([row[1] for row in rows], key=lambda x: len(x))
+            if len(largest) < len(label):
+                for row in rows:
+                    first, second = (len(label) - len(row[1])) // 2, math.ceil((len(label) - len(row[1])) / 2)
+                    row[1] = (" " * first) + row[1] + (" " * second)
+            elif len(largest) > len(label):
+                first, second = (len(largest) - len(label)) // 2, math.ceil((len(largest) - len(label)) / 2)
+                label = (" " * first) + label + (" " * second)
+                for row in rows:
+                    first, second = (len(largest) - len(row[1])) // 2, round((len(largest) - len(row[1])) / 2)
+                    row[1] = (" " * first) + row[1] + (" " * second)
         table.append({label: []})
 
     for row in rows:
@@ -185,21 +194,13 @@ async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed,
         A list, tuple or set contains more than one type, e.g: [File, File, Embed].
     """
     use_codeblock: bool = options.get("codeblock")
-    kwargs = {
-        "delete_after": options.get("delete_after"),
-        "nonce": options.get("nonce"),
-        "allowed_mentions": options.get("allowed_mentions"),
-        "reference": options.get("reference"),
-        "mention_author": options.get("mention_author"),
-        "stickers": options.get("stickers"),
-        "tts": options.get("tts", False),
-        "suppress_embeds": options.get("suppress_embeds", False)
-    }
+    kwargs = {}
     for arg in args:
         if isinstance(arg, discord.Embed):
             arg = _embed_inspector(ctx.bot, arg)
             return_type = _check_length(arg, 6000)
             if isinstance(return_type, commands.Paginator):
+                arg.description = return_type.pages[0]
                 await ctx.send(embed=arg, view=Paginator(return_type, ctx.author.id))
             else:
                 kwargs["embed"] = arg
@@ -230,6 +231,7 @@ async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed,
                     item = _embed_inspector(ctx.bot, item)
                     return_type = _check_length(item, 6000)
                     if isinstance(return_type, commands.Paginator):
+                        item.description = return_type.pages[0]
                         await ctx.send(embed=item, view=Paginator(return_type, ctx.author.id))
                     else:
                         items.append(item)
@@ -244,10 +246,22 @@ async def send(ctx: commands.Context, *args: Union[Sequence[Union[discord.Embed,
             content = content if not use_codeblock else f"```py\n{content}\n```"
             return_type = _check_length(content)
             if isinstance(return_type, commands.Paginator):
-                await ctx.send(content, view=Paginator(return_type, ctx.author.id))
+                await ctx.send(return_type.pages[0], view=Paginator(return_type, ctx.author.id))
             else:
                 kwargs["content"] = content
     if kwargs:
+        kwargs.update(
+            {
+                "delete_after": options.get("delete_after"),
+                "nonce": options.get("nonce"),
+                "allowed_mentions": options.get("allowed_mentions", discord.AllowedMentions.none()),
+                "reference": options.get("reference"),
+                "mention_author": options.get("mention_author"),
+                "stickers": options.get("stickers"),
+                "tts": options.get("tts", False),
+                "suppress_embeds": options.get("suppress_embeds", False)
+             }
+        )
         return await ctx.send(**kwargs)
 
 
@@ -294,7 +308,7 @@ def _embed_inspector(bot: BotT, embed: discord.Embed) -> discord.Embed:
         for field in embed.fields:
             field.name = _revert_virtual_var_value(field.name).replace(bot.http.token, "[token]")
             if field.value.startswith("```") and field.value.endswith("```"):
-                field.value = field.value.split("\n")[0] + "\n" + _revert_virtual_var_value("\n".join(field.value.split("\n")[1:-1])).replace(bot.http.token, "[token]").replace("``", "`\u200b`") + "```"
+                field.value = field.value.split("\n")[0] + "\n" + _revert_virtual_var_value("\n".join(field.value.split("\n")[1:-1])).replace(bot.http.token, "[token]").replace("``", "`\u200b`") + "```"  # type: ignore
             else:
                 field.value = _revert_virtual_var_value(field.value).replace(bot.http.token, "[token]")
     return embed
