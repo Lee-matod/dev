@@ -9,6 +9,8 @@ Handlers that are used in the dev extension.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
+
+
 from typing import (
     Any,
     Callable,
@@ -21,13 +23,13 @@ from typing import (
 
 import asyncio
 import contextlib
-import discord
 import inspect
 import re
-
-from discord.ext import commands
 from traceback import format_exception
 from types import TracebackType
+
+import discord
+from discord.ext import commands
 
 from dev.utils.baseclass import Root
 from dev.utils.startup import Settings
@@ -106,18 +108,29 @@ class ExceptionHandler:
     ----------
     message: :class:`discord.Message`
         The message that the reactions will be added to.
-    send_traceback: :class:`bool`
+    on_error: Optional[Callable[[], Any]]
+        An optional, argument-less function that is called whenever an exception is raised inside the context manager.
+        This function *can* be a coroutine.
+    save_traceback: :class:`bool`
         Whether to send a traceback if an exception is raised.
         Defaults to ``False``.
+
+    Raises
+    ------
+    TypeError
+        The function passed into on_error has a keyword-only parameter in its signature.
     """
     error: List[Tuple[str, str]] = []
     debug: bool = False
 
-    def __init__(self, message: discord.Message, *, send_traceback: bool = False):
+    def __init__(self, message: discord.Message, /, on_error: Optional[Callable[[], Any]] = None, save_traceback: bool = False):
         self.message: discord.Message = message
-        self.send_traceback: bool = send_traceback
-        if send_traceback:
+        self.on_error: Optional[Callable[..., Any]] = on_error
+        if save_traceback:
             ExceptionHandler.debug = True
+        if self.on_error:
+            if inspect.signature(self.on_error).parameters:
+                raise TypeError("Parameters aren't supported in 'on_error' function")
 
     async def __aenter__(self):
         return self
@@ -138,11 +151,17 @@ class ExceptionHandler:
             elif isinstance(exc_val, (AttributeError, IndexError, KeyError, TypeError, UnicodeError, ValueError, commands.CommandInvokeError)):
                 if isinstance(exc_val, commands.CommandInvokeError):
                     exc_val = exc_val.original
+                    exc_tb = exc_val.__traceback__
                 await self.message.add_reaction("❗")
             elif isinstance(exc_val, ArithmeticError):
                 await self.message.add_reaction("⁉")
             else:  # error doesn't fall under any other category
                 await self.message.add_reaction("‼")
+        if self.on_error:
+            if inspect.isawaitable(self.on_error):
+                await self.on_error()
+            else:
+                self.on_error()
 
         if self.debug:
             ExceptionHandler.error.append((exc_val.__class__.__name__, "".join(format_exception(exc_type, exc_val, exc_tb))))
