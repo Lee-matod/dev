@@ -15,23 +15,24 @@ from typing import (
     Any,
     Callable,
     Coroutine,
+    Protocol,
     TypeVar,
     Union
 )
 
 import discord
-
-from typing_extensions import Concatenate, ParamSpec
 from discord.ext import commands
+from typing_extensions import Concatenate, ParamSpec
 
 __all__ = (
+    "AnyCommand",
     "AnyUser",
     "BotT",
     "Callback",
     "CogT",
     "CommandT",
     "ContextT",
-    "GroupMixinT",
+    "CommandObj",
     "GroupT"
 )
 
@@ -45,6 +46,15 @@ GroupT = TypeVar("GroupT", bound="Group")
 
 BotT = Union[commands.Bot, commands.AutoShardedBot]
 AnyUser = Union[discord.ClientUser, discord.Member, discord.User]
-GroupMixinT = Union[commands.Group, commands.Command]
+AnyCommand = Union[commands.Group, commands.Command]
 
 Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T][T]]
+
+
+class CommandObj(Protocol):
+    __slots__ = ()
+
+    callback: Callback
+    command: AnyCommand
+    qualified_name: str
+    source: str
