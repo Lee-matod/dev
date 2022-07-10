@@ -3,18 +3,16 @@ A debugging, testing and editing cog for discord.py. This does not use slash com
 (mainly because I think they're ugly), so message intents have to be enabled! 
 (or set the bot's prefix to its tag).
 
-discord.py github: https://github.com/Rapptz/discord.py 
-
+discord.py github: https://github.com/Rapptz/discord.py  
 discord.py docs: https://discordpy.readthedocs.io/en/latest/index.html
 
-This is still under development, so I'm terribly sorry if you experience any issues.
-
+This is still under development, so I'm terribly sorry if you experience any issues.  
 This `README.md` should also get edited in the near future with more stuff to read.
 ****
 # setup
 
 Python 3.8 or higher is required. To install the extension, simply run the following command
-on your console depending what operating system you use.
+on your console depending on what operating system you use.
 
 **For Windows**
 ```
@@ -36,7 +34,7 @@ bot = commands.Bot(command_prefix=..., intents=...)
 async def setup_hook() -> None:
     await bot.load_extension("dev")
 ```
-or if you're subclassing commands.Bot
+if you're subclassing commands.Bot
 ```python
 from discord.ext import commands
 
@@ -69,7 +67,7 @@ PATH_TO_FILE: Optional[str] = os.getcwd()
 ROOT_FOLDER: Optional[str] = ""
 VIRTUAL_VARS: str = "|%(name)s|"
 ```
-* **ALLOW_GLOBAL_USES:** Commands aren't considered very harmful or dangerous can be excecuted by every user. If this setting is enabled, then commands that are considered as 'not harmful' can be called by any user. This defaults to `False`.
+* **ALLOW_GLOBAL_USES:** Commands aren't considered very harmful or dangerous can be executed by every user. If this setting is enabled, then commands that are considered as 'not harmful' can be called by any user. This defaults to `False`.
 * **FLAG_DELIMITER:** This setting is used to determine when to separate
 keys and values when specifying any kwargs that should be passed in if the command supports these.
 * **INVOKE_ON_EDIT:** If `True`, then a command will be reinvoked if it is edited.
