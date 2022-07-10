@@ -127,8 +127,8 @@ class CodeblockConverter(commands.Converter):
             A tuple with the arguments and codeblocks or just the argument if IndexError was raised during parsing.
         """
 
-        start: Optional[int] = None
-        end: Optional[int] = None
+        start: Optional[int] = False
+        end: Optional[int] = False
 
         for i in range(len(argument)):
             try:
@@ -137,7 +137,7 @@ class CodeblockConverter(commands.Converter):
                 i += 1
                 if "".join([argument[-i], argument[-(i + 1)], argument[-(i + 2)]]) == "```":
                     end = -(i - 1) if i != 1 else None
-                if start is not None and end is not None:
+                if start is not False and end is not False:
                     break
             except IndexError:
                 return argument
@@ -247,9 +247,9 @@ def convert_str_to_bool(content: str, default: Optional[bool] = None, *, additio
     """
     additional_true: List[str] = additional_true or []
     additional_false: List[str] = additional_false or []
-    if content.lower() in ["y", "yes", "1", "true", "t", "enable", "on", *[t.lower() for t in additional_true]]:
+    if str(content).lower() in ["y", "yes", "1", "true", "t", "enable", "on", *[t.lower() for t in additional_true]]:
         return True
-    elif content.lower() in ["n", "no", "0", "false", "f", "disable", "off", *[f.lower() for f in additional_false]]:
+    elif str(content).lower() in ["n", "no", "0", "false", "f", "disable", "off", *[f.lower() for f in additional_false]]:
         return False
     elif default is not None:
         return default
