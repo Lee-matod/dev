@@ -11,10 +11,10 @@ A virtual variable manager directly implemented to the dev extension.
 """
 
 
-import discord
-
-from discord.ext import commands
 from typing import Literal, Optional
+
+import discord
+from discord.ext import commands
 
 from dev.converters import LiteralModes
 
