@@ -61,7 +61,7 @@ The full `settings` tree and what they do are shown below. Note that if the wron
 ```python
 ALLOW_GLOBAL_USES: bool = False
 FLAG_DELIMITER: str = "="
-INVOKE_ON_EDIT: bool = True
+INVOKE_ON_EDIT: bool = False
 OWNERS: Optional[Set[int]] = {}
 PATH_TO_FILE: Optional[str] = os.getcwd()
 ROOT_FOLDER: Optional[str] = ""
