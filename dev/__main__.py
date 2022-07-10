@@ -11,14 +11,14 @@ Includes the root command for the dev extension, as well as other commands that 
 """
 
 
-import discord
 import os
-import psutil
 import sys
 import time
-
-from discord.ext import commands
 from typing import Optional
+
+import discord
+from discord.ext import commands
+import psutil
 
 from dev.handlers import optional_raise
 
@@ -92,6 +92,8 @@ class RootCommand(Root):
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
         if Settings.INVOKE_ON_EDIT:
             prefix = await self.bot.get_prefix(after)
+            if callable(prefix):
+                prefix = prefix(self.bot, after)
             if before.content.startswith(prefix) and after.content.startswith(prefix):
                 await after.clear_reactions()
                 await self.bot.process_commands(after)
