@@ -82,7 +82,7 @@ def check_types(bot: BotT) -> None:
         [Settings.ALLOW_GLOBAL_USES, bool, "ALLOW_GLOBAL_USES"],
         [Settings.VIRTUAL_VARS, str, "VIRTUAL_VARS"]
     )
-    if not all((bot.owner_id, bot.owner_ids, Settings.OWNERS)):
+    if not any((bot.owner_id, bot.owner_ids, Settings.OWNERS)):
         raise ValueError("For security reasons, an owner ID must be set")
 
     for module in setting_types:
