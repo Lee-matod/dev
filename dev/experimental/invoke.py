@@ -23,9 +23,9 @@ from dev.utils.startup import Settings
 
 
 class ReinvokeFlags(commands.FlagConverter):
-    has_: Optional[str] = commands.flag(name="has", default=None)
-    startswith_: Optional[str] = commands.flag(name="startswith", default=None)
-    endswith_: Optional[str] = commands.flag(name="endswith", default=None)
+    has: Optional[str] = commands.flag(default=None)
+    startswith: Optional[str] = commands.flag(default=None)
+    endswith: Optional[str] = commands.flag(default=None)
 
 
 class RootInvoke(Root):
@@ -129,7 +129,8 @@ class RootInvoke(Root):
             skip_message: Optional[int] = 0,
             author: Optional[discord.Member] = None,
             *,
-            flags: ReinvokeFlags):
+            flags: ReinvokeFlags
+    ):
         """Reinvoke the last command that was executed.
         By default, it will try to get the last command that was executed.
         If `invoke` is used instead of reinvoke, command checks will not be ignored.
@@ -171,13 +172,13 @@ class RootInvoke(Root):
 
 
 def flag_checks(message: discord.Message, flags: ReinvokeFlags) -> bool:
-    if flags.has_:
-        if flags.has_ not in message.content:
+    if flags.has is not None:
+        if flags.has not in message.content:
             return False
-    if flags.startswith_:
-        if not message.content.startswith(flags.startswith_):
+    if flags.startswith is not None:
+        if not message.content.startswith(flags.startswith):
             return False
-    if flags.endswith_:
-        if not message.content.endswith(flags.endswith_):
+    if flags.endswith is not None:
+        if not message.content.endswith(flags.endswith):
             return False
     return True
