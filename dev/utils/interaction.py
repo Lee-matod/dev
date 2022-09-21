@@ -121,10 +121,16 @@ class SyntheticInteraction:
             base_converter = CONVERSIONS.get(param.annotation, None)
             if base_converter is not None:
                 kwargs[param.name] = await base_converter.convert(self._context, param.argument)
-            elif issubclass(param.annotation, commands.Converter):
-                kwargs[param.name] = await param.annotation().convert(self._context, param.argument)
-            elif issubclass(param.annotation, app_commands.Transformer):
-                kwargs[param.name] = await param.annotation().transform(self, param.argument)  # type: ignore
+            elif inspect.isclass(param.annotation):
+                if issubclass(param.annotation, commands.Converter):
+                    kwargs[param.name] = await param.annotation().convert(self._context, param.argument)
+                elif issubclass(param.annotation, app_commands.Transformer):
+                    kwargs[param.name] = await param.annotation().transform(self, param.argument)  # type: ignore
+            elif not inspect.isclass(param.annotation):
+                if isinstance(param.annotation, commands.Converter):
+                    kwargs[param.name] = await param.annotation.convert(self._context, param.argument)
+                elif isinstance(param.annotation, app_commands.Transformer):
+                    kwargs[param.name] = await param.annotation.transform(self, param.argument)  # type: ignore
             elif param.annotation is None and param.default not in (inspect.Parameter.empty, None):
                 # We should never run into this section, but might as well deal with it
                 kwargs[param.name] = type(param.default)(param.argument)
