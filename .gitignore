@@ -1,6 +1,11 @@
 # Byte-compiled / optimized / DLL files
 .idea/
 __pycache__/
+dev/__pycache__
+dev/config/__pycache__
+dev/experimental/__pycache__
+dev/misc/__pycache__
+dev/utils/__pycache__
 *.py[cod]
 *$py.class
 
