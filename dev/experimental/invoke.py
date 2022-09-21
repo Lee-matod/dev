@@ -104,6 +104,8 @@ class RootInvoke(Root):
             kwargs["content"] = kwargs["content"].removeprefix(ctx.prefix)
             context: commands.Context = await generate_ctx(ctx, **kwargs)
             interaction = SyntheticInteraction(context, app_command)
+            if ctx.invoked_with.endswith("!"):
+                return await interaction.reinvoke()
             return await interaction.invoke()
         context: commands.Context = await generate_ctx(ctx, **kwargs)
         if not context.command:
