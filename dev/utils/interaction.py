@@ -102,6 +102,8 @@ class SyntheticInteraction:
         self.extras = {}
         self.command_failed = False
 
+        self._original_response = None
+
     async def get_namespace(self, arguments: List[str], ignore_params: int) -> Dict[str, Any]:
         signature = inspect.signature(self._command.callback)
         parameters = [
