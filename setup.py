@@ -1,4 +1,8 @@
+import re
 from setuptools import setup
+
+with open("dev/__init__.py") as file:
+    version = re.search(r'__version__ = \"(\d+\.\d+\.\d(a|b|rc)?)\"', file.read()).group(1)
 
 with open("requirements.txt") as file:
     requirements = file.readlines()[1:]  # exclude discord.py
@@ -10,7 +14,7 @@ setup(
     name="dev",
     author="Lee-matod",
     url="https://github.com/Lee-matod/dev",
-    version="1.0.0a",
+    version=version,
     packages=["dev", "dev.config", "dev.experimental", "dev.misc", "dev.utils"],
     license="Apache 2.0",
     description="A debugging, testing and editing cog for discord.py",
