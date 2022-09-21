@@ -18,7 +18,7 @@ from dev.handlers import ExceptionHandler
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import generate_ctx, send
-from dev.utils.interaction import SyntheticInteraction, get_invokable_app_command
+from dev.utils.interaction import SyntheticInteraction, get_app_command
 from dev.utils.startup import Settings
 
 
@@ -98,7 +98,7 @@ class RootInvoke(Root):
                 roles.append(attr.id)
         if command_attr.startswith("/"):
             app_commands = self.bot.tree.get_commands(type=discord.AppCommandType.chat_input)
-            app_command = get_invokable_app_command(command_attr.removeprefix("/"), app_commands.copy())  # type: ignore
+            app_command = get_app_command(command_attr.removeprefix("/"), app_commands.copy())  # type: ignore
             if app_command is None:
                 return await send(ctx, "Couldn't find an app (slash) command with that name.")
             kwargs["content"] = kwargs["content"].removeprefix(ctx.prefix)

@@ -28,9 +28,11 @@ from dev.converters import convert_str_to_bool
 
 __all__ = (
     "SyntheticInteraction",
-    "get_invokable_app_command"
+    "get_app_command"
 )
 
+# I'm not too sure if all of these type hint converters are actually available in app command type hinting, but I
+# couldn't be bothered to check
 CONVERSIONS = {
     discord.Role: commands.RoleConverter(),
     discord.Member: commands.MemberConverter(),
@@ -55,7 +57,7 @@ CONVERSIONS = {
 }
 
 
-def get_invokable_app_command(content: str, app_command_list: List[app_commands.Command]) -> app_commands.Command:
+def get_app_command(content: str, app_command_list: List[app_commands.Command]) -> app_commands.Command:
     possible_subcommands = content.split()
     app_command_name = possible_subcommands[0]
     possible_subcommands = possible_subcommands[1:]
@@ -87,6 +89,9 @@ class SyntheticInteraction:
         self._interaction_response: InteractionResponse = InteractionResponse(self)
         self._unknown_interaction: bool = False
 
+        # There are a few attributes that just cannot be obtained using the Context,
+        # so I'll just leave them with a static value.
+        # These attributes might be the case for some nasty errors.
         self.id = 0
         self.type = discord.InteractionType.application_command
         self.data = None
@@ -102,9 +107,10 @@ class SyntheticInteraction:
         self.extras = {}
         self.command_failed = False
 
+        # Protected attributes aren't defined, but we still need to keep track of the original response regardless
         self._original_response = None
 
-    async def get_namespace(self, arguments: List[str], ignore_params: int) -> Dict[str, Any]:
+    async def get_parameters(self, arguments: List[str], ignore_params: int) -> Dict[str, Any]:
         signature = inspect.signature(self._command.callback)
         parameters = [
             Parameter(name=name, annotation=param.annotation, argument=argument, default=param.default)
@@ -120,6 +126,7 @@ class SyntheticInteraction:
             elif issubclass(param.annotation, app_commands.Transformer):
                 kwargs[param.name] = await param.annotation().transform(self, param.argument)  # type: ignore
             elif param.annotation is None and param.default not in (inspect.Parameter.empty, None):
+                # We should never run into this section, but might as well deal with it
                 kwargs[param.name] = type(param.default)(param.argument)
             elif param.annotation == bool:
                 kwargs[param.name] = convert_str_to_bool(param.argument)
@@ -130,13 +137,22 @@ class SyntheticInteraction:
                     kwargs[param.name] = param.argument
         return kwargs
 
-    async def invoke(self):
+    async def invoke(self):  # Acts as commands.Command.invoke
         # noinspection PyProtectedMember
-        if not await self._command._check_can_run(self):  # type: ignore
+        if not await self._command._check_can_run(self):  # type: ignore  # This works for the time being
             raise commands.CheckFailure(f"The check functions for command {self._command.qualified_name!r} failed.")
         arguments = self._context.message.content.removeprefix(f"/{self._command.qualified_name}")
+        # Pass in interaction and check if the command is inside a cog/group
         required = (self,) if self._command.binding is None else (self._command.binding, self)
-        parameters = await self.get_namespace(shlex.split(arguments), len(required))
+        parameters = await self.get_parameters(shlex.split(arguments), len(required))
+        self._context.bot.loop.create_task(self._wait_for_response())
+        await self._command.callback(*required, **parameters)
+
+    async def reinvoke(self):  # Acts as commands.Command.reinvoke
+        arguments = self._context.message.content.removeprefix(f"/{self._command.qualified_name}")
+        # Pass in interaction and check if the command is inside a cog/group
+        required = (self,) if self._command.binding is None else (self._command.binding, self)
+        parameters = await self.get_parameters(shlex.split(arguments), len(required))
         self._context.bot.loop.create_task(self._wait_for_response())
         await self._command.callback(*required, **parameters)
 
@@ -144,6 +160,8 @@ class SyntheticInteraction:
         await asyncio.sleep(3)  # simulate maximum of 3 seconds for a response
         # noinspection PyProtectedMember
         if self._interaction_response._response_type is None:
+            # The bot did not respond to the interaction, so we have to somehow tell the user that it took too long.
+            # By this time, the interaction would become unknown, so we have to simulate that too
             self._unknown_interaction = True
             await self._context.message.add_reaction("❗")
 
@@ -220,6 +238,9 @@ class SyntheticInteraction:
 
 
 class SyntheticWebhook:
+    # We can't really create a webhook, so I just resolved to creating a class that mimics common functionality
+    # of an actual webhook. Just like with SyntheticInteraction, there are a few attributes and methods that I cannot
+    # synthesize given the command invocation context, which is why most of these features do nothing.
     def __init__(self, ctx: commands.Context):
         self.ctx: commands.Context = ctx
 
