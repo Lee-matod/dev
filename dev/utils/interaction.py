@@ -99,14 +99,6 @@ class SyntheticInteraction:
         self.guild_locale = None
         self.message = context.message
         self.user = context.author
-
-        # noinspection PyProtectedMember
-        self._state = context.bot._connection
-        self._client = context.bot
-        # noinspection PyProtectedMember
-        self._session = self._state.http._HTTPClient__session  # type: ignore
-        self._original_response = None
-        self._baton = MISSING
         self.extras = {}
         self.command_failed = False
 
