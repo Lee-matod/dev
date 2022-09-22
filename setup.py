@@ -3,6 +3,20 @@ from setuptools import setup
 
 with open("dev/__init__.py") as file:
     version = re.search(r'__version__ = \"(\d+\.\d+\.\d(a|b|rc)?)\"', file.read()).group(1)
+    if not version:
+        raise RuntimeError("version is not set")
+
+if version.endswith(("a", "b", "rc")):
+    try:
+        import subprocess
+        count, err = subprocess.Popen(["git", "rev-list", "--count", "HEAD"]).communicate()
+        if count:
+            version += count.decode("utf-8").strip()
+        count, err = subprocess.Popen(["git", "rev-list", "--short", "HEAD"]).communicate()
+        if count:
+            version += f"+g{count.decode('utf-8').strip()}"
+    except:  # noqa E722
+        pass
 
 with open("requirements.txt") as file:
     requirements = file.readlines()[1:]  # exclude discord.py
