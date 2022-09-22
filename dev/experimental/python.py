@@ -130,7 +130,7 @@ class RootPython(Root):
         mapping = {"--all-response": True, "--no-response": False}
         response = mapping.get(flag.lower(), None)
         if response is None:
-            code = f"{flag} {code}".strip()
+            code = f"{flag} {code or ''}".strip()
         code = await __previous__(
             ctx,
             f"{' '.join(ctx.invoked_parents)} {ctx.invoked_with}",
