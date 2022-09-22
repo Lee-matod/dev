@@ -246,7 +246,13 @@ class RootOver(Root):
                     Over.ADD
                 )
 
-    @root_override.command(name="setting", virtual_vars=True, aliases=["settings"], require_var_positional=True, usage="<setting>... <command_name|script>")
+    @root_override.command(
+        name="setting",
+        virtual_vars=True,
+        aliases=["settings"],
+        require_var_positional=True,
+        usage="<setting>... <command_name|script>"
+    )
     async def root_override_setting(self, ctx: commands.Context, *, greedy: OverrideSettingConverter):
         """Temporarily override a (some) setting(s).
         All changes will be undone once the command has finished executing.
@@ -358,7 +364,7 @@ class RootOver(Root):
         name="command",
         virtual_vars=True,
         require_var_positional=True,
-        usage=r"<command_name> <script>"
+        usage="<command_name> <script>"
     )
     async def root_overwrite_command(self, ctx: commands.Context, *, command_code: CodeblockConverter):
         r"""Completely change a command's execution script to be permanently overwritten.
