@@ -113,16 +113,23 @@ class RootPython(Root):
         root_placeholder=True,
         virtual_vars=True,
         aliases=["py"],
-        require_var_positional=True
+        require_var_positional=False,
+        usage="<code>"
     )
-    async def root_python(self, ctx: commands.Context, *, code: str):
+    async def root_python(self, ctx: commands.Context, flag: str, *, code: str = None):
         """Evaluate or execute Python code.
         When specifying a script, some placeholder texts can be set.
         `__previous__` = This is replaced with the previous script that was executed.
         The bot will search through the history of the channel with a limit of 25 messages.
         `|root|` = This is replaced with the folder specified in `Settings.ROOT_FOLDER`.
+        At the beginning of the argument, you may pass in `--no-response` or `--all-response` to either not send a
+        message, or to send a message, even if the result is None.
         """
         args = {"bot": self.bot, "ctx": ctx}
+        mapping = {"--all-response": True, "--no-response": False}
+        flag = mapping.get(flag.lower(), None)
+        if flag is None:
+            code = f"{flag} {code}".strip()
         code = await __previous__(
             ctx,
             f"{' '.join(ctx.invoked_parents)} {ctx.invoked_with}",
@@ -134,7 +141,9 @@ class RootPython(Root):
         async with ExceptionHandler(ctx.message):
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 async for expr in Execute(code, self.vars if self.retain else GlobalLocals(), args):
-                    if expr is None:
+                    if expr is None and flag is None:
+                        continue
+                    elif flag is False:
                         continue
                     if not isinstance(expr, (discord.File, discord.Embed, discord.Message)):
                         expr = repr(expr)
