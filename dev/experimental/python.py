@@ -117,7 +117,7 @@ class RootPython(Root):
         require_var_positional=False,
         usage="<code>"
     )
-    async def root_python(self, ctx: commands.Context, flag: str, *, code: str = None):
+    async def root_python(self, ctx: commands.Context, *, code: str = None):
         """Evaluate or execute Python code.
         When specifying a script, some placeholder texts can be set.
         `__previous__` = This is replaced with the previous script that was executed.
@@ -128,9 +128,9 @@ class RootPython(Root):
         """
         args = {"bot": self.bot, "ctx": ctx}
         mapping = {"--all-response": True, "--no-response": False}
-        response = mapping.get(flag.lower(), None)
+        response = mapping.get(code.split()[0].lower(), None)
         if response is None:
-            code = f"{flag} {code or ''}".strip()
+            code = f"{code.split()[0]} {code or ''}".strip()
         code = await __previous__(
             ctx,
             f"{' '.join(ctx.invoked_parents)} {ctx.invoked_with}",
