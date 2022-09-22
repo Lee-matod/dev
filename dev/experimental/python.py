@@ -15,8 +15,7 @@ import ast
 import contextlib
 import inspect
 import io
-from collections.abc import Sequence
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, AsyncGenerator, Dict, Sequence, Optional
 
 import discord
 from discord.ext import commands
@@ -30,6 +29,10 @@ from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper
+
+
+def sequence(seq: Sequence[Any], type_obj: type, /) -> bool:
+    return all(isinstance(elem, type_obj) for elem in seq)
 
 
 class Execute:
@@ -130,7 +133,8 @@ class RootPython(Root):
         mapping = {"--all-response": True, "--no-response": False}
         response = mapping.get(code.split()[0].lower(), None)
         if response is None:
-            code = f"{code.split()[0]} {code or ''}".strip()
+            if code.split()[0] != code:
+                code = f"{code.split()[0]} {code.split()[1:]}".strip()
         code = await __previous__(
             ctx,
             f"{' '.join(ctx.invoked_parents)} {ctx.invoked_with}",
@@ -147,13 +151,8 @@ class RootPython(Root):
                     elif response is False:
                         continue
                     if not isinstance(
-                            expr,
-                            (discord.Embed,
-                             Sequence[discord.Embed],
-                             discord.File,
-                             Sequence[discord.File],
-                             discord.ui.View)
-                    ):
+                            expr, (discord.Embed, discord.File, discord.ui.View)
+                    ) or sequence(expr, discord.Embed) or sequence(expr, discord.File):  # type: ignore
                         expr = repr(expr)
                     if isinstance(expr, str):
                         await send(ctx, codeblock_wrapper(expr, "py"))
