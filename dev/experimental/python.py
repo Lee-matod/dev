@@ -128,8 +128,8 @@ class RootPython(Root):
         """
         args = {"bot": self.bot, "ctx": ctx}
         mapping = {"--all-response": True, "--no-response": False}
-        flag = mapping.get(flag.lower(), None)
-        if flag is None:
+        response = mapping.get(flag.lower(), None)
+        if response is None:
             code = f"{flag} {code}".strip()
         code = await __previous__(
             ctx,
@@ -142,9 +142,9 @@ class RootPython(Root):
         async with ExceptionHandler(ctx.message):
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 async for expr in Execute(code, self.vars if self.retain else GlobalLocals(), args):
-                    if expr is None and flag is None:
+                    if expr is None and response is None:
                         continue
-                    elif flag is False:
+                    elif response is False:
                         continue
                     if not isinstance(
                             expr,
