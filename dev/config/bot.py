@@ -183,10 +183,10 @@ class RootBot(Root):
                     unsuccessful.append(f"{ext} ‒ {e}")
             end = time.perf_counter()
             reloaded_cogs = ("☑ " + "\n☑ ".join(successful) if successful else "") + \
-                            ("❌ " + "\n❌ ".join(unsuccessful) if unsuccessful else '')
+                            ("\n❌ " + "\n❌ ".join(unsuccessful) if unsuccessful else "")
             embed = discord.Embed(
                 title=f"Reloaded {plural(len(successful), 'Cog')}",
-                description=reloaded_cogs,
+                description=reloaded_cogs.strip("\n"),
                 color=discord.Color.blurple()
             )
             embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
