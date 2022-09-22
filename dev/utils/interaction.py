@@ -118,14 +118,23 @@ class SyntheticInteraction:
         ]
         kwargs = {}
         for param in parameters:
-            base_converter = CONVERSIONS.get(param.annotation, None)
-            if base_converter is not None:
+            if base_converter := CONVERSIONS.get(param.annotation, False):
                 kwargs[param.name] = await base_converter.convert(self._context, param.argument)
+            elif choices := self._command.get_parameter(param.name).choices:
+                for choice in choices:
+                    if choice.name == param.argument:
+                        kwargs[param.name] = choice.value
+                        break
             elif inspect.isclass(param.annotation):
                 if issubclass(param.annotation, commands.Converter):
                     kwargs[param.name] = await param.annotation().convert(self._context, param.argument)
                 elif issubclass(param.annotation, app_commands.Transformer):
                     kwargs[param.name] = await param.annotation().transform(self, param.argument)  # type: ignore
+                else:
+                    try:
+                        kwargs[param.name] = param.annotation(param.argument)  # type: ignore
+                    except TypeError:
+                        kwargs[param.name] = param.argument
             elif not inspect.isclass(param.annotation):
                 if isinstance(param.annotation, commands.Converter):
                     kwargs[param.name] = await param.annotation.convert(self._context, param.argument)
@@ -137,10 +146,7 @@ class SyntheticInteraction:
             elif param.annotation == bool:
                 kwargs[param.name] = convert_str_to_bool(param.argument)
             else:
-                try:
-                    kwargs[param.name] = param.annotation(param.argument)  # type: ignore
-                except TypeError:
-                    kwargs[param.name] = param.argument
+                kwargs[param.name] = param.argument
         return kwargs
 
     async def invoke(self):  # Acts as commands.Command.invoke
@@ -353,3 +359,4 @@ class InteractionResponse(discord.InteractionResponse):
         if self._parent._unknown_interaction:
             raise discord.NotFound(UnknownInteraction, {"code": 10062, "message": "Unknown interaction"})  # type: ignore
         self._response_type = discord.InteractionResponseType.autocomplete_result
+

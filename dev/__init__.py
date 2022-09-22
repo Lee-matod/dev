@@ -13,7 +13,7 @@ A simple debugging, editing and testing extension for discord.py version 2.0.
 __title__ = "dev"
 __author__ = "Lee"
 __license__ = "Apache 2.0"
-__version__ = "1.0.2b"
+__version__ = "1.0.3b"
 
 
 from dev.__main__ import *
