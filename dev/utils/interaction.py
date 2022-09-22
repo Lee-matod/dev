@@ -81,6 +81,15 @@ class Parameter(NamedTuple):
     argument: str
 
 
+class InvalidChoice(app_commands.AppCommandError):
+    def __init__(self, parameter: Parameter, choices: List[app_commands.Choice]):
+        super().__init__(
+            f"Choice value {parameter.argument!r} "
+            f"passed to {parameter.name} "
+            f"not found as a valid choice: {', '.join([choice.name for choice in choices])}"
+        )
+
+
 class SyntheticInteraction:
     def __init__(self, context: commands.Context, command: app_commands.Command):
         self._context: commands.Context = context
@@ -125,16 +134,17 @@ class SyntheticInteraction:
                     if choice.name == param.argument:
                         kwargs[param.name] = choice.value
                         break
+                else:
+                    raise InvalidChoice(param, choices)
             elif inspect.isclass(param.annotation):
                 if issubclass(param.annotation, commands.Converter):
                     kwargs[param.name] = await param.annotation().convert(self._context, param.argument)
                 elif issubclass(param.annotation, app_commands.Transformer):
                     kwargs[param.name] = await param.annotation().transform(self, param.argument)  # type: ignore
-                else:
-                    try:
-                        kwargs[param.name] = param.annotation(param.argument)  # type: ignore
-                    except TypeError:
-                        kwargs[param.name] = param.argument
+                try:
+                    kwargs[param.name] = param.annotation(param.argument)  # type: ignore
+                except TypeError:
+                    kwargs[param.name] = param.argument
             elif not inspect.isclass(param.annotation):
                 if isinstance(param.annotation, commands.Converter):
                     kwargs[param.name] = await param.annotation.convert(self._context, param.argument)
