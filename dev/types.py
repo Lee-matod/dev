@@ -12,7 +12,7 @@ Type shortcuts used for type hinting and type checking as well as enums.
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, Coroutine, Sequence, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, TypeVar, Union
 from typing_extensions import Concatenate, ParamSpec
 
 import discord
@@ -48,6 +48,7 @@ GroupT = TypeVar("GroupT", bound="Group")
 Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T][T]]
 
 if TYPE_CHECKING:
+    from typing import Sequence
     Bot = Union[commands.Bot, commands.AutoShardedBot]
     Channel = Union[
         discord.TextChannel,
@@ -70,6 +71,7 @@ if TYPE_CHECKING:
     User = Union[discord.ClientUser, discord.Member, discord.User]
 
 else:
+    from collections.abc import Sequence
     Bot = (commands.Bot, commands.AutoShardedBot)
     Channel = (
         discord.TextChannel,
@@ -85,7 +87,8 @@ else:
         Sequence[discord.Embed],
         discord.File,
         Sequence[discord.File],
-        Union[discord.GuildSticker, discord.StickerItem],
+        discord.GuildSticker,
+        discord.StickerItem,
         discord.ui.View
     )
     Setting = (bool, set, str)

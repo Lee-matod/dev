@@ -15,6 +15,7 @@ import ast
 import contextlib
 import inspect
 import io
+from collections.abc import Sequence
 from typing import Any, AsyncGenerator, Dict, Optional
 
 import discord
@@ -145,7 +146,14 @@ class RootPython(Root):
                         continue
                     elif flag is False:
                         continue
-                    if not isinstance(expr, (discord.File, discord.Embed, discord.Message)):
+                    if not isinstance(
+                            expr,
+                            (discord.Embed,
+                             Sequence[discord.Embed],
+                             discord.File,
+                             Sequence[discord.File],
+                             discord.ui.View)
+                    ):
                         expr = repr(expr)
                     if isinstance(expr, str):
                         await send(ctx, codeblock_wrapper(expr, "py"))
