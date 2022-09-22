@@ -9,10 +9,18 @@ with open("dev/__init__.py") as file:
 if version.endswith(("a", "b", "rc")):
     try:
         import subprocess
-        count, err = subprocess.Popen(["git", "rev-list", "--count", "HEAD"]).communicate()
+        count, err = subprocess.Popen(
+            ["git", "rev-list", "--count", "HEAD"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        ).communicate()
         if count:
             version += count.decode("utf-8").strip()
-        count, err = subprocess.Popen(["git", "rev-list", "--short", "HEAD"]).communicate()
+        count, err = subprocess.Popen(
+            ["git", "rev-list", "--short", "HEAD"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        ).communicate()
         if count:
             version += f"+g{count.decode('utf-8').strip()}"
     except:  # noqa E722
