@@ -56,7 +56,7 @@ class BaseCommand:
     def __init__(self, func: Callback, **kwargs):
         if not asyncio.iscoroutinefunction(func):
             raise TypeError("Callback must be a coroutine.")
-        name = kwargs.get("name") or func.__name__
+        name = kwargs.pop("name", None) or func.__name__
         if not isinstance(name, str):
             raise TypeError("Name of a command must be a string.")
         self.name: str = name
