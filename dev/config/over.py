@@ -16,7 +16,7 @@ import contextlib
 import inspect
 import io
 import textwrap
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import discord
 from discord.ext import commands
@@ -185,7 +185,8 @@ class RootOver(Root):
         parent="dev override",
         virtual_vars=True,
         require_var_positional=True,
-        usage="<command_name> <script>")
+        usage="<command_name> <script>"
+    )
     async def root_override_command(self, ctx: commands.Context, *, command_code: CodeblockConverter):
         r"""Temporarily override a command.
         All changes will be undone once the bot is restart or the cog is reloaded.
@@ -203,8 +204,20 @@ class RootOver(Root):
             return await send(ctx, "The command's source code exceeds the 4000 maximum character limit.")
         if not script:
             return await send(ctx, CodeView(ctx, command, self))
-
         self.bot.remove_command(command_string)
+
+        # get file imports, so you don't have to import everything yourself
+        base_command = self.get_base_command(command.qualified_name)
+        imports: List[ast.Import] = []
+        from_imports: List[ast.ImportFrom] = []
+        if base_command is not None:
+            file = inspect.getsourcefile(base_command.callback)
+            with open(file, "r") as f:
+                read = f.read()
+            parsed_base_file = ast.parse(read)
+            imports = [expr for expr in parsed_base_file.body if isinstance(expr, ast.Import)]
+            from_imports = [expr for expr in parsed_base_file.body if isinstance(expr, ast.ImportFrom)]
+
         script = clean_code(replace_vars(script, Root.scope))
         lcls = {"discord": discord, "commands": commands, "bot": self.bot}
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -217,6 +230,32 @@ class RootOver(Root):
                         ctx,
                         "The entire parent body should only consist of a single asynchronous function definition."
                     )
+                # format imports
+                imports_string = ""
+                if imports:
+                    for _import in imports:
+                        imports_string += "import "
+                        names = []
+                        for name in _import.names:
+                            if name.asname is not None:
+                                names.append(f"{name.name} as {name.asname}")
+                            else:
+                                names.append(name.name)
+                        imports_string += ", ".join(names) + "\n"
+                imports_string += "\n"
+                if from_imports:
+                    for from_import in from_imports:
+                        imports_string += f"from {'.' * from_import.level}{from_import.module} import "
+                        names = []
+                        for name in from_import.names:
+                            if name.asname is not None:
+                                names.append(f"{name.name} as {name.asname}")
+                            else:
+                                names.append(name.name)
+                        imports_string += ", ".join(names) + "\n"
+                imports_string += "\n"
+                imports_string = imports_string.strip("\n")
+
                 # prepare variables for script wrapping
                 func: ast.AsyncFunctionDef = parsed.body[-1]  # type: ignore
                 body = textwrap.indent("\n".join(script.split("\n")[len(func.decorator_list) + 1:]), "\t")
@@ -224,7 +263,12 @@ class RootOver(Root):
                 upper = "\n".join(script.split("\n")[:func.lineno - 1])
 
                 exec(
-                    f"async def func():\n\t{upper}\n\tasync def {func.name}({parameters}\n{body}\n\treturn {func.name}",
+                    f"{imports_string}"
+                    f"async def func():\n"
+                    f"\t{upper}\n"
+                    f"\tasync def {func.name}({parameters}\n"
+                    f"{body}\n"
+                    f"\treturn {func.name}",
                     lcls
                 )
                 obj = await lcls["func"]()
