@@ -217,8 +217,11 @@ class RootOver(Root):
             with open(file, "r") as f:
                 read = f.read()
             command_registrations = [cmd for cmd in self.registers_from_type(OverType.COMMAND)
-                                     if cmd.qualified_name == command.qualified_name][-1]
-            file = read.replace(command_registrations.source, "")
+                                     if cmd.qualified_name == command.qualified_name]
+            if command_registrations:
+                file = read.replace(command_registrations[-1].source, "")
+            else:
+                file = read.replace(base_command.source, "")
             additional_attrs = {}
             exec(compile(file, "<exec>", "exec"), additional_attrs)
 
