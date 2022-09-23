@@ -134,7 +134,7 @@ class RootPython(Root):
         response = mapping.get(code.split()[0].lower(), None)
         if response is None:
             if code.split()[0] != code:
-                code = f"{code.split()[0]} {code.split()[1:]}".strip()
+                code = f"{code.split()[0]} {code[len(code.split()[0]) + 1:]}".strip()
         code = await __previous__(
             ctx,
             f"{' '.join(ctx.invoked_parents)} {ctx.invoked_with}",
