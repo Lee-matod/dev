@@ -178,6 +178,7 @@ class Root(commands.Cog):
             command = command.to_instance(self.commands)
             self.commands[command.qualified_name] = command
             self.commands[command.qualified_name].cog = self
+        bot.add_command(self.commands.get("dev"))
 
     def get_base_command(self, command_name: str, /) -> Optional[BaseCommandRegistration]:
         for base in self._base_registrations:
