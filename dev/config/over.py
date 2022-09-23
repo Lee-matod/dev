@@ -268,6 +268,10 @@ class RootOver(Root):
                     self.bot.remove_command(obj.qualified_name)
                     self.bot.add_command(command)
                     return await send(ctx, "The command's name cannot be changed.")
+                if command.parent is not None:
+                    command.parent.add_command(command)
+                else:
+                    self.bot.add_command(command)
                 self.update_register(
                     CommandRegistration(
                         obj,
