@@ -254,7 +254,7 @@ class RootOver(Root):
                                 names.append(name.name)
                         imports_string += ", ".join(names) + "\n"
                 imports_string += "\n"
-                imports_string = imports_string.strip("\n")
+                imports_string = imports_string.lstrip("\n")
 
                 # prepare variables for script wrapping
                 func: ast.AsyncFunctionDef = parsed.body[-1]  # type: ignore
