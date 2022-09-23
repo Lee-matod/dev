@@ -130,11 +130,6 @@ class RootPython(Root):
         message, or to send a message, even if the result is None.
         """
         args = {"bot": self.bot, "ctx": ctx}
-        mapping = {"--all-response": True, "--no-response": False}
-        response = mapping.get(code.split()[0].lower(), None)
-        if response is None:
-            if code.split()[0] != code:
-                code = f"{code.split()[0]} {code[len(code.split()[0]) + 1:]}".strip()
         code = await __previous__(
             ctx,
             f"{' '.join(ctx.invoked_parents)} {ctx.invoked_with}",
@@ -146,9 +141,7 @@ class RootPython(Root):
         async with ExceptionHandler(ctx.message):
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 async for expr in Execute(code, self.vars if self.retain else GlobalLocals(), args):
-                    if expr is None and response is None:
-                        continue
-                    elif response is False:
+                    if expr is None:
                         continue
                     if not isinstance(
                             expr, (discord.Embed, discord.File, discord.ui.View)
