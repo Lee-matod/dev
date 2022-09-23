@@ -20,7 +20,6 @@ from discord.ext import commands
 from dev import types
 
 from dev.converters import LiteralModes, convert_str_to_ints
-from dev.handlers import optional_raise
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import all_commands, send
@@ -153,7 +152,7 @@ class RootBot(Root):
         embed.add_field(name="Information", value=information_field, inline=False)
         await send(ctx, embed)
 
-    @root_bot.command(name="perms", aliases=["permissions"])
+    @root.command(name="perms", parent="dev bot", aliases=["permissions"])
     async def root_bot_here(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
         """Shows the bot's permissions in this guild."""
         view = PermissionsSelector(ctx.me, channel)
@@ -166,7 +165,7 @@ class RootBot(Root):
             view
         )
 
-    @root_bot.command(name="reload")
+    @root.command(name="reload", parent="dev bot")
     async def root_bot_reload(self, ctx: commands.Context, *cogs: str):
         """Reload all or a specific set of the bot's extension(s)
         If specific cogs are specified, they should be separated by a blank space.
@@ -212,7 +211,7 @@ class RootBot(Root):
         embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
         return await send(ctx, embed)
 
-    @root_bot.command(name="edit")
+    @root.command(name="edit", parent="dev bot")
     async def root_bot_edit(
             self,
             ctx: commands.Context,
@@ -265,7 +264,7 @@ class RootBot(Root):
                 f"Successfully changed `{attr}` to `{'`, `'.join(str(owner) for owner in self.bot.owner_ids) or 'None'}`"
             )
 
-    @root_bot.command(name="enable", require_var_positional=True)
+    @root.command(name="enable", parent="dev bot", require_var_positional=True)
     async def root_bot_enable(self, ctx: commands.Context, *, command_name: str):
         """Enable a command.
         It is not recommended to disable this command using `dev bot disable`.
@@ -278,7 +277,7 @@ class RootBot(Root):
         command.enabled = True
         await ctx.message.add_reaction("☑")
 
-    @root_bot.command(name="disable", require_var_positional=True)
+    @root.command(name="disable", parent="dev bot", require_var_positional=True)
     async def root_bot_disable(self, ctx: commands.Context, *, command_name: str):
         """Disable a command.
         It is not recommended to disable the `dev bot enable` command.
@@ -293,14 +292,8 @@ class RootBot(Root):
         command.enabled = False
         await ctx.message.add_reaction("☑")
 
-    @root_bot.command(name="close")
+    @root.command(name="close", parent="dev bot")
     async def root_bot_close(self, ctx: commands.Context):
         """Closes the bot."""
         await ctx.message.add_reaction("👋")
         await self.bot.close()
-
-    @root_bot.error
-    async def root_bot_error(self, ctx: commands.Context, error: commands.CommandError):
-        if isinstance(error, commands.TooManyArguments):
-            return await send(ctx, f"`dev bot` has no subcommand called `{ctx.subcommand_passed}`.")
-        optional_raise(ctx, error)

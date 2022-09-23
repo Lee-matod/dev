@@ -22,7 +22,6 @@ from dev import types
 __all__ = (
     "Settings",
     "set_settings",
-    "setup_"
 )
 
 
@@ -115,14 +114,3 @@ def check_types(bot: types.Bot) -> None:
         path = pathlib.Path(Settings.PATH_TO_FILE)
         if not path.exists():
             raise ValueError(f"Path {Settings.PATH_TO_FILE!r} does not exist")
-
-
-async def setup_(bot: types.Bot) -> None:
-    # Circular import
-    from dev.utils.baseclass import Group, root
-
-    root_command: Group = bot.get_command("dev")  # type: ignore
-    # noinspection PyProtectedMember
-    for cmd, parent in root._add_parent.items():
-        root_command.add_command(cmd)
-        bot.remove_command(cmd.name)

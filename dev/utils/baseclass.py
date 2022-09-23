@@ -11,7 +11,8 @@ Basic classes used within the dev extension.
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional, List, Tuple, TypeVar, Union, overload
+import asyncio
+from typing import Callable, Dict, Optional, List, Tuple, TypeVar, Union, overload
 
 from discord.ext import commands
 from discord.utils import MISSING
@@ -19,203 +20,123 @@ from discord.utils import MISSING
 from dev import types
 from dev.handlers import GlobalLocals
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
-from dev.types import Callback, CommandT, GroupT, Over
+from dev.types import Callback, Over
 
 
 __all__ = (
     "Command",
     "Group",
-    "GroupMixin",
     "Root",
     "root"
 )
 
 CST = TypeVar("CST", CommandRegistration, SettingRegistration)
 
+class root:  # noqa E302
 
-class GroupMixin(commands.GroupMixin):
-    """A subclasses of :class:`commands.GroupMixin` that overrides command registering functionality.
-
-    You would usually want to create an instance of this class and start registering your commands from there.
-
-    Attributes
-    ----------
-    all_commands: Dict[:class:`str`, Union[:class:`Command`, :class:`Group`]]
-        A dictionary of all registered commands and their qualified names.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.all_commands: Dict[str, types.Command] = {}
-        self._add_parent: Dict[types.Command, str] = {}
-
-    def group(
-            self,
-            name: str = MISSING,
-            *args: Any,
-            **kwargs: Any) -> Callable[
-        [
-            Callback
-        ],
-        GroupT
-    ]:
-        def decorator(func: Callback) -> Group:
-            parent: str = kwargs.get("parent", MISSING)
-            kwargs.setdefault('parent', self)
-            if isinstance(func, Group):
-                raise TypeError('Callback is already a command.')
-            result = Group(func, name=name, **kwargs)
-            self.all_commands[name] = result
-            if parent:
-                self._add_parent[result] = parent
-            return result
-        return decorator
-
-    def command(
-            self,
-            name: str = MISSING,
-            *args: Any,
-            **kwargs: Any) -> Callable[
-        [
-            Callback,
-        ],
-        CommandT
-    ]:
+    @staticmethod
+    def command(name: str = MISSING, **kwargs) -> Callable[[Callback], Command]:
         def decorator(func: Callback) -> Command:
-            parent: str = kwargs.get("parent", MISSING)
-            kwargs.setdefault('parent', self)
             if isinstance(func, Command):
-                raise TypeError('Callback is already a command.')
-            result = Command(func, name=name, **kwargs)
-            self.all_commands[name] = result
-            if parent:
-                self._add_parent[result] = parent
-            return result
+                raise TypeError("Callback is already a command.")
+            return Command(func, name=name, **kwargs)
+        return decorator
 
+    @staticmethod
+    def group(name: str = MISSING, **kwargs) -> Callable[[Callback], Group]:
+        def decorator(func: Callback) -> Group:
+            if isinstance(func, Group):
+                raise TypeError("Callback is already a group.")
+            return Group(func, name=name, **kwargs)
         return decorator
 
 
-root = GroupMixin()
-
-
-class Group(commands.Group):
-    """A subclasses of :class:`commands.Group` which adds a few extra properties for commands."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.args = args
+class BaseCommand:
+    """Class that implements common functionality within both :class:`Command` and :class:`Group`"""
+    def __init__(self, func: Callback, **kwargs):
+        if not asyncio.iscoroutinefunction(func):
+            raise TypeError("Callback must be a coroutine.")
+        name = kwargs.get("name") or func.__name__
+        if not isinstance(name, str):
+            raise TypeError("Name of a command must be a string.")
+        self.name: str = name
+        self.callback: Callback = func
+        self.parent: str = kwargs.pop("parent", None)
         self.kwargs = kwargs
+
+        self.level: int = 0
+        if self.parent:
+            self.level = len(self.parent.split())
+
+        self.extras: Dict[str, bool] = {
+            "global_use": kwargs.pop("global_use", None),
+            "virtual_vars": kwargs.pop("virtual_vars", False),
+            "root_placeholder": kwargs.pop("root_placeholder", False)
+        }
+        extras = self.kwargs.setdefault("extras", self.extras)
+        if extras:
+            extras.update(self.extras)
 
     @property
     def global_use(self) -> bool:
         """:class:`bool`:
         Check whether this command is allowed to be invoked by any user.
         """
-        return self.kwargs.get("global_use", False)
+        return self.extras.get("global_use")
 
     @global_use.setter
     def global_use(self, value: bool):
-        if self.kwargs.get("global_use") is None:
+        if self.extras.get("global_use") is None:
             raise TypeError("Cannot toggle global use value for a group that didn't have it enabled in the first place")
         if not isinstance(value, bool):
-            raise TypeError(f"Expected bool type but received {type(value).__name__}")
-        self.kwargs["global_use"] = value
+            raise TypeError(f"Expected type bool but received {type(value).__name__}")
+        self.extras["global_use"] = value
 
     @property
-    def supports_virtual_vars(self) -> bool:
+    def virtual_vars(self) -> bool:
         """:class:`bool`:
         Check whether this command is compatible with the use of out-of-scope variables.
         """
-        return self.kwargs.get("virtual_vars", False)
+        return self.extras.get("virtual_vars")
 
     @property
-    def supports_root_placeholder(self) -> bool:
+    def root_placeholder(self) -> bool:
         """:class:`bool`:
         Check whether this command is compatible with the `|root|` placeholder text.
         """
-        return self.kwargs.get("root_placeholder", False)
-
-    def group(
-            self,
-            name: str = MISSING,
-            *args: Any,
-            **kwargs: Any) -> Callable[
-        [
-            Callback,
-        ],
-        CommandT
-    ]:
-        def decorator(func: Callback) -> Group:
-            kwargs.setdefault('parent', self)
-            if isinstance(func, Group):
-                raise TypeError('Callback is already a command.')
-            result = Group(func, name=name, **kwargs)
-            self.add_command(result)
-            root.all_commands[result.qualified_name] = result
-            return result
-        return decorator
-
-    def command(
-            self,
-            name: str = MISSING,
-            *args: Any,
-            **kwargs: Any) -> Callable[
-        [
-            Callback,
-        ],
-        CommandT
-    ]:
-        def decorator(func: Callback) -> Command:
-            kwargs.setdefault('parent', self)
-            if isinstance(func, Command):
-                raise TypeError('Callback is already a command.')
-            result = Command(func, name=name, **kwargs)
-            self.add_command(result)
-            root.all_commands[result.qualified_name] = result
-            return result
-
-        return decorator
+        return self.extras.get("root_placeholder")
 
 
-class Command(commands.Command):
-    """A subclasses of :class:`commands.Command` which adds a few extra properties for commands."""
+class Group(BaseCommand):
+    """A class that simulates a :class:`commands.Group` class"""
 
-    def __init__(self, func, *args, **kwargs):
-        super().__init__(func, **kwargs)
-        list(args).append(func)
-        self.args = tuple(args)
-        self.kwargs = kwargs
+    def to_instance(self, command_mapping: Dict[str, types.Command], /) -> commands.Group:
+        if self.parent:
+            command = command_mapping.get(self.parent)
+            if not command:
+                raise RuntimeError("Couldn't find group command's parent")
+            if not isinstance(command, commands.Group):
+                raise RuntimeError("Group's parent command is not commands.Group instance")
+            deco = command.group
+        else:
+            deco = commands.group
+        return deco(name=self.name, **self.kwargs)(self.callback)
 
-    @property
-    def global_use(self) -> bool:
-        """:class:`bool`:
-        Check whether this command is allowed to be invoked by any user.
-        """
-        return self.kwargs.get("global_use", False)
 
-    @global_use.setter
-    def global_use(self, value: bool):
-        if self.kwargs.get("global_use") is None:
-            raise TypeError(
-                "Cannot toggle global use value for a command that didn't have it enabled in the first place"
-            )
-        if not isinstance(value, bool):
-            raise ValueError(f"Expected bool type but received {type(value).__name__}")
-        self.kwargs["global_use"] = value
+class Command(BaseCommand):
+    """A class that simulates a :class:`commands.Command` class"""
 
-    @property
-    def supports_virtual_vars(self) -> bool:
-        """:class:`bool`:
-        Check whether this command is compatible with the use of out-of-scope variables.
-        """
-        return self.kwargs.get("virtual_vars", False)
-
-    @property
-    def supports_root_placeholder(self) -> bool:
-        """:class:`bool`:
-        Check whether this command is compatible with the `|root|` placeholder text.
-        """
-        return self.kwargs.get("root_placeholder", False)
+    def to_instance(self, command_mapping: Dict[str, types.Command], /) -> commands.Group:
+        if self.parent:
+            command = command_mapping.get(self.parent)
+            if not command:
+                raise RuntimeError("Couldn't find command command's parent")
+            if not isinstance(command, commands.Group):
+                raise RuntimeError("Command's parent command is not commands.Group instance")
+            deco = command.command
+        else:
+            deco = commands.command
+        return deco(name=self.name, **self.kwargs)(self.callback)
 
 
 class Root(commands.Cog):
@@ -233,8 +154,6 @@ class Root(commands.Cog):
     ----------
     bot: :class:`commands.Bot`
         The bot instance that was passed to :meth:`baseclass.Root`
-    root_command: Optional[Group]
-        The root command (`dev`) of the extension.
     """
 
     scope: GlobalLocals = GlobalLocals()
@@ -243,16 +162,22 @@ class Root(commands.Cog):
         from dev.utils.functs import all_commands  # circular import
 
         self.bot: types.Bot = bot
-        self.root_command: Optional[Group] = root.all_commands.get("dev")
+        self.commands: Dict[str, types.Command] = {}
         self.registrations: Dict[int, Union[CommandRegistration, SettingRegistration]] = {}
         self._base_registrations: Tuple[BaseCommandRegistration, ...] = tuple(
             [BaseCommandRegistration(cmd) for cmd in all_commands(self.bot.commands)]
         )
 
+        root_commands: List[Union[Command, Group]] = []
         for kls in type(self).__mro__:
             for key, cmd in kls.__dict__.items():
                 if isinstance(cmd, (Command, Group)):
-                    cmd.cog = self
+                    root_commands.append(cmd)
+        root_commands.sort(key=lambda c: c.level)
+        for command in root_commands:
+            command = command.to_instance(self.commands)
+            self.commands[command.qualified_name] = command
+            self.commands[command.qualified_name].cog = self
 
     def get_base_command(self, command_name: str, /) -> Optional[BaseCommandRegistration]:
         for base in self._base_registrations:

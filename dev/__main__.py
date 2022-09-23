@@ -18,8 +18,6 @@ import discord
 from discord.ext import commands
 import psutil
 
-from dev.handlers import optional_raise
-
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
@@ -50,41 +48,36 @@ class RootCommand(Root):
         process = psutil.Process()
         version = sys.version.replace("\n", "")
         description = f"dev is a simple debugging, testing and editing extension for discord.py. " \
-                      f"It features a total of {plural(len(root.all_commands), 'command')} which were loaded <t:{self.load_time}:R>.\n" \
+                      f"It features a total of {plural(len(self.commands), 'command')} which were loaded <t:{self.load_time}:R>.\n" \
                       f"\nThis process (`{process.name()} {str(__file__).split('/')[-1]}`) is currently running on Python version `{version}` on a `{sys.platform}` machine, " \
                       f"with discord version `{discord.__version__}` and dev version `{sys.modules['dev'].__version__}`.\n" \
                       f"Running with a PID of `{os.getpid()}` and {plural(process.num_threads(), 'thread')} which are using " \
                       f"`{round((psutil.getloadavg()[2] / os.cpu_count()) * 100, 2)}%` of CPU power and `{round(process.memory_percent(), 2)}%` of memory.\n"
         await send(ctx, description)
 
-    @root_.command(name="exit", aliases=["quit", "kys"])
+    @root.command(name="exit", parent="dev", aliases=["quit", "kys"])
     async def root_exit(self, ctx: commands.Context):
         """Exit the whole code at once. Note that this may cause issues."""
         await ctx.message.add_reaction("👋")
         exit()
 
-    @root_.command(name="visibility")
+    @root.command(name="visibility", parent="dev")
     async def root_visibility(self, ctx: commands.Context, toggle: Optional[bool] = None):
         """Toggle whether the dev command is hidden."""
+        root_command = self.commands.get("dev")
         if toggle:
-            if self.root_command.hidden:
+            if root_command.hidden:
                 return await send(ctx, f"`dev` is already hidden.")
-            self.root_command.hidden = True
+            root_command.hidden = True
             await ctx.message.add_reaction("☑")
         elif toggle is None:
             translate = {True: "hidden", False: "visible"}
-            await send(ctx, f"`dev` is currently {translate.get(self.root_command.hidden)}.")
+            await send(ctx, f"`dev` is currently {translate.get(root_command.hidden)}.")
         else:
-            if not self.root_command.hidden:
+            if not root_command.hidden:
                 return await send(ctx, f"`dev` is already visible.")
-            self.root_command.hidden = False
+            root_command.hidden = False
             await ctx.message.add_reaction("☑")
-
-    @root_.error
-    async def root_error(self, ctx: commands.Context, error: commands.CommandError):
-        if isinstance(error, commands.TooManyArguments):
-            return await send(ctx, f"`dev` has no subcommand called `{ctx.subcommand_passed}`.")
-        optional_raise(ctx, error)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):

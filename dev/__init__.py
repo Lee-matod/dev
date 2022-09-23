@@ -13,7 +13,7 @@ A simple debugging, editing and testing extension for discord.py version 2.0.
 __title__ = "dev"
 __author__ = "Lee"
 __license__ = "Apache 2.0"
-__version__ = "1.0.9b"
+__version__ = "1.0.0rc"
 
 
 from dev.__main__ import *
@@ -40,7 +40,6 @@ __all__ = (
     "ExceptionHandler",
     "GlobalLocals",
     "Group",
-    "GroupMixin",
     "Interface",
     "LiteralModes",
     "Paginator",
@@ -79,4 +78,3 @@ class Dev(
 async def setup(bot: commands.Bot):
     await set_settings(bot)
     await bot.add_cog(Dev(bot))
-    await setup_(bot)

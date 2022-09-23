@@ -25,7 +25,7 @@ from dev import types
 
 from dev.types import Over, OverType
 from dev.converters import CodeblockConverter, convert_str_to_bool, convert_str_to_ints
-from dev.handlers import ExceptionHandler, replace_vars, optional_raise
+from dev.handlers import ExceptionHandler, replace_vars
 from dev.registrations import CommandRegistration, SettingRegistration
 
 from dev.config._views import CodeView, SettingView
@@ -97,7 +97,7 @@ class RootOver(Root):
             return await send(ctx, f"```py\n{table_creator(rows, ['IDs', 'Names', 'Descriptions'])}\n```")
         await send(ctx, "No overrides have been made.")
 
-    @root_override.command(name="undo")
+    @root.command(name="undo", parent="dev override")
     async def root_override_undo(self, ctx: commands.Context, index: int = 0):
         """Undo an override.
         If the specified override ID is not the last override, then it will simply get deleted.
@@ -115,7 +115,7 @@ class RootOver(Root):
         command.callback = self.match_register_command(override.qualified_name)[-1].callback
         await ctx.message.add_reaction("☑")
 
-    @root_override.command(name="changes")
+    @root.command(name="changes", parent="dev override")
     async def root_override_changes(self, ctx: commands.Context, index1: int = 0, index2: int = None):
         """Compare changes made between overrides. Optionally compare unique overrides."""
         if not (overrides := self.registers_from_type(Over.OVERRIDE)):
@@ -180,8 +180,9 @@ class RootOver(Root):
             ]
         )
 
-    @root_override.command(
+    @root.command(
         name="command",
+        parent="dev override",
         virtual_vars=True,
         require_var_positional=True,
         usage="<command_name> <script>")
@@ -246,8 +247,9 @@ class RootOver(Root):
                     Over.ADD
                 )
 
-    @root_override.command(
+    @root.command(
         name="setting",
+        parent="dev override",
         virtual_vars=True,
         aliases=["settings"],
         require_var_positional=True,
@@ -295,7 +297,7 @@ class RootOver(Root):
             return await send(ctx, codeblock_wrapper(table_creator(rows, ['IDs', 'Types', 'Descriptions']), "py"))
         await send(ctx, "No overwrites have been made.")
 
-    @root_overwrite.command(name="undo", aliases=["del", "delete"])
+    @root.command(name="undo", parent="dev overwrite", aliases=["del", "delete"])
     async def root_overwrite_undo(self, ctx: commands.Context, index: int = 0):
         """Undoes or deletes an overwrite.
         If the specified overwrite ID is not the last overwrite, then it will simply get deleted.
@@ -360,8 +362,9 @@ class RootOver(Root):
             self.update_register(overwrite, Over.DELETE)
             await ctx.message.add_reaction("☑")
 
-    @root_overwrite.command(
+    @root.command(
         name="command",
+        parent="dev overwrite",
         virtual_vars=True,
         require_var_positional=True,
         usage="<command_name> <script>"
@@ -434,7 +437,7 @@ class RootOver(Root):
         self.update_register(CommandRegistration(command, Over.OVERWRITE, source=code), Over.ADD)
         await ctx.message.add_reaction("☑")
 
-    @root_overwrite.command(name="setting", aliases=["settings"])
+    @root.command(name="setting", parent="dev overwrite", aliases=["settings"])
     async def root_overwrite_setting(self, ctx: commands.Context, *, settings: Optional[str] = None):
         """Temporarily change a setting's value. Settings will be reverted once the bot has been restarted.
         Command execution after setting specification isn't available in this mode.
@@ -480,15 +483,3 @@ class RootOver(Root):
                 color=discord.Color.green() if changed else discord.Color.red()
             )
         )
-
-    @root_override.error
-    async def root_override_error(self, ctx: commands.Context, error: commands.CommandError):
-        if isinstance(error, commands.TooManyArguments):
-            return await send(ctx, f"`dev override` has no subcommand called `{ctx.subcommand_passed}`.")
-        optional_raise(ctx, error)
-
-    @root_overwrite.error
-    async def root_overwrite_error(self, ctx: commands.Context, error: commands.CommandError):
-        if isinstance(error, commands.TooManyArguments):
-            return await send(ctx, f"`dev overwrite` has no subcommand called `{ctx.subcommand_passed}`.")
-        optional_raise(ctx, error)

@@ -62,7 +62,7 @@ class RootManagement(Root):
             return await send(ctx, f"```py\n{table_creator(rows, ['IDs', 'Types', 'Descriptions'])}\n```")
         await send(ctx, "No modifications have been made.")
 
-    @root_files.command(name="upload", root_placeholder=True, aliases=["new", "create"])
+    @root.command(name="upload", parent="dev files", root_placeholder=True, aliases=["new", "create"])
     async def root_files_upload(
             self,
             ctx: commands.Context,
@@ -85,7 +85,13 @@ class RootManagement(Root):
         self.files_rgs.append(ManagementRegistration(directory + attachment.filename, ManagementOperation.UPLOAD))
         await ctx.message.add_reaction("☑")
 
-    @root_files.command(name="edit", root_placeholder=True, aliases=["change"], require_var_positional=True)
+    @root.command(
+        name="edit",
+        parent="dev files",
+        root_placeholder=True,
+        aliases=["change"],
+        require_var_positional=True
+    )
     async def root_files_edit(self, ctx: commands.Context, attachment: discord.Attachment, *, directory: str):
         """Edit an existing file.
         This command does not change the file's name. Use `dev files|file rename` to accomplish this.
@@ -100,7 +106,7 @@ class RootManagement(Root):
         self.files_rgs.append(ManagementRegistration(directory, ManagementOperation.EDIT))
         await ctx.message.add_reaction("☑")
 
-    @root_files.command(name="rename", root_placeholder=True, require_var_positional=True)
+    @root.command(name="rename", parent="dev files", root_placeholder=True, require_var_positional=True)
     async def root_files_rename(self, ctx: commands.Context, new_name: str, *, directory: str):
         """Rename an existing file.
         The directory path should include the full name of the file that should be renamed.
@@ -120,7 +126,7 @@ class RootManagement(Root):
         self.files_rgs.append(ManagementRegistration(directory, ManagementOperation.RENAME, new_name))
         await ctx.message.add_reaction("☑")
 
-    @root_files.command(name="show", root_placeholder=True, aliases=["view"], require_var_positional=True)
+    @root.command(name="show", parent="dev files", root_placeholder=True, aliases=["view"], require_var_positional=True)
     async def root_files_show(self, ctx: commands.Context, *, directory: str):
         """Show an existing file.
         Files are evaluated and checked before sending, so the bot's token will be replaced with `[token]`
@@ -132,8 +138,9 @@ class RootManagement(Root):
         with open(directory, "r") as file:
             await send(ctx, discord.File(fp=io.BytesIO(file.read().encode('utf-8')), filename=directory.split("/")[-1]))
 
-    @root_files.command(
+    @root.command(
         name="delete",
+        parent="dev files",
         root_placeholder=True,
         aliases=["del", "remove", "rm"],
         require_var_positional=True
@@ -161,7 +168,13 @@ class RootManagement(Root):
             return await send(ctx, f"```py\n{table_creator(rows, ['IDs', 'Types', 'Descriptions'])}\n```")
         await send(ctx, "No modifications have been made.")
 
-    @root_folders.command(name="new", root_placeholder=True, aliases=["create", "mkdir"], require_var_positional=True)
+    @root.command(
+        name="new",
+        parent="dev folders",
+        root_placeholder=True,
+        aliases=["create", "mkdir"],
+        require_var_positional=True
+    )
     async def root_folders_new(self, ctx: commands.Context, *, directory: str):
         """Create a new folder.
         The folder's name cannot already exist.
@@ -175,7 +188,7 @@ class RootManagement(Root):
         self.folders_rgs.append(ManagementRegistration(directory, ManagementOperation.CREATE))
         await ctx.message.add_reaction("☑")
 
-    @root_folders.command(name="rename", root_placeholder=True, require_var_positional=True)
+    @root.command(name="rename", parent="dev folders", root_placeholder=True, require_var_positional=True)
     async def root_folders_rename(self, ctx: commands.Context, new_name: str, *, directory: str):
         """Rename an already existing folder.
         The directory path should include the full name of the folder that should be renamed.
@@ -191,7 +204,7 @@ class RootManagement(Root):
         self.folders_rgs.append(ManagementRegistration(directory, ManagementOperation.RENAME, new_name))
         await ctx.message.add_reaction("☑")
 
-    @root_folders.command(name="tree", root_placeholder=True, aliases=["tree!"])
+    @root.command(name="tree", parent="dev folders", root_placeholder=True, aliases=["tree!"])
     async def root_folders_tree(self, ctx: commands.Context, *, directory: Optional[str] = None):
         """Get the files and folders inside a given directory.
         If `directory` is None, then it will show the tree of the current working directory.
@@ -213,8 +226,9 @@ class RootManagement(Root):
         tree.append("```")
         await send(ctx, "\n".join(tree))
 
-    @root_folders.command(
+    @root.command(
         name="delete",
+        parent="dev folders",
         root_placeholder=True,
         aliases=["del", "remove", "rmdir", "rm"],
         require_var_positional=True
