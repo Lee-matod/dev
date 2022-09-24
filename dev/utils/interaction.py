@@ -137,18 +137,14 @@ class SyntheticInteraction:
                 else:
                     raise InvalidChoice(param, choices)
             elif inspect.isclass(param.annotation):
-                if issubclass(param.annotation, commands.Converter):
-                    kwargs[param.name] = await param.annotation().convert(self._context, param.argument)
-                elif issubclass(param.annotation, app_commands.Transformer):
+                if issubclass(param.annotation, app_commands.Transformer):
                     kwargs[param.name] = await param.annotation().transform(self, param.argument)  # type: ignore
                 try:
                     kwargs[param.name] = param.annotation(param.argument)  # type: ignore
                 except TypeError:
                     kwargs[param.name] = param.argument
             elif not inspect.isclass(param.annotation):
-                if isinstance(param.annotation, commands.Converter):
-                    kwargs[param.name] = await param.annotation.convert(self._context, param.argument)
-                elif isinstance(param.annotation, app_commands.Transformer):
+                if isinstance(param.annotation, app_commands.Transformer):
                     kwargs[param.name] = await param.annotation.transform(self, param.argument)  # type: ignore
             elif param.annotation is None and param.default not in (inspect.Parameter.empty, None):
                 # We should never run into this section, but might as well deal with it
@@ -163,18 +159,26 @@ class SyntheticInteraction:
         # noinspection PyProtectedMember
         if not await self._command._check_can_run(self):  # type: ignore  # This works for the time being
             raise commands.CheckFailure(f"The check functions for command {self._command.qualified_name!r} failed.")
-        arguments = self._context.message.content.removeprefix(f"/{self._command.qualified_name}")
+        arguments = self._context.message.content.removeprefix(f"/{self._command.qualified_name} ")
+        if len(self._command.parameters) == 1:
+            arguments = [arguments]
+        else:
+            arguments = shlex.split(arguments)
         # Pass in interaction and check if the command is inside a cog/group
         required = (self,) if self._command.binding is None else (self._command.binding, self)
-        parameters = await self.get_parameters(shlex.split(arguments), len(required))
+        parameters = await self.get_parameters(arguments, len(required))
         self._context.bot.loop.create_task(self._wait_for_response())
         await self._command.callback(*required, **parameters)
 
     async def reinvoke(self):  # Acts as commands.Command.reinvoke
         arguments = self._context.message.content.removeprefix(f"/{self._command.qualified_name}")
+        if len(self._command.parameters) == 1:
+            arguments = [arguments]
+        else:
+            arguments = shlex.split(arguments)
         # Pass in interaction and check if the command is inside a cog/group
         required = (self,) if self._command.binding is None else (self._command.binding, self)
-        parameters = await self.get_parameters(shlex.split(arguments), len(required))
+        parameters = await self.get_parameters(arguments, len(required))
         self._context.bot.loop.create_task(self._wait_for_response())
         await self._command.callback(*required, **parameters)
 
@@ -369,4 +373,3 @@ class InteractionResponse(discord.InteractionResponse):
         if self._parent._unknown_interaction:
             raise discord.NotFound(UnknownInteraction, {"code": 10062, "message": "Unknown interaction"})  # type: ignore
         self._response_type = discord.InteractionResponseType.autocomplete_result
-
