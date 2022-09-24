@@ -97,7 +97,7 @@ class RootManagement(Root):
         This command does not change the file's name. Use `dev files|file rename` to accomplish this.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
-        directory = self.format_path(directory)
+        directory = self.format_path(directory, back=False)
         if not pathlib.Path(directory).is_file():
             return await send(ctx, f"File `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
         with open(directory, "w") as file:
@@ -114,7 +114,7 @@ class RootManagement(Root):
         The new file name shouldn't already exist.
         """
         directory = self.format_path(directory)
-        new_name = self.format_path(new_name, front=False, back=False)
+        new_name = self.format_path(new_name, back=False)
         path = pathlib.Path(directory)
         if not path.is_file():
             return await send(ctx, f"File `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
@@ -132,7 +132,7 @@ class RootManagement(Root):
         Files are evaluated and checked before sending, so the bot's token will be replaced with `[token]`
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
-        directory = self.format_path(directory)
+        directory = self.format_path(directory, back=False)
         if not pathlib.Path(directory).is_file():
             return await send(ctx, f"File `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
         with open(directory, "r") as file:
@@ -196,7 +196,7 @@ class RootManagement(Root):
         The new folder name shouldn't already exist.
         """
         directory = self.format_path(directory)
-        new_name = self.format_path(new_name, front=False, back=False)
+        new_name = self.format_path(new_name, back=False)
         path = pathlib.Path(directory)
         if not path.exists():
             return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
@@ -258,14 +258,10 @@ class RootManagement(Root):
             self.folders_rgs.append(ManagementRegistration(directory, ManagementOperation.DELETE))
             await ctx.message.add_reaction("☑")
 
-    def format_path(self, directory: str, *, front: bool = True, back: bool = True) -> str:
+    def format_path(self, directory: str, *, back: bool = True) -> str:
         directory = directory.replace("\\", "/").replace("|root|", Settings.ROOT_FOLDER)
-        if directory.startswith("!"):
-            directory = directory.replace("!", self.cwd, 1).lstrip("/")
-        if front and not directory.startswith("/"):
-            directory = "/" + directory
-        elif not front and directory.startswith("/"):
-            directory = directory[1:]
+        if not directory.startswith("!"):
+            directory = self.cwd + directory.lstrip("/")
         if back and not directory.endswith("/"):
             directory += "/"
         elif not back and directory.endswith("/"):
