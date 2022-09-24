@@ -74,7 +74,7 @@ class RootManagement(Root):
         If `directory` is None, then it will be set to the current working directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
-        directory = self.format_path(directory)
+        directory = self.format_path(directory or self.cwd)
         if not pathlib.Path(directory).exists():
             return await send(ctx, f"Directory `{directory}` does not exist.")
         if pathlib.Path(directory + attachment.filename).is_file():
@@ -211,7 +211,7 @@ class RootManagement(Root):
         Execute `tree!` instead of `tree` to show the full path of the files and folders.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
-        directory = self.format_path(directory)
+        directory = self.format_path(directory or self.cwd)
         path = pathlib.Path(directory)
         if not path.exists():
             return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
@@ -238,7 +238,7 @@ class RootManagement(Root):
         If the folder is not empty, a prompt will pop up asking if you're sure you want to delete the directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
-        directory = self.format_path(directory or self.cwd)
+        directory = self.format_path(directory)
         path = pathlib.Path(directory)
         if not path.exists():
             return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
