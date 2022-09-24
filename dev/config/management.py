@@ -51,7 +51,7 @@ class RootManagement(Root):
         self.cwd = new_cwd + "/" if not new_cwd.endswith("/") else new_cwd
         await ctx.message.add_reaction("☑")
 
-    @root.group(name="files", parent="dev", aliases=["file"])
+    @root.group(name="files", parent="dev", aliases=["file"], invoke_without_command=True)
     async def root_files(self, ctx: commands.Context):
         """Everything related to file management."""
         if files := self.files_rgs:
@@ -157,7 +157,7 @@ class RootManagement(Root):
         self.files_rgs.append(ManagementRegistration(directory, ManagementOperation.DELETE))
         await ctx.message.add_reaction("☑")
 
-    @root.group(name="folders", parent="dev", aliases=["folder", "dir", "directory"])
+    @root.group(name="folders", parent="dev", aliases=["folder", "dir", "directory"], invoke_without_command=True)
     async def root_folders(self, ctx: commands.Context):
         """Everything related to folder management."""
         if folders := self.folders_rgs:
@@ -238,7 +238,7 @@ class RootManagement(Root):
         If the folder is not empty, a prompt will pop up asking if you're sure you want to delete the directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
-        directory = self.format_path(directory)
+        directory = self.format_path(directory or self.cwd)
         path = pathlib.Path(directory)
         if not path.exists():
             return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
