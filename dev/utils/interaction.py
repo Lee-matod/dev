@@ -158,7 +158,7 @@ class SyntheticInteraction:
     async def invoke(self):  # Acts as commands.Command.invoke
         # noinspection PyProtectedMember
         if not await self._command._check_can_run(self):  # type: ignore  # This works for the time being
-            raise commands.CheckFailure(f"The check functions for command {self._command.qualified_name!r} failed.")
+            raise app_commands.CheckFailure(f"The check functions for command {self._command.qualified_name!r} failed.")
         arguments = self._context.message.content.removeprefix(f"/{self._command.qualified_name} ")
         if len(self._command.parameters) == 1:
             arguments = [arguments]
