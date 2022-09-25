@@ -38,9 +38,7 @@ __all__ = (
 
 
 class GlobalLocals:
-    """This allows variables to be stored within a class instance, instead of a global scope or dictionary.
-
-    All parameters are positional-only.
+    """Allows variables to be stored within a class instance, instead of a global scope or a dictionary.
 
     Parameters
     ----------
@@ -92,40 +90,40 @@ class GlobalLocals:
     def __len__(self) -> int:
         return len(self.globals) + len(self.locals)
 
-    def items(self):
-        """Returns a list of all global and local scopes with their respective key-value pairs.
+    def items(self) -> Tuple[Tuple[str, ...], Tuple[Any, ...]]:
+        """Returns a tuple of all global and local scopes with their respective key-value pairs.
 
         Returns
         -------
-        Tuple[List[:class:`str`], List[Any]]
-            A joined list of global and local variables from the current scope.
+        Tuple[Tuple[:class:`str`, ...], Tuple[Any, ...]]
+            A joined tuple of global and local variables from the current scope.
         """
-        return self.globals.items(), self.locals.items()
+        return tuple(self.globals.items()), tuple(self.locals.items())
 
-    def keys(self):
-        """Returns a list of keys of all global and local scopes.
+    def keys(self) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+        """Returns a tuple of keys of all global and local scopes.
 
         Returns
         -------
-        Tuple[List[:class:`str`], List[:class:`str`]]
+        Tuple[Tuple[:class:`str`, ...], Tuple[:class:`str`, ...]]
             A tuple containing the list of global and local keys from the current scope.
         """
-        return self.globals.keys(), self.locals.keys()
+        return tuple(self.globals.keys()), tuple(self.locals.keys())
 
-    def values(self):
-        """Returns a list of values of all global and local scopes.
+    def values(self) -> Tuple[Tuple[Any, ...], Tuple[Any, ...]]:
+        """Returns a tuple of values of all global and local scopes.
 
         Returns
         -------
         Tuple[Tuple[Any, ...], Tuple[Any, ...]]
             A tuple containing the list of global and local values from the current scope.
         """
-        return self.globals.values(), self.locals.values()
+        return tuple(self.globals.values()), tuple(self.locals.values())
 
     def get(self, item: str, default: Any = None) -> Any:
         """Get an item from either the global scope or the locals scope.
 
-        Global scope will be search first, then local scope and if no item is found, the default will be returned.
+        Global scope will be searched first, then local scope and if no item is found, the default will be returned.
         It's best to use this when you are just trying to get a value without worrying about the scope.
 
         Parameters
@@ -152,8 +150,6 @@ class GlobalLocals:
     def update(self, __new_globals: Optional[Dict[str, Any]] = None, __new_locals: Optional[Dict[str, Any]] = None, /):
         """Update the current instance of variables with new ones.
 
-        All parameters are positional-only.
-
         Parameters
         ----------
         __new_globals: Optional[Dict[:class:`str`, Any]]
@@ -168,40 +164,32 @@ class GlobalLocals:
 
 
 class BoolInput(discord.ui.View):
-    """Allows the user to submit a yes or no answer through buttons.
-    If the user clicks on yes, a function is called and the view is removed.
+    """Allows the user to submit a true or false answer through buttons.
+
+    If the user clicks on "Yes", a function is called and the view is removed.
+
+    Subclass of :class:`discord.ui.View`.
 
     Examples
     --------
     .. codeblock:: python3
-        async def check(ctx: commands.Context):
+        # inside a command
+        async def check():
             await ctx.send("We shall continue!")
-        await ctx.send("Would you like to continue?", view=BoolInput(ctx.author, check, ctx))
+        await ctx.send("Would you like to continue?", view=BoolInput(ctx.author, check))
 
     Parameters
     ----------
-    author: Union[:class:`discord.abc.User`, :class:`int`]
-        The author of the message. It can be either their ID or User object.
-    func: :class:`callable`[Any, Any]
-        The function that should get called if the user clicks on the yes button.
-    args: :class:`Any`
-        The arguments that should be passed into the function once it gets executed, if any.
-    kwargs: :class:`Any`
-        The keyword arguments that should be passed into the function once it gets executed, if any.
+    author: Union[types.User, :class:`int`]
+        The author of the message. It can be either their ID or Discord object.
+    func: Optional[Callable[[], Any]]
+        The function that should get called if the user clicks on the "Yes" button. This function cannot have arguments.
     """
 
-    def __init__(
-            self,
-            author: Union[types.User, int],
-            func: Optional[Callable[..., Any]] = None,
-            *args: Any,
-            **kwargs: Any
-    ):
+    def __init__(self, author: Union[types.User, int], func: Optional[Callable[[], Any]] = None):
         super().__init__()
-        self.func: Optional[Callable[..., Any]] = func
+        self.func: Optional[Callable[[], Any]] = func
         self.author: int = author.id if isinstance(author, types.User) else author
-        self.args = args
-        self.kwargs = kwargs
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return self.author == interaction.user.id
@@ -209,10 +197,10 @@ class BoolInput(discord.ui.View):
     @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
     async def yes_button(self, interaction: discord.Interaction, _):
         if self.func is not None:
-            if inspect.isawaitable(self.func):
-                await self.func(*self.args, **self.kwargs)
+            if inspect.iscoroutinefunction(self.func):
+                await self.func()
             else:
-                self.func(*self.args, **self.kwargs)
+                self.func()
         await interaction.response.edit_message(content="Task has been executed.", view=None)
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.red)
@@ -222,8 +210,8 @@ class BoolInput(discord.ui.View):
 
 class ExceptionHandler:
     """Handle any exceptions in an async context manager.
-    If any exceptions are raised during the process' lifetime, the bot will try to add
-    reactions depending on the exception value.
+    If any exceptions are raised during the process' lifetime, the bot will try to add reactions depending on the
+    exception value.
 
     💢 – Syntax errors (EOFError, IndentationError).
     ⏰ – Timeout errors (asyncio.TimeoutError, TimeoutError).
@@ -241,12 +229,7 @@ class ExceptionHandler:
         This function *can* be a coroutine.
     save_traceback: :class:`bool`
         Whether to save a traceback if an exception is raised.
-        Defaults to ``False``.
-
-    Raises
-    ------
-    TypeError
-        The function passed into on_error has a keyword-only parameter in its signature.
+        Defaults to `False`.
     """
     error: List[Tuple[str, str]] = []
     debug: bool = False
@@ -262,11 +245,8 @@ class ExceptionHandler:
         self.on_error: Optional[Callable[..., Any]] = on_error
         if save_traceback:
             ExceptionHandler.debug = True
-        if self.on_error:
-            if inspect.signature(self.on_error).parameters:
-                raise TypeError("Parameters aren't supported in 'on_error' function")
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> ExceptionHandler:
         return self
 
     async def __aexit__(self, exc_type: Type[Exception], exc_val: Exception, exc_tb: TracebackType):
@@ -303,7 +283,7 @@ class ExceptionHandler:
             else:  # error doesn't fall under any other category
                 await self.message.add_reaction("‼")
         if self.on_error:
-            if inspect.isawaitable(self.on_error):
+            if inspect.iscoroutinefunction(self.on_error):
                 await self.on_error()
             else:
                 self.on_error()
@@ -324,9 +304,9 @@ class ExceptionHandler:
 
 
 def optional_raise(ctx: commands.Context, error: commands.CommandError, /):
-    # we have to somehow check if the on_command_error event was overridden,
-    # the most logical way I could think of was checking if the functions were the same
-    # which is the aim of this bit. Do note, however, that this might fail under certain circumstances
+    # We have to somehow check if the on_command_error event was overridden, the most logical way I could think of was
+    # checking if the functions were the same which is the aim of this bit. Do note, however, that this might fail under
+    # certain circumstances.
     events = ctx.bot.on_command_error.__code__.co_code == commands.Bot.on_command_error.__code__.co_code  # type: ignore
     listeners = ctx.bot.extra_events.get("on_command_error")
     if events or listeners:
@@ -336,9 +316,7 @@ def optional_raise(ctx: commands.Context, error: commands.CommandError, /):
 
 
 def replace_vars(string: str, scope: GlobalLocals) -> str:
-    """Replaces any instance of a virtual variables with their respective values and return it the parsed string.
-
-    Instances of the variables will not get converted if a value is not found.
+    """Replaces any instance of virtual variables with their respective values and returns the parsed string.
 
     Parameters
     ----------

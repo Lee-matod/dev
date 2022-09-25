@@ -82,6 +82,9 @@ class Dropdown(discord.ui.View):
 class RootSearch(Root):
     @root.command(name="search", parent="dev", require_var_positional=True, global_use=True)
     async def root_search(self, ctx: commands.Context, *, query: str):
+        """Search for different items given a query.
+        Items include cogs, command names, channels, emojis, members, and roles.
+        """
         channels = match(query, [(channel.name, channel.mention) for channel in ctx.guild.channels])
         members = match(query, [(member.name, member.mention) for member in ctx.guild.members])
         cmds = match(

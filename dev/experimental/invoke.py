@@ -32,8 +32,8 @@ class RootInvoke(Root):
 
     @root.command(name="repeat", parent="dev", aliases=["repeat!"], require_var_positional=True)
     async def root_repeat(self, ctx: commands.Context, amount: int, *, command_string: str):
-        """Call a command `amount` times.
-        Checks can be optionally bypassed by using `repeat!` instead of `repeat`.
+        """Call a command a given amount of times.
+        Checks can be optionally bypassed by using `dev repeat!` instead of `dev repeat`.
         """
         kwargs = {"content": f"{ctx.prefix}{command_string}", "author": ctx.author, "channel": ctx.channel}
         for _ in range(amount):
@@ -48,8 +48,7 @@ class RootInvoke(Root):
     @root.command(name="debug", parent="dev", aliases=["dbg"], require_var_positional=True)
     async def root_debug(self, ctx: commands.Context, *, command_string: str):
         """Catch errors when executing a command.
-        This command will probably not catch errors with commands that already have an error handler.
-        If `Settings.PATH_TO_FILE` is specified, any instances of this path will be removed if a traceback is sent.
+        This command will probably not work with commands that already have an error handler.
         """
         kwargs = {"content": f"{ctx.prefix}{command_string}", "author": ctx.author, "channel": ctx.channel}
         context: commands.Context = await generate_ctx(ctx, **kwargs)
@@ -132,15 +131,18 @@ class RootInvoke(Root):
             flags: ReinvokeFlags
     ):
         """Reinvoke the last command that was executed.
-        By default, it will try to get the last command that was executed.
+        By default, it will try to get the last command that was executed. However, this can be altered by supplying
+        `skip_message`.
         If `invoke` is used instead of reinvoke, command checks will not be ignored.
         If the command references a message, then it will try to reinvoke the command found in the reference.
-        This method of reinvocation ignores all other options and flags.
+        Nevertheless, this method of reinvocation ignores all other options and flags.
         **Flag arguments:**
         `has`: _str_ = Check if the message has a specific sequence of characters. Defaults to _None_.
         `startswith`: _str_ = Check if the message startswith a specific characters. Defaults to _None_.
         `endswith`: _str_ = Check if the message endswith a specific characters. Defaults to _None_.
         """
+        if not self.bot.intents.message_content:
+            return await send(ctx, "Message content intent is not enabled on this bot.")
         if ctx.message.reference:
             if ctx.message.reference.resolved.content.startswith(ctx.prefix):
                 context: commands.Context = await self.bot.get_context(ctx.message.reference.resolved)

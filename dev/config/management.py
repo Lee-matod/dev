@@ -40,11 +40,9 @@ class RootManagement(Root):
 
     @root.command(name="cwd", parent="dev", root_placeholder=True, aliases=["change_cwd"])
     async def root_files_cwd(self, ctx: commands.Context, *, new_cwd: Optional[str] = None):
-        """Change the current working directory that the bot should focus on.
-        Don't specify `new_cwd` to get the current working directory.
-        """
+        """Change or view the current working directory that the bot should use."""
         if new_cwd is None:
-            return await send(ctx, f"Current working directory: `{self.cwd}`")
+            return await send(ctx, f"Current working directory is: `{self.cwd}`")
         new_cwd = new_cwd.replace("|root|", Settings.ROOT_FOLDER)
         if not pathlib.Path(new_cwd).exists():
             return await send(ctx, f"Directory `{new_cwd.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
@@ -53,7 +51,7 @@ class RootManagement(Root):
 
     @root.group(name="files", parent="dev", aliases=["file"], invoke_without_command=True)
     async def root_files(self, ctx: commands.Context):
-        """Everything related to file management."""
+        """View modifications made to files."""
         if files := self.files_rgs:
             rows = [
                 [index, rgs.operation_type.name, f"{rgs}. Date modified: {rgs.created_at}"]
@@ -62,7 +60,7 @@ class RootManagement(Root):
             return await send(ctx, f"```py\n{table_creator(rows, ['IDs', 'Types', 'Descriptions'])}\n```")
         await send(ctx, "No modifications have been made.")
 
-    @root.command(name="upload", parent="dev files", root_placeholder=True, aliases=["new", "create"])
+    @root.command(name="upload", parent="dev files", root_placeholder=True, aliases=["new"])
     async def root_files_upload(
             self,
             ctx: commands.Context,
@@ -70,7 +68,7 @@ class RootManagement(Root):
             *,
             directory: Optional[str] = None
     ):
-        """Create a new file.
+        """Upload a new file to a given directory.
         If `directory` is None, then it will be set to the current working directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
@@ -94,7 +92,7 @@ class RootManagement(Root):
     )
     async def root_files_edit(self, ctx: commands.Context, attachment: discord.Attachment, *, directory: str):
         """Edit an existing file.
-        This command does not change the file's name. Use `dev files|file rename` to accomplish this.
+        This command does not change the file's name. Consider using `dev files|file rename`.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
         directory = self.format_path(directory, back=False)
@@ -111,7 +109,7 @@ class RootManagement(Root):
         """Rename an existing file.
         The directory path should include the full name of the file that should be renamed.
         Use `!` at the beginning of the directory to ignore the current working directory.
-        The new file name shouldn't already exist.
+        The new file name can't already exist.
         """
         directory = self.format_path(directory)
         new_name = self.format_path(new_name, back=False)
@@ -129,7 +127,7 @@ class RootManagement(Root):
     @root.command(name="show", parent="dev files", root_placeholder=True, aliases=["view"], require_var_positional=True)
     async def root_files_show(self, ctx: commands.Context, *, directory: str):
         """Show an existing file.
-        Files are evaluated and checked before sending, so the bot's token will be replaced with `[token]`
+        Files are checked before sending, so the token of this bot will be replaced with `[token]`.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
         directory = self.format_path(directory, back=False)
@@ -159,7 +157,7 @@ class RootManagement(Root):
 
     @root.group(name="folders", parent="dev", aliases=["folder", "dir", "directory"], invoke_without_command=True)
     async def root_folders(self, ctx: commands.Context):
-        """Everything related to folder management."""
+        """View modifications made to folders."""
         if folders := self.folders_rgs:
             rows = [
                 [index, rgs.operation_type.name, f"{rgs}. Date modified: {rgs.created_at}"]
@@ -177,7 +175,7 @@ class RootManagement(Root):
     )
     async def root_folders_new(self, ctx: commands.Context, *, directory: str):
         """Create a new folder.
-        The folder's name cannot already exist.
+        The name of the new folder cannot already exist in the directory given.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
         directory = self.format_path(directory)
@@ -193,7 +191,7 @@ class RootManagement(Root):
         """Rename an already existing folder.
         The directory path should include the full name of the folder that should be renamed.
         Use `!` at the beginning of the directory to ignore the current working directory.
-        The new folder name shouldn't already exist.
+        The new folder name can't already exist.
         """
         directory = self.format_path(directory)
         new_name = self.format_path(new_name, back=False)
@@ -235,7 +233,7 @@ class RootManagement(Root):
     )
     async def root_folders_delete(self, ctx: commands.Context, *, directory: str):
         """Delete an already existing folder.
-        If the folder is not empty, a prompt will pop up asking if you're sure you want to delete the directory.
+        If the folder is not empty, a prompt will be sent asking if you're sure you want to delete the directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
         directory = self.format_path(directory)

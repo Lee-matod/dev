@@ -26,7 +26,7 @@ from discord.ext import commands
 from dev import types
 
 from dev.types import Over, OverType
-from dev.converters import CodeblockConverter, convert_str_to_bool, convert_str_to_ints
+from dev.converters import CodeblockConverter, str_bool, str_ints
 from dev.handlers import ExceptionHandler, replace_vars
 from dev.registrations import CommandRegistration, SettingRegistration
 
@@ -43,9 +43,12 @@ class OverrideSettingConverter(commands.Converter):
     script: str = ""
     command_string: str = ""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> Optional[OverrideSettingConverter]:
+    async def convert(self, ctx: commands.Context, argument: str):
         changed = []
         new_settings = flag_parser(argument, "=")
+        if isinstance(new_settings, str):
+            return
+        assert isinstance(new_settings, dict)
         for key, value in new_settings.items():
             if key.startswith("__") and key.endswith("__"):
                 continue
@@ -54,11 +57,11 @@ class OverrideSettingConverter(commands.Converter):
                 return
             setting = getattr(Settings, key.upper())
             if isinstance(setting, bool):
-                self.default_settings[key] = convert_str_to_bool(value)
-                setattr(Settings, key.upper(), convert_str_to_bool(value))
+                self.default_settings[key] = str_bool(value)
+                setattr(Settings, key.upper(), str_bool(value))
             elif isinstance(setting, set):
-                self.default_settings[key] = set(convert_str_to_ints(value))
-                setattr(Settings, key.upper(), set(convert_str_to_ints(value)))
+                self.default_settings[key] = set(str_ints(value))
+                setattr(Settings, key.upper(), set(str_ints(value)))
             else:
                 self.default_settings[key] = value
                 setattr(Settings, key.upper(), value)
@@ -77,7 +80,6 @@ class OverrideSettingConverter(commands.Converter):
             self.script = argument
         else:
             self.command_string = argument
-        return self
 
     def back_to_default(self):
         for module, value in self.default_settings.items():
@@ -191,9 +193,9 @@ class RootOver(Root):
     )
     async def root_override_command(self, ctx: commands.Context, *, command_code: CodeblockConverter):
         r"""Temporarily override a command.
-        All changes will be undone once the bot is restart or the cog is reloaded.
+        All changes will be undone once the bot is restarted or the cog is reloaded.
         This differentiates from its counterpart `dev overwrite` which permanently changes a file.
-        Script that will be used as override should be specified between \`\`\`.
+        The script that will be used as override should be specified in a codeblock (or between \`\`\`).
         """
         command_string, script = command_code if isinstance(command_code, tuple) else (command_code, None)
         if not command_string:
@@ -290,10 +292,9 @@ class RootOver(Root):
     )
     async def root_override_setting(self, ctx: commands.Context, *, greedy: OverrideSettingConverter):
         """Temporarily override a (some) setting(s).
-        All changes will be undone once the command has finished executing.
+        All changes will be undone once the command or script have finished executing.
         This differentiates from `dev overwrite`, which does not switch back once the command has been terminated.
-        Multiple settings can be specified.
-        Setting overrides should be specified as follows: `setting=attr`.
+        Multiple settings can be specified and should be specified as follows: `setting=attr`.
         Adding single or double quotes in between the different parameters is also a valid option.
         """
         if greedy.script:
@@ -404,8 +405,10 @@ class RootOver(Root):
     )
     async def root_overwrite_command(self, ctx: commands.Context, *, command_code: CodeblockConverter):
         r"""Completely change a command's execution script to be permanently overwritten.
-        Script that will be used as the command overwrite should be specified in between \`\`\`.
-        This command edits the command's file with the new script, thus changes will be seen once the bot is restarted.
+        The script that will be used as the command overwrite should be specified inside a codeblock
+        (or in between \`\`\`).
+        This command edits the command's file with the new script, thus the bot must be restarted for actual changes
+        during execution to take place once the bot is restarted.
         """
         command_string, script = command_code
         if not all([command_string, script]):
@@ -474,8 +477,7 @@ class RootOver(Root):
     async def root_overwrite_setting(self, ctx: commands.Context, *, settings: Optional[str] = None):
         """Temporarily change a setting's value. Settings will be reverted once the bot has been restarted.
         Command execution after setting specification isn't available in this mode.
-        Multiple settings can be specified.
-        A setting format should be specified as follows: `setting=attr`.
+        Multiple settings can be specified, and they should be specified as follows: `setting=attr`.
         Adding single or double quotes in between the different parameters is also a valid option.
         """
         if settings is None:
@@ -484,6 +486,9 @@ class RootOver(Root):
         changed = []  # a formatted version of the settings that were changed
         raw_changed = {}
         new_settings = flag_parser(settings, "=")
+        if isinstance(new_settings, str):
+            return await send(ctx, new_settings)
+        assert isinstance(new_settings, dict)
         error_settings = []
         for key, value in new_settings.items():
             if key.startswith("__") and key.endswith("__"):
@@ -500,9 +505,9 @@ class RootOver(Root):
             setting = getattr(Settings, str_setting)
             raw_changed[key] = setting
             if isinstance(setting, bool):
-                setattr(Settings, str_setting, convert_str_to_bool(attr))
+                setattr(Settings, str_setting, str_bool(attr))
             elif isinstance(setting, set):
-                setattr(Settings, str_setting, set(convert_str_to_ints(attr)))
+                setattr(Settings, str_setting, set(str_ints(attr)))
             else:
                 setattr(Settings, str_setting, attr)
             changed.append(f"Settings.{str_setting}={attr}")

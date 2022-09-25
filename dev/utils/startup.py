@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 import os
 import pathlib
-from typing import Optional, Set
+from typing import Set
 
 from dev import types
 
@@ -28,33 +28,34 @@ __all__ = (
 class Settings:
     """
     ALLOW_GLOBAL_USES: :class:`bool`
-        If commands that have their ``global_use`` property set True are allowed to be invoked.
-        Defaults to ``False``.
+        Commands that have their `global_use` property set True are allowed to be invoked by any user.
+        Defaults to `False`.
     FLAG_DELIMITER: :class:`str`
-        The flag delimiter to be used when parsing strings to dictionaries.
-        Defaults to ``=``.
+        The characters that determine when to separate a key from its valur when parsing strings to dictionaries.
+        Defaults to `=``
     INVOKE_ON_EDIT: :class:`bool`
-        If commands that are edited should get reinvoked.
-        Defaults to ``False``.
-    OWNERS: Optional[Set[:class:`int`]]
-        A set of user IDs that can additionally use this extension.
-    PATH_TO_FILE: Optional[:class:`str`]
-        A path directory that will be removed if found inside a message.
+        If enabled, whenever a message with a command is edited to another command, the bot will try to invoke the new
+        command.
+        Defaults to `False`.
+    OWNERS: Set[:class:`int`]
+        A set of user IDs that override bot ownership IDs, thus allowing these users to use this extension.
+    PATH_TO_FILE: :class:`str`
+        A path directory that will be removed if found inside a message. This will typically be used in tracebacks.
         Defaults to your current working directory.
-    ROOT_FOLDER: Optional[:class:`str`]
-        The path that will replace the ``|root|`` text placeholder.
+    ROOT_FOLDER: :class:`str`
+        The path that will replace the `|root|` text placeholder.
     VIRTUAL_VARS: :class:`str`
-        The format in which virtual vars should be specified. The actual place where the
-        variable's name will be should be defined as ``$var$``.
-        Defaults to ``|$var$|``.
+        The format in which virtual variables should be specified. The actual place where the
+        variable's name will be should be defined as `$var$`.
+        Defaults to `|$var$|`.
     """
 
     ALLOW_GLOBAL_USES: bool = False
     FLAG_DELIMITER: str = "="
     INVOKE_ON_EDIT: bool = False
-    OWNERS: Optional[Set[int]] = {}
-    PATH_TO_FILE: Optional[str] = os.getcwd()
-    ROOT_FOLDER: Optional[str] = ""
+    OWNERS: Set[int] = {}
+    PATH_TO_FILE: str = os.getcwd()
+    ROOT_FOLDER: str = ""
     VIRTUAL_VARS: str = "|$var$|"
 
 

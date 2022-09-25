@@ -23,7 +23,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.utils import MISSING
 
-from dev.converters import convert_str_to_bool
+from dev.converters import str_bool
 
 
 __all__ = (
@@ -150,7 +150,7 @@ class SyntheticInteraction:
                 # We should never run into this section, but might as well deal with it
                 kwargs[param.name] = type(param.default)(param.argument)
             elif param.annotation == bool:
-                kwargs[param.name] = convert_str_to_bool(param.argument)
+                kwargs[param.name] = str_bool(param.argument)
             else:
                 kwargs[param.name] = param.argument
         return kwargs

@@ -12,14 +12,12 @@ Direct bot reconfiguration and attributes manager.
 from __future__ import annotations
 
 import time
-from typing import Literal, Optional
+from typing import Optional
 
 import discord
 from discord.ext import commands
 
 from dev import types
-
-from dev.converters import LiteralModes, convert_str_to_ints
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import all_commands, send
@@ -111,7 +109,7 @@ class RootBot(Root):
 
     @root.group(name="bot", parent="dev", global_use=True, invoke_without_command=True)
     async def root_bot(self, ctx: commands.Context):
-        """Get a briefing of the bot's characteristics"""
+        """Get a briefing on some bot information."""
         embed = discord.Embed(
             title=self.bot.user,
             description=self.bot.description or '',
@@ -154,7 +152,9 @@ class RootBot(Root):
 
     @root.command(name="perms", parent="dev bot", aliases=["permissions"])
     async def root_bot_here(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
-        """Shows the bot's permissions in this guild."""
+        """Show which permissions the bot has.
+        A text channel may be optionally passed to check for permissions in the given channel.
+        """
         view = PermissionsSelector(ctx.me, channel)
         await send(
             ctx,
@@ -167,8 +167,8 @@ class RootBot(Root):
 
     @root.command(name="reload", parent="dev bot")
     async def root_bot_reload(self, ctx: commands.Context, *cogs: str):
-        """Reload all or a specific set of the bot's extension(s)
-        If specific cogs are specified, they should be separated by a blank space.
+        """Reload all or a specific set of bot cog(s).
+        When adding specific cogs, each extension must be separated but a blank space.
         """
         if not cogs:
             successful = []
@@ -211,63 +211,10 @@ class RootBot(Root):
         embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
         return await send(ctx, embed)
 
-    @root.command(name="edit", parent="dev bot")
-    async def root_bot_edit(
-            self,
-            ctx: commands.Context,
-            attr: LiteralModes[Literal["prefix", "owner", "owners"]],
-            *,
-            value: Optional[str] = None
-    ):
-        """Edit any attributed of the bot.
-        **Text Placeholders**
-        `__existent__` = Keep already existent values of the specified attribute and add new ones (if specified).
-        **Attributes**
-        `prefix` = Change the prefix of the bot.
-        `owner`|`owners` = Change, add or view current owner ID(s).
-        """
-        if attr is None:
-            return
-        if attr == "prefix":
-            if not value:
-                return await send(ctx, f"{attr}: `{escape(self.bot.command_prefix)}`")
-            self.bot.command_prefix = value
-            await send(ctx, f"Successfully changed `{attr}` to `{escape(value)}`")
-
-        elif attr == "owner":
-            if self.bot.owner_ids:
-                return await send(ctx, f"Cannot set `owner_id` if `owner_ids` is not None.")
-            if not value:
-                return await send(ctx, f"{attr}: `{self.bot.owner_id or 'None'}`")
-            elif not value.isnumeric():
-                return await send(ctx, f"`{attr}` has to be of type _int_.")
-            elif value.lower() == "none":
-                self.bot.owner_id = None
-                return await send(ctx, f"Successfully set `{attr}` to None.")
-            self.bot.owner_id = int(value)
-            await send(ctx, f"Successfully changed `{attr}` to `{self.bot.owner_id}`")
-
-        elif attr == "owners":
-            if self.bot.owner_id:
-                return await send(ctx, f"Cannot set `owner_ids` if `owner_id` is not None.")
-            if not value:
-                return await send(ctx, f"{attr}: `{'`, `'.join(owner for owner in self.bot.owner_ids) or '{}'}`")
-            if "__existent__" in value:
-                value = value.replace("__existent__", ", ".join(owner for owner in self.bot.owner_ids), 1)
-            elif value.lower() == "none":
-                self.bot.owner_ids = None
-                return await send(ctx, f"Successfully set `{attr}` to None.")
-            ids = convert_str_to_ints(value)
-            self.bot.owner_ids = set(ids)
-            await send(
-                ctx,
-                f"Successfully changed `{attr}` to `{'`, `'.join(str(owner) for owner in self.bot.owner_ids) or 'None'}`"
-            )
-
     @root.command(name="enable", parent="dev bot", require_var_positional=True)
     async def root_bot_enable(self, ctx: commands.Context, *, command_name: str):
         """Enable a command.
-        It is not recommended to disable this command using `dev bot disable`.
+        For obvious reasons, it is not recommended to disable this command using `dev bot disable`.
         """
         command = self.bot.get_command(command_name)
         if not command:
@@ -280,7 +227,7 @@ class RootBot(Root):
     @root.command(name="disable", parent="dev bot", require_var_positional=True)
     async def root_bot_disable(self, ctx: commands.Context, *, command_name: str):
         """Disable a command.
-        It is not recommended to disable the `dev bot enable` command.
+        For obvious reasons, it is not recommended to disable the `dev bot enable` command.
         """
         command = self.bot.get_command(command_name)
         if not command:
@@ -294,6 +241,6 @@ class RootBot(Root):
 
     @root.command(name="close", parent="dev bot")
     async def root_bot_close(self, ctx: commands.Context):
-        """Closes the bot."""
+        """Close the bot."""
         await ctx.message.add_reaction("👋")
         await self.bot.close()

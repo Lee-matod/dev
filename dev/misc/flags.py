@@ -10,7 +10,6 @@ Flag-like commands for command analysis.
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 import inspect
-from typing import Optional
 
 import discord
 from discord.ext import commands
@@ -72,6 +71,7 @@ class RootFlags(Root):
     async def root_types(self, ctx: commands.Context, *, command_string: str):
         """Inspect a command.
         This is not exclusive to the `dev` extension.
+        Command signature, as well as some useful attributes will be returned.
         """
         command = self.bot.get_command(command_string)
         if not command:
@@ -114,26 +114,34 @@ class RootFlags(Root):
         embed.add_field(name="Signature", value="\n".join(params) or '`None`')
         await send(ctx, embed)
 
-    @root.command(name="--source", parent="dev", aliases=["-src", "--sourceFile", "-srcF"], hidden=True)
-    async def root_source(self, ctx: commands.Context, *, command_string: Optional[str] = ""):
+    @root.command(name="--source", parent="dev", aliases=["-src"], hidden=True)
+    async def root_source(self, ctx: commands.Context, *, command_string: str = ""):
         """View the source code of a command.
         This is not exclusive to the `dev` extension.
-        The bot's token is hidden as `[token]`.
-        Alternatively, use `dev --sourceFile|-srcF` to show the command's source code file.
+        The token of the bot will be hidden as `[token]` if it is found within the source code.
         """
-        file: bool = ctx.invoked_with in ["--sourceFile", "-srcF"]
         command = self.bot.get_command(command_string)
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
 
-        if not file:
-            over = self.match_register_command(command.qualified_name)
-            if not hasattr(over[-1], "source"):
-                return await send(ctx, f"Couldn't get source lines for the command `{command_string}`.")
-            return await send(ctx, codeblock_wrapper(over[-1].source, "py"))
+        over = self.match_register_command(command.qualified_name)
+        if not hasattr(over[-1], "source"):
+            return await send(ctx, f"Couldn't get source lines for the command `{command_string}`.")
+        return await send(ctx, codeblock_wrapper(over[-1].source, "py"))
+
+    @root.command(name="--file", parent="dev", aliases=["-f"], hidden=True)
+    async def root_file(self, ctx: commands.Context, *, command_string: str = ""):
+        """View the file of a command.
+        This is not exclusive to the `dev` extension.
+        The token of the bot will be hidden as `[token]` if it is found within the file.
+        """
+        command = self.bot.get_command(command_string)
+        if not command:
+            return await send(ctx, f"Command `{command_string}` not found.")
         try:
             directory = inspect.getsourcefile(self.get_base_command(command.qualified_name).callback)
         except OSError:
             return await send(ctx, f"Couldn't get the source file for the command `{command_string}`.")
-        with open(directory) as source:
-            await send(ctx, codeblock_wrapper(''.join(source.readlines()), "py"))
+        with open(directory, "r") as source:
+            await send(ctx, discord.File(fp=source.read(), filename=command.module))
+

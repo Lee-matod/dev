@@ -38,9 +38,9 @@ class RootHTTP(Root):
             *,
             options: Optional[str] = None
     ):
-        """View the contents of a URL. Response modes can differ.
+        """Send an HTTP request using GET method.
         **Modes:**
-        `json` = Convert the response to JSON. This isn't always available.
+        `json` = Converts the response to JSON. This isn't always available.
         `read` = Read the response and return it.
         `status` = Return the status code of the website.
         `text` = Send the response as text.
@@ -50,6 +50,7 @@ class RootHTTP(Root):
         kwargs = flag_parser(replace_vars(options or '', Root.scope), Settings.FLAG_DELIMITER.strip())
         if isinstance(kwargs, str):
             return await send(ctx, kwargs)
+        assert isinstance(kwargs, dict)
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(
@@ -63,7 +64,7 @@ class RootHTTP(Root):
                             discord.Embed(
                                 title=f"Status {(status := str(request.status))}",
                                 description=f"{(f'{t}.' if (t := responses.get(status[0])) else '')}"
-                                            f"{' ‒ ' if (desc := responses.get(status)) else ''}"
+                                            f"{' ‒ ' if (desc := request.reason) else ''}"
                                             f"{f'{desc}.' if desc else ''}".strip(),
                                 color=discord.Color.blurple(),
                                 url=f"https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{status}"

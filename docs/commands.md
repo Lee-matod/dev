@@ -1,81 +1,107 @@
 # dev API – commands
 
 In this page you'll find documentation regarding command registration, context generation & management, as well as some
-other helper functions were solely designed to go hand in hand with commands.
+other helper functions that were solely designed to go hand-in-hand with commands.
 
 Baseclasses for command registration are also included here, as well as cog-related classes.
 
 ***
 ## command registration
 
-> ### `class` dev.utils.baseclass.GroupMixin
-> A subclasses of [commands.GroupMixin](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.GroupMixin) 
-> that overrides command registering functionality. You would usually want to create an instance of this class and 
-> start registering your commands from there.
+> ### `class` dev.utils.baseclass.root
+> A super class that allows the conversion of coroutine functions to temporary command classes that can later be used to 
+> register them as an actual [discord.ext.commands.Command](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Command).
 > 
->> ### all_commands
->> A dictionary of all registered commands and their qualified names.
->>> #### Type
->>> Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), Union[[Command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclasscommand), [Group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup)]]
+> Even though this class was made for internal uses, it cannot be instantiated nor subclassed. It should be used as-is.
+>> ### `staticmethod` @command(name=MISSING, **kwargs)
+>> A decorator that converts the given function to a temporary :class:`Command` class.
+>>> #### Parameters
+>>> - name([str](https://docs.python.org/3/library/stdtypes.html#str)) – The name of the command that should be used. 
+>>> If no name is provided, the function's name will be used.
+>>> - kwargs – Key-word arguments that'll be forwarded to the :class:`Command` class.
+>
+>> ### `staticmethod` @group(name=MISSING, **kwargs)
+>> A decorator that converts the given function to a temporary :class:`Group` class.
+>>> #### Parameters
+>>> - name([str](https://docs.python.org/3/library/stdtypes.html#str)) – The name of the command that should be used. 
+>>> If no name is provided, the function's name will be used.
+>>> - kwargs – Key-word arguments that'll be forwarded to the :class:`Group` class.
 
 > ### `class` dev.utils.baseclass.Group
-> A subclasses of [commands.Group](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Group) 
-> which adds a few extra properties for commands.
-> 
->> ### `property` global_use
->> Check whether this command is allowed to be invoked by any user.
->>> #### Type
->>> [bool](https://docs.python.org/3/library/functions.html#bool)
-> 
->> ### `property` supports_virtual_vars
->> Check whether this command is compatible with the use of out-of-scope variables.
->>> #### Type
->>> [bool](https://docs.python.org/3/library/functions.html#bool)
-> 
->> ### `property` supports_root_placeholder
->> Check whether this command is compatible with the `|root|` placeholder text.
->>> #### Type
->>> [bool](https://docs.python.org/3/library/functions.html#bool)
+> A class that simulates [discord.ext.commands.Group](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Group).
+> This class is used to keep track of which functions be groups, and it shouldn't get called manually. 
+> Instead, consider using :meth:`root.group` to instantiate this class.
+>> ### to_instance(command_mapping, /)
+>> Converts this class to an instance of its respective simulation.
+>>> #### Parameters
+>>> - command_mapping(Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), types.Command]) – A mapping of 
+>>> commands from which this group will get their corresponding parents from.
+>>
+>>> #### Returns
+>>> [discord.ext.commands.Group](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Group) – 
+>>> The group class made using the given attributes of this temporary class.
 
 > ### `class` dev.utils.baseclass.Command
-> A subclasses of [commands.Command](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Command)
-> which adds a few extra properties for commands.
->> ### `property` global_use
->> Check whether this command is allowed to be invoked by any user.
->>> #### Type
->>> [bool](https://docs.python.org/3/library/functions.html#bool)
-> 
->> ### `property` supports_virtual_vars
->> Check whether this command is compatible with the use of out-of-scope variables.
->>> #### Type
->>> [bool](https://docs.python.org/3/library/functions.html#bool)
-> 
->> ### `property` supports_root_placeholder
->> Check whether this command is compatible with the `|root|` placeholder text.
->>> #### Type
->>> [bool](https://docs.python.org/3/library/functions.html#bool)
+> A class that simulates [discord.ext.commands.Command](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Command).
+>
+> This class is used to keep track of which functions should be commands, and it shouldn't get called manually. 
+> Instead, consider using :meth:`root.command` to instantiate this class.
+>> ### to_instance(command_mapping, /)
+>> Converts this class to an instance of its respective simulation.
+>>> #### Parameters
+>>> - command_mapping(Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), types.Command]) – A mapping of 
+>>> commands from which this command will get their corresponding parents from.
+>>
+>>> #### Returns
+>>> [discord.ext.commands.Command](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Command) – 
+>>> The command class made using the given attributes of this temporary class.
+
 ***
 ## cogs
 
 > ### `class` dev.utils.baseclass.Root(bot)
-> A cog base subclass that implements a global check and some default functionality that the dev extension should have.
+> A cog subclass that implements a global check and some default functionality that the dev extension should have.
+> Command registrations are stored in here for quick access between different dev cogs.
 > 
-> Command uses and override callbacks are stored in here for quick access between different cogs.
+> All other dev cogs will derive from this base class.
+> 
+> Subclass of [discord.ext.commands.Cog](https://discordpy.readthedocs.io/en/stable/ext/commands/api.html#discord.ext.commands.Cog).
 >> ### Parameters
->> - bot([Bot](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Bot)) – The bot 
->> instance that gets passed to [commands.Bot.add_cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Bot.add_cog).
+>> - bot([discord.ext.commands.Bot](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Bot)) – The bot 
+>> instance that gets passed to [discord.ext.commands.Bot.add_cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Bot.add_cog).
 >
 >> ### bot
->> The bot instance that was passed to [baseclass.Root](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassrootbot).
+>> The bot instance that was passed to the constructor of this class.
 >>> #### Type
->>> [Bot](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Bot)
+>>> [discord.ext.commands.Bot](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Bot)
 >
->> ### command_uses
->> A dictionary that keeps track of the amount of times a command has been used.
+>> ### commands
+>> A dictionary that stores all dev commands.
 >>> #### Type
->>> Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), [int](https://docs.python.org/3/library/functions.html#int)]
+>>> Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), types.Command]
 >
->> ### root_command
->> The root command (`dev`) of the extension.
+>> ### registrations
+>> A dictionary that stores all modifications made in the `dev override`/`dev overwrite` commands.
 >>> #### Type
->>> Optional[[Group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup)]
+>>> Dict[[int](https://docs.python.org/3/library/functions.html#int), Union[CommandRegistration, SettingRegistration]]
+>
+>> ### *await* cog_check(ctx)
+>> A check that is called every time a dev command is invoked. This check is called internally, and shouldn't be called 
+>> elsewhere.
+>>
+>> It first checks if the command is allowed for global use. 
+>> If that check fails, it checks if the author of the invoked command is specified in :attr:`Settings.OWNERS`. 
+>> If the owner list is empty, it'll lastly check if the author owns the bot.
+>>
+>> If all checks fail, [discord.ext.commands.NotOwner](https://discordpy.readthedocs.io/en/stable/ext/commands/api.html#discord.ext.commands.NotOwner)
+>> is raised. This is done so that you can customize the message that is sent by the bot through an error handler.
+>>> #### Parameters
+>>> - ctx([discord.ext.commands.Context](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Context)) – 
+>>> The invocation context in which the command was invoked.
+>>
+>>> #### Returns
+>>> [bool](https://docs.python.org/3/library/functions.html#bool) – Whether the user is allowed to use this command.
+>>
+>>> #### Raises
+>>> - [discord.ext.commands.NotOwner](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.NotOwner) – 
+>>> All checks failed. The user who invoked the command is not the owner of the bot.

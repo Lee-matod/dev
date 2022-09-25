@@ -43,31 +43,32 @@ class _PageSetter(discord.ui.Modal):
 
 
 class Paginator(commands.Paginator):
-    """A :class:`commands.Paginator` wrapper.
+    """A :class:`discord.ext.commands.Paginator` wrapper.
 
     This subclass deals with lines that are greater than the maximum page size by splitting them.
 
+    Subclass of `discord.ext.commands.Paginator`.
+
     See Also
     --------
-    :class:`commands.Paginator`
-        Other attributes and methods available from the super class of this wrapper.
+    :class:`discord.ext.commands.Paginator`
 
     Parameters
     ----------
     paginator_type: Union[discord.Embed, :class:`str`]
         Content pagination form to use.
     prefix: :class:`str`
-        From :attr:`commands.Paginator.prefix`. Character sequence in which all pages should start with.
-        Defaults to '```'
+        From :attr:`discord.ext.commands.Paginator.prefix`. Character sequence in which all pages should start with.
+        Defaults to '```'.
     suffix: :class:`str`
-        From :attr:`commands.Paginator.suffix`. Character sequence in which all pages should end with.
-        Defaults to '```'
+        From :attr:`discord.ext.commands.Paginator.suffix`. Character sequence in which all pages should end with.
+        Defaults to '```'.
     max_size: :class:`int`
-        From :attr:`commands.Paginator.max_size`. Maximum amount of characters allowed per page.
-        Defaults to 2000
+        From :attr:`discord.ext.commands.Paginator.max_size`. Maximum amount of characters allowed per page.
+        Defaults to 2000.
     linesep: :class:`str`
-        From :attr:`commands.Paginator.linesep`. Character sequence inserted between each line.
-        Defaults to a new line.
+        From :attr:`discord.ext.commands.Paginator.linesep`. Character sequence inserted between each line.
+        Defaults to a new line ('\n').
 
     Attributes
     ----------
@@ -88,12 +89,13 @@ class Paginator(commands.Paginator):
         self.type: Union[discord.Embed, str] = paginator_type
 
     def to_dict(self, content: str) -> Dict[str, Union[discord.Embed, str]]:
-        """A useful helper function that can be sent to a :meth:`Messageable.send` as a key-word argument.
+        """A useful helper function that can be sent to a :meth:`discord.abc.Messageable.send` as key-word arguments.
 
         Parameters
         ----------
         content: :class:`str`
-            The content that the dictionary's value should have.
+            The new content that the dictionary's value should have.
+
         Returns
         -------
         Dict[:class:`str`, Union[discord.Embed, :class:`str`]]
@@ -104,17 +106,17 @@ class Paginator(commands.Paginator):
             return {"embed": self.type}
         return {"content": content}
 
-    def add_line(self, line: str = '', *, empty: bool = False) -> None:
-        """A wrapper to the default :meth:`commands.Paginator.add_line`.
+    def add_line(self, line: str = "", *, empty: bool = False) -> None:
+        """A wrapper to the default :meth:`discord.ext.commands.Paginator.add_line`.
 
         Difference being that no TypeErrors are raised if the line exceeds the maximum page length.
 
         Parameters
         ----------
         line: :class:`str`
-            From :meth:`commands.Paginator.add_line`. The line that should be added to the paginator.
+            From :meth:`discord.ext.commands.Paginator.add_line`. The line that should be added to the paginator.
         empty: :class:`bool`
-            From :meth:`commands.Paginator.add_line`. Whether an empty line should be added too.
+            From :meth:`discord.ext.commands.Paginator.add_line`. Whether an empty line should be added too.
         """
         max_page_size = self.max_size - self._prefix_len - self._suffix_len - 2 * self._linesep_len
         if len(line) > max_page_size:
@@ -137,16 +139,16 @@ class Paginator(commands.Paginator):
 class Interface(discord.ui.View):
     """A paginator interface that implements basic pagination functionality.
 
-    This is the :class:`discord.ui.View` part of the overall paginator.
-    Note that the :attr:`paginator` passed should have more than one page, otherwise IndexError might be raised.
+    Note that the paginator passed should have more than one page, otherwise IndexError might be raised.
+
+    Subclass of :class:`discord.ui.View`.
 
     Parameters
     ----------
     paginator: :class:`Paginator`
         A pagination instance from which to get the pages from.
-    author: Union[User, :class:`int`]
-        The user that should be able to interact with this paginator.
-        User ID or object can be passed.
+    author: Union[types.User, :class:`int`]
+        The user that should be able to interact with this paginator. User ID or object can be passed.
 
     Attributes
     ----------

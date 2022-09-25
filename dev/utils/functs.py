@@ -41,19 +41,19 @@ __all__ = (
 
 
 def all_commands(command_list: Set[types.Command]) -> List[types.Command]:
-    """Retrieve all commands that are currently available.
+    """Retrieve all commands that are currently available from a given set.
 
-    Unlike :meth:`commands.Bot.commands`, group subcommands are also returned.
+    Unlike :meth:`discord.ext.commands.Bot.commands`, group subcommands are also returned.
 
     Parameters
     ----------
-    command_list: Set[Union[:class:`commands.Command`, :class:`commands.Group`]]
+    command_list: Set[types.Command]
         A set of commands, groups or both.
 
     Returns
     -------
-    List[Union[:class:`commands.Command`, :class:`commands.Group`]]
-        The full list of all the commands that were found within ``command_list``.
+    List[types.Command]
+        The full list of all the commands that were found within `command_list`.
     """
     command_count = []
     for command in command_list:
@@ -69,8 +69,8 @@ def all_commands(command_list: Set[types.Command]) -> List[types.Command]:
 def flag_parser(string: str, delimiter: str) -> Union[Dict[str, Any], str]:
     """Converts a string into a dictionary.
 
-    This works similarly to :class:`commands.FlagConverter`, only that it can
-    take an arbitrary number of flags and prefix aren't supported.
+    This works similarly to :class:`discord.ext.commands.FlagConverter`, only that it can
+    take an arbitrary number of flags and prefixes aren't supported.
 
     Examples
     --------
@@ -84,12 +84,14 @@ def flag_parser(string: str, delimiter: str) -> Union[Dict[str, Any], str]:
     string: :class:`str`
         The string that should be converted.
     delimiter: :class:`str`
-        The characters that separate keys and values.
+        The character(s) that separate keys and values.
 
     Returns
     -------
-    Union[Dict[:class:`str`, Any], :class:`str`]
-        The parsed string dictionary or a string if :class:`json.JSONDecodeError` was raised during parsing.
+    Dict[:class:`str`, Any]
+        The parsed string dictionary.
+    :class:`str`
+        If an error occurred during parsing, the error will be returned instead.
     """
     keys, values = [], []
     temp_string = ""
@@ -157,18 +159,17 @@ def table_creator(rows: List[List[Any]], labels: List[str]) -> str:
 
 
 async def send(ctx: commands.Context, *args: types.MessageContent, **options: Any) -> Optional[discord.Message]:
-    """Evaluates how to safely send a discord message.
+    """Evaluates how to safely send a Discord message.
 
     `content`, `embed`, `embeds`, `file`, `files` and `view` are all positional arguments instead of keywords.
     Everything else that is available in :meth:`commands.Context.send` remain as keyword arguments.
 
-    This function replaces the bot's token with '[token]' and converts any instances of a virtual variable's value back
-    to its respective key.
+    This function replaces the token of the bot with '[token]' and converts any instances of a virtual variable's
+    value back to its respective key.
 
     See Also
     --------
     :meth:`discord.ext.commands.Context.send`
-        View a list of all possible arguments and keyword arguments that are available to be passed into this function.
 
     Parameters
     ----------
@@ -188,7 +189,7 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
     Raises
     ------
     TypeError
-        A list, tuple or set contains more than one type, e.g: [File, File, Embed].
+        A list, tuple or set contains more than one type.
     """
     kwargs = {}
     for arg in args:
@@ -283,15 +284,15 @@ async def interaction_response(
         ],
         **options: Any
 ) -> None:
-    """Evaluates how to safely respond to a discord interaction.
+    """Evaluates how to safely respond to a Discord interaction.
 
-    `content`, `embed`, `embeds`, `file`, `files` and `view` can all be optionally passed as positional arguments
-    instead of keywords.
+    `content`, `embed`, `embeds`, `file`, `files`, `modal` and `view` can all be optionally passed as positional
+    arguments instead of keywords.
     Everything else that is available in :meth:`discord.InteractionResponse.send_message` and
     :meth:`discord.InteractionResponse.edit_message` remain as keyword arguments.
 
-    This replaces the bot's token with '[token]' and converts any instances of a virtual variable's value back
-    to its respective key.
+    This replaces the token of the bot with '[token]' and converts any instances of a virtual variable's value back to
+    its respective key.
 
     If a modal is passed to this function, and `response_type` is set to `InteractionResponseType.MODAL`, no other
     arguments should be passed as this will raise a TypeError.
@@ -299,15 +300,14 @@ async def interaction_response(
     See Also
     --------
     :meth:`discord.InteractionResponse.send_message`, :meth:`discord.InteractionResponse.edit_message`
-        Keyword arguments that are supported.
 
     Parameters
     ----------
     interaction: :class:`discord.Interaction`
-        The invocation context in which the command was invoked.
+        The interaction that should be responded to.
     response_type: :class:`InteractionResponseType`
         The type of response that will be used to respond to the interaction. :meth:`discord.InteractionResponse.defer`
-        isn't included
+        isn't included.
     args: Union[
         Sequence[Union[:class:`discord.Embed`, :class:`discord.File`]],
         :class:`discord.Embed`,
@@ -316,19 +316,18 @@ async def interaction_response(
         :class:`discord.ui.Modal`,
         :class:`str`
     ]
-        Arguments that will be passed to :meth:`discord.InteractionResponse.send_message` and
+        Arguments that will be passed to :meth:`discord.InteractionResponse.send_message` or
         :meth:`discord.InteractionResponse.edit_message`.
         Embeds and files can be inside a list, tuple or set to send multiple of these types.
     options:
-        Keyword arguments that will be passed to :meth:`discord.InteractionResponse.send_message` and
-        :meth:`discord.InteractionResponse.edit_message` as well as the option that specifies if the message is a
-        codeblocks.
+        Keyword arguments that will be passed to :meth:`discord.InteractionResponse.send_message` or
+        :meth:`discord.InteractionResponse.edit_message`.
 
     Raises
     ------
     TypeError
-        Multiple arguments were passed when `response_type` was selected to `MODAL`
-        A list, tuple or set contains more than one type, e.g: [File, File, Embed].
+        Multiple arguments were passed when `response_type` was selected to `MODAL`.
+        A list, tuple or set contains more than one type.
     """
     if response_type is InteractionResponseType.SEND:
         method = interaction.response.send_message
@@ -433,24 +432,15 @@ async def interaction_response(
             await interaction.followup.send(**pag)
 
 
-async def generate_ctx(
-        ctx: commands.Context,
-        author: discord.abc.User,
-        channel: discord.TextChannel,
-        **kwargs: Any
-) -> commands.Context:
-    """Create a custom context with changeable attributes such as author or channel.
+async def generate_ctx(ctx: commands.Context, **kwargs: Any) -> commands.Context:
+    """Create a custom context with changeable attributes.
 
     Parameters
     ----------
     ctx: :class:`commands.Context`
         The invocation context in which the command was invoked.
-    author: :class:`discord.abc.User`
-        The author that the generated context should have.
-    channel: :class:`discord.TextChannel`
-        The text channel that the generated context should have.
     kwargs:
-        Any other additional attributes that the generated context should have.
+        Any attributes that the generated context should have.
 
     Returns
     -------
@@ -460,8 +450,6 @@ async def generate_ctx(
     alt_msg: discord.Message = copy(ctx.message)
     # noinspection PyProtectedMember
     alt_msg._update(kwargs)
-    alt_msg.author = author
-    alt_msg.channel = channel
     return await ctx.bot.get_context(alt_msg, cls=type(ctx))
 
 

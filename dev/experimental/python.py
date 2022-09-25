@@ -118,16 +118,11 @@ class RootPython(Root):
         virtual_vars=True,
         aliases=["py"],
         require_var_positional=False,
-        usage="<code>"
     )
     async def root_python(self, ctx: commands.Context, *, code: str = None):
         """Evaluate or execute Python code.
-        When specifying a script, some placeholder texts can be set.
-        `__previous__` = This is replaced with the previous script that was executed.
+        You may specify `__previous__` in the code, and it'll get replaced with the previous script that was executed.
         The bot will search through the history of the channel with a limit of 25 messages.
-        `|root|` = This is replaced with the folder specified in `Settings.ROOT_FOLDER`.
-        At the beginning of the argument, you may pass in `--no-response` or `--all-response` to either not send a
-        message, or to send a message, even if the result is None.
         """
         args = {"bot": self.bot, "ctx": ctx}
         code = await __previous__(

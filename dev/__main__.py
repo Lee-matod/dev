@@ -27,14 +27,14 @@ from dev.utils.utils import plural
 class RootCommand(Root):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
-        self.load_time = str(round(time.time()))
+        self.load_time: str = str(round(time.time()))
 
     @root.group(
         name="dev",
-        invoke_without_command=True,
         global_use=True,
         ignore_extra=False,
-        usage="[--help|--man] [--source|-src|--sourceFile|-srcF] [--inspect|-i] <command>"
+        invoke_without_command=True,
+        usage="[--help|--man] [--source|-src] [--file|--f] [--inspect|-i] <command>"
     )
     async def root_(self, ctx: commands.Context):
         """Root command for the `dev` extension.
@@ -42,7 +42,7 @@ class RootCommand(Root):
         Execute `dev --help [command]` for more information on a subcommand.
         `--help`|`--man` [command] = Shows a custom made help command.
         `--source`|`-src` <command> = Shows the source code of a command.
-        `--sourceFile`|`-srcF` <command> = Shows the source file of a command.
+        `--file`|`-f` <command> = Shows the source file of a command.
         `--inspect`|`-i` <command> = Get the signature of a command as well as some information of it.
         """
         process = psutil.Process()
@@ -57,13 +57,17 @@ class RootCommand(Root):
 
     @root.command(name="exit", parent="dev", aliases=["quit", "kys"])
     async def root_exit(self, ctx: commands.Context):
-        """Exit the whole code at once. Note that this may cause issues."""
+        """Exit the whole code at once. Note that this may cause issues.
+        This uses the :meth:`exit` method, so beware!
+        """
         await ctx.message.add_reaction("👋")
         exit()
 
     @root.command(name="visibility", parent="dev")
     async def root_visibility(self, ctx: commands.Context, toggle: Optional[bool] = None):
-        """Toggle whether the dev command is hidden."""
+        """Toggle whether the dev command is hidden.
+        Pass no arguments to check current status
+        """
         root_command = self.commands.get("dev")
         if toggle:
             if root_command.hidden:

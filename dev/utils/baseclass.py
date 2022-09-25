@@ -32,10 +32,38 @@ __all__ = (
 
 CST = TypeVar("CST", CommandRegistration, SettingRegistration)
 
+
+class OperationNotAllowedError(BaseException):
+    pass
+
+
 class root:  # noqa E302
+    """A super class that allows the conversion of coroutine functions to temporary command classes
+    that can later be used to register them as an actual :class:`discord.ext.commands.Command`.
+
+    Even though this class was made for internal uses, it cannot be instantiated nor subclassed.
+    It should be used as-is.
+    """
+    def __init__(self):
+        raise OperationNotAllowedError("Cannot instantiate root.")
+
+    def __init_subclass__(cls, **kwargs):
+        raise OperationNotAllowedError("Cannot subclass root.")
+
+    def __new__(cls, *args, **kwargs):
+        raise OperationNotAllowedError("Cannot instantiate root.")
 
     @staticmethod
     def command(name: str = MISSING, **kwargs) -> Callable[[Callback], Command]:
+        """A decorator that converts the given function to a temporary :class:`Command` class.
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the command that should be used. If no name is provided, the function's name will be used.
+        kwargs:
+            Key-word arguments that'll be forwarded to the :class:`Command` class.
+        """
         def decorator(func: Callback) -> Command:
             if isinstance(func, Command):
                 raise TypeError("Callback is already a command.")
@@ -44,6 +72,15 @@ class root:  # noqa E302
 
     @staticmethod
     def group(name: str = MISSING, **kwargs) -> Callable[[Callback], Group]:
+        """A decorator that converts the given function to a temporary :class:`Group` class.
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the command that should be used. If no name is provided, the function's name will be used.
+        kwargs:
+            Key-word arguments that'll be forwarded to the :class:`Group` class.
+        """
         def decorator(func: Callback) -> Group:
             if isinstance(func, Group):
                 raise TypeError("Callback is already a group.")
@@ -52,7 +89,6 @@ class root:  # noqa E302
 
 
 class BaseCommand:
-    """Class that implements common functionality within both :class:`Command` and :class:`Group`"""
     def __init__(self, func: Callback, **kwargs):
         if not asyncio.iscoroutinefunction(func):
             raise TypeError("Callback must be a coroutine.")
@@ -108,9 +144,25 @@ class BaseCommand:
 
 
 class Group(BaseCommand):
-    """A class that simulates a :class:`commands.Group` class"""
+    """A class that simulates :class:`discord.ext.commands.Group`.
+
+    This class is used to keep track of which functions be groups, and it shouldn't get called manually.
+    Instead, consider using :meth:`root.group` to instantiate this class.
+    """
 
     def to_instance(self, command_mapping: Dict[str, types.Command], /) -> commands.Group:
+        """Converts this class to an instance of its respective simulation.
+
+        Parameters
+        ----------
+        command_mapping: Dict[str, types.Command]
+            A mapping of commands from which this group will get their corresponding parents from.
+
+        Returns
+        -------
+        discord.ext.commands.Group
+            The group class made using the given attributes of this temporary class.
+        """
         if self.parent:
             command = command_mapping.get(self.parent)
             if not command:
@@ -124,9 +176,25 @@ class Group(BaseCommand):
 
 
 class Command(BaseCommand):
-    """A class that simulates a :class:`commands.Command` class"""
+    """A class that simulates :class:`commands.Command`
 
-    def to_instance(self, command_mapping: Dict[str, types.Command], /) -> commands.Group:
+    This class is used to keep track of which functions should be commands, and it shouldn't get called manually.
+    Instead, consider using :meth:`root.command` to instantiate this class.
+    """
+
+    def to_instance(self, command_mapping: Dict[str, types.Command], /) -> commands.Command:
+        """Converts this class to an instance of its respective simulation.
+
+        Parameters
+        ----------
+        command_mapping: Dict[str, types.Command]
+            A mapping of commands from which this command will get their corresponding parents from.
+
+        Returns
+        -------
+        discord.ext.commands.Command
+            The command class made using the given attributes of this temporary class.
+        """
         if self.parent:
             command = command_mapping.get(self.parent)
             if not command:
@@ -140,20 +208,27 @@ class Command(BaseCommand):
 
 
 class Root(commands.Cog):
-    """A cog base subclass that implements a global check and some default functionality that the dev
-    extension should have.
+    """A cog subclass that implements a global check and some default functionality that the dev extension should have.
 
-    Command uses and override callbacks are stored in here for quick access between different cogs.
+    All other dev cogs will derive from this base class.
+
+    Command registrations are stored in here for quick access between different dev cogs.
+
+    Subclass of :class:`discord.ext.commands.Cog`
 
     Parameters
     ----------
-    bot: :class:`commands.Bot`
-        The bot instance that gets passed to :meth:`commands.Bot.add_cog`.
+    bot: :class:`discord.ext.commands.Bot`
+        The bot instance that gets passed to :meth:`discord.ext.commands.Bot.add_cog`.
 
     Attributes
     ----------
     bot: :class:`commands.Bot`
-        The bot instance that was passed to :meth:`baseclass.Root`
+        The bot instance that was passed to the constructor of this class.
+    commands: Dict[:class:`str`, types.Command]
+        A dictionary that stores all dev commands.
+    registrations: Dict[int, Union[CommandRegistration, SettingRegistration]]
+        A dictionary that stores all modifications made in the `dev override`/`dev overwrite` commands.
     """
 
     scope: GlobalLocals = GlobalLocals()
@@ -216,19 +291,29 @@ class Root(commands.Cog):
         return register
 
     async def cog_check(self, ctx: commands.Context) -> bool:
-        """A cog check that is called every time a dev command is invoked.
+        """A check that is called every time a dev command is invoked.
         This check is called internally, and shouldn't be called elsewhere.
 
         It first checks if the command is allowed for global use.
-        If that check fails, it checks if the author of the invoked command is specified
-        in :attr:`Settings.OWNERS` or if they own the bot.
+        If that check fails, it checks if the author of the invoked command is specified in :attr:`Settings.OWNERS`.
+        If the owner list is empty, it'll lastly check if the author owns the bot.
 
-        If all checks fail, :class:`commands.NotOwner` is raised. This is done so that you can
+        If all checks fail, :class:`discord.ext.commands.NotOwner` is raised. This is done so that you can
         customize the message that is sent by the bot through an error handler.
+
+        Parameters
+        ----------
+        ctx: :class:`discord.ext.commands.Context`
+            The invocation context in which the command was invoked.
+
+        Returns
+        -------
+        bool
+            Whether the user is allowed to use this command.
 
         Raises
         ------
-        NotOwner
+        discord.ext.commands.NotOwner
             All checks failed. The user who invoked the command is not the owner of the bot.
         """
         from dev.utils.startup import Settings  # circular import
@@ -237,6 +322,8 @@ class Root(commands.Cog):
             if ctx.command.global_use and Settings.ALLOW_GLOBAL_USES:
                 return True
         # not sure if it'd be best to do an elif or an `or` operation here.
-        if ctx.author.id in Settings.OWNERS or await ctx.bot.is_owner(ctx.author):
+        if ctx.author.id in Settings.OWNERS:
+            return True
+        elif await self.bot.is_owner(ctx.author) and not Settings.OWNERS:
             return True
         raise commands.NotOwner("You have to own this bot to be able to use this command")

@@ -18,14 +18,16 @@ from dev.utils.utils import clean_code
 __all__ = (
     "__previous__",
     "CodeblockConverter",
-    "convert_str_to_bool",
-    "convert_str_to_ints",
+    "str_bool",
+    "str_ints",
     "LiteralModes"
 )
 
 
 class LiteralModes(commands.Converter):
     """A custom converter that checks if a given argument falls under a typing.Literal list.
+
+    Subclass of :class:`discord.ext.commands.Converter`.
 
     Examples
     --------
@@ -45,25 +47,15 @@ class LiteralModes(commands.Converter):
         The list of strings that should be accepted.
 
     case_sensitive: :class:`bool`
-        Whether the modes should be case-sensitive. Defaults to ``False``
-
-    Returns
-    -------
-    Optional[str]
-        The argument that was passed if it was found in the list of acceptable modes, else ``None``.
-
-    Raises
-    ------
-    TypeError
-        An invalid format was passed to the class.
+        Whether the modes should be case-sensitive. Defaults to `False`
     """
 
     def __init__(self, modes: Literal[...], case_sensitive: bool):  # type: ignore
         self.case_sensitive: bool = case_sensitive
         if not case_sensitive:
-            self.modes: Literal[...] = [mode.lower() for mode in map(str, modes.__args__)]  # type: ignore
+            self.modes: List[str] = [mode.lower() for mode in map(str, modes.__args__)]
         else:
-            self.modes: Literal[...] = [mode for mode in map(str, modes.__args__)]  # type: ignore
+            self.modes: List[str] = list(map(str, modes.__args__))
 
     async def convert(self, ctx: commands.Context, mode: str) -> Optional[str]:
         """The method that converts the argument passed in.
@@ -87,7 +79,7 @@ class LiteralModes(commands.Converter):
             valid = ", ".join(f"`{mode}`" for mode in self.modes)
             await ctx.send(
                 f"`{mode}` is not a valid mode."
-                f"Case-sensitive is {'on' if self.case_sensitive else 'off'}. Acceptable modes are:\n{valid}"
+                f"Case-sensitive is {'enabled' if self.case_sensitive else 'disabled'}. Acceptable modes are: {valid}"
             )
             return
         return mode
@@ -99,7 +91,6 @@ class LiteralModes(commands.Converter):
         if len(item) != 2:
             raise TypeError(f"LiteralModes[...[, bool]] expected a maximum of 2 attributes, got {len(item)}")
         item, case_sensitive = item
-        # can't use isinstance with typing.Literal
         if type(item) != type(Literal[...]):  # type: ignore # noqa: E721
             raise TypeError(
                 f"LiteralModes[...[, bool]] expected a typing.Literal to be passed, "
@@ -116,15 +107,25 @@ class LiteralModes(commands.Converter):
 
 
 class CodeblockConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument: str) -> Union[Tuple[Optional[str], Optional[str]], str]:
-        """A custom converter that identifies and separates normal string arguments from codeblocks.
+    """A custom converter that identifies and separates normal string arguments from codeblocks.
 
-        Codeblock cleaning should be done later on as this does not automatically return the clean code.
-        E.g: The second string of the returned tuple will start with and end with 3 codeblock back ticks.
+    Codeblock cleaning should be done later on as this does not automatically return the clean code.
+
+    Subclass of :class:`discord.ext.commands.Converter`.
+    """
+    async def convert(self, ctx: commands.Context, argument: str) -> Union[Tuple[Optional[str], Optional[str]], str]:
+        """The method that converts the argument passed in.
+
+        Parameters
+        ----------
+        ctx: :class:`Context`
+            The invocation context in which the argument is being using on.
+        argument: :class:`str`
+            The string that should get converted and parsed.
 
         Returns
         -------
-        Union[Tuple[Optional[:class:`str`], Optional[:class:`str`]], :class:`str`]
+        Union[Tuple[Optional[str], Optional[str]], str]
             A tuple with the arguments and codeblocks or just the argument if IndexError was raised during parsing.
         """
 
@@ -148,17 +149,14 @@ class CodeblockConverter(commands.Converter):
 
 
 async def __previous__(ctx: commands.Context, command_name: str, arg: str, /) -> str:
-    """|coro|
-    Searches for instances of a string containing the '__previous__' placeholder text and
-    replaces it with the contents of the last same-type command that was sent stripping the
+    """Searches for instances of a string containing the '__previous__' placeholder text and
+    replaces it with the contents of the last same-type command that was sent, stripping the
     actual command name and prefix.
 
     This cycle continues for a limit of 25 messages, and automatically breaks if no
     '__previous__' instance was found in the current message.
 
     This function removes codeblocks from the message if the whole message was a codeblock.
-
-    All parameters are positional-only.
 
     Parameters
     ----------
@@ -196,10 +194,10 @@ async def __previous__(ctx: commands.Context, command_name: str, arg: str, /) ->
     return arg.replace("__previous__", previous)
 
 
-def convert_str_to_ints(content: str) -> List[int]:
+def str_ints(content: str) -> List[int]:
     """Converts a string to a list of integers.
-    Integer separation is determined whenever a non-numeric character appears when iterating
-    through the characters of `content`.
+    Integer separation is determined whenever a non-numeric character appears when iterating through the characters of
+    `content`.
 
     Parameters
     ----------
@@ -224,13 +222,13 @@ def convert_str_to_ints(content: str) -> List[int]:
     return int_list
 
 
-def convert_str_to_bool(
+def str_bool(
         content: str,
         default: Optional[bool] = None, *,
         additional_true: Optional[List[str]] = None,
         additional_false: Optional[List[str]] = None
 ) -> bool:
-    """Similar to the :class:`bool` typehint in commands, this converts a string to a boolean
+    """Similar to the :class:`bool` type hint in commands, this converts a string to a boolean
     with the added functionality of optionally appending new true/false statements.
 
     Parameters
@@ -247,7 +245,7 @@ def convert_str_to_bool(
     Returns
     -------
     bool
-        Whether the argument was considered ``True`` or ``False`` by the converter.
+        Whether the argument was considered `True` or `False` by the converter.
 
     Raises
     ------

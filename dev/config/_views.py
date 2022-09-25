@@ -19,7 +19,7 @@ from discord.ext import commands
 
 from dev import types
 
-from dev.converters import convert_str_to_ints
+from dev.converters import str_ints
 from dev.handlers import ExceptionHandler
 from dev.registrations import CommandRegistration
 from dev.types import InteractionResponseType, Over
@@ -43,7 +43,7 @@ class _SettingEditor(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if isinstance(self.setting_obj, set):
-            setattr(Settings, self.setting, set(convert_str_to_ints(self.item.value)))
+            setattr(Settings, self.setting, set(str_ints(self.item.value)))
         #  bool instances are toggleable buttons
         else:
             setattr(Settings, self.setting, self.item.value)

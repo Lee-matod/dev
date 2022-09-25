@@ -24,10 +24,10 @@ class ValueSubmitter(discord.ui.Modal):
     value = discord.ui.TextInput(label="Value", style=discord.TextStyle.paragraph)
 
     def __init__(self, name: str, new: bool, default: str):
+        self.value.default = default
         super().__init__(title="Value Submitter")
         self.name = name
         self.new = new
-        self.value.default = default
 
     async def on_submit(self, interaction: discord.Interaction):
         Root.scope.update({self.name: self.value.value})
@@ -62,15 +62,16 @@ class RootVariables(Root):
             mode: LiteralModes[
                 Literal["~", "all", "content", "create", "del", "delete", "edit", "exists", "new", "replace", "value"]
             ],
+            *,
             name: Optional[str] = None
     ):
         """A virtual scope manager.
         This allows you to create temporary variables that can later be used as placeholder texts.
         Note that all variables created using this manager will later be destroyed once the bot restarts.
         **Modes:**
-        `content` = Sends the content of the variable to ctx.author.
+        `content|value` = View the value of the given variable.
         `exists` = Check if a variable with the given name exists.
-        `all`|`~` = Sends a list of all currently existing tags.
+        `all`|`~` = Sends a list of all currently existing variable names.
         `edit`|`replace` = Edit the contents of an already existing variable.
         `delete`|`del` = Delete an already existing variable.
         `new`|`create` = Create a new variable.
