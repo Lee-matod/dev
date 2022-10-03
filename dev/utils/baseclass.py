@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 from typing import Callable, Dict, Optional, List, Tuple, TypeVar, Union, overload
 
+import discord
 from discord.ext import commands
 from discord.utils import MISSING
 
@@ -232,6 +233,7 @@ class Root(commands.Cog):
     """
 
     scope: GlobalLocals = GlobalLocals()
+    cached_messages: Dict[int, discord.Message] = {}
 
     def __init__(self, bot: types.Bot):
         from dev.utils.functs import all_commands  # circular import

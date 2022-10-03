@@ -263,7 +263,9 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
                 "suppress_embeds": options.get("suppress_embeds", False)
              }
         )
-        return await ctx.send(**kwargs)
+        message = await ctx.send(**kwargs)
+        Root.cached_messages[ctx.message.id] = message
+        return message
 
 
 async def interaction_response(
