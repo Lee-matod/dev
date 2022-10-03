@@ -409,15 +409,13 @@ async def interaction_response(
                 kwargs["content"] = content
     responded = False
     if kwargs:
-        kwargs.update(
-            {
-                "tts": options.get("tts", False),
-                "allowed_mentions": options.get("allowed_mentions", discord.AllowedMentions.none()),
-                "suppress_embeds": options.get("suppress_embeds", False)
-            }
-        )
+        kwargs.update(allowed_mentions=options.get("allowed_mentions", discord.AllowedMentions.none()))
         if response_type is InteractionResponseType.SEND:
-            kwargs.update(ephemeral=options.get("ephemeral", False))
+            kwargs.update(
+                ephemeral=options.get("ephemeral", False),
+                tts=options.get("tts", False),
+                suppress_embeds=options.get("suppress_embeds", False)
+            )
         await method(**kwargs)
         responded = True
     if paginators:
