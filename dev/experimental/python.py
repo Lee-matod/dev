@@ -120,11 +120,19 @@ class RootPython(Root):
         aliases=["py"],
         require_var_positional=False,
     )
-    async def root_python(self, ctx: commands.Context, *, code: str = None):
+    async def root_python(self, ctx: commands.Context, *, code: Optional[str] = None):
         """Evaluate or execute Python code.
         You may specify `__previous__` in the code, and it'll get replaced with the previous script that was executed.
         The bot will search through the history of the channel with a limit of 25 messages.
         """
+        if code is None and ctx.message.attachments:
+            code = await ctx.message.attachments[0].read()
+            try:
+                code = code.decode("utf-8")
+            except UnicodeDecodeError:
+                return await send(ctx, "Unable to decode attachment. Make sure it is UTF-8 compatible.")
+        else:
+            raise commands.MissingRequiredArgument(list(ctx.command.clean_params.values())[-1])
         args = {"bot": self.bot, "ctx": ctx}
         code = await __previous__(
             ctx,
