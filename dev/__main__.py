@@ -91,7 +91,7 @@ class RootCommand(Root):
                 prefix = prefix(self.bot, after)
             if before.content.startswith(prefix) and after.content.startswith(prefix):
                 if before.id in Root.cached_messages.keys():
-                    await Root.cached_messages[before.id].delete()
-                    del Root.cached_messages[before.id]
+                    message = Root.cached_messages.pop(before.id)
+                    Root.cached_messages[after.id] = message
                 await after.clear_reactions()
                 await self.bot.process_commands(after)

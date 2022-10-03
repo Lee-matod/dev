@@ -263,7 +263,20 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
                 "suppress_embeds": options.get("suppress_embeds", False)
              }
         )
-        message = await ctx.send(**kwargs)
+        if ctx.message.id in Root.cached_messages:
+            edit = {
+                "content": kwargs.get("content"),
+                "embed": kwargs.get("embed"),
+                "embeds": kwargs.get("embeds", []),
+                "attachments": kwargs.get("attachments", []),
+                "suppress": kwargs.get("suppress_embeds"),
+                "delete_after": kwargs.get("delete_after"),
+                "allowed_mentions": kwargs.get("allowed_mentions"),
+                "view": kwargs.get("view")
+            }
+            message = await Root.cached_messages[ctx.message.id].edit(**edit)
+        else:
+            message = await ctx.send(**kwargs)
         Root.cached_messages[ctx.message.id] = message
         return message
 

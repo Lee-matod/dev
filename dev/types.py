@@ -25,9 +25,7 @@ __all__ = (
     "Channel",
     "CogT",
     "Command",
-    "CommandT",
     "ContextT",
-    "GroupT",
     "InteractionResponseType",
     "ManagementOperation",
     "MessageContent",
@@ -41,9 +39,7 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 CogT = TypeVar("CogT", bound="Optional[Cog]")
-CommandT = TypeVar("CommandT", bound="Command")
 ContextT = TypeVar("ContextT", bound="Context")
-GroupT = TypeVar("GroupT", bound="Group")
 
 Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T][T]]
 
@@ -94,6 +90,8 @@ else:
     Setting = (bool, set, str)
     User = (discord.ClientUser, discord.Member, discord.User)
 
+
+# Enums
 
 class Over(Enum):
     OVERRIDE = 1
