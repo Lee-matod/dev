@@ -14,23 +14,23 @@ Baseclasses for command registration are also included here, as well as cog-rela
 > 
 > Even though this class was made for internal uses, it cannot be instantiated nor subclassed. It should be used as-is.
 >> ### `staticmethod` @command(name=MISSING, **kwargs)
->> A decorator that converts the given function to a temporary :class:`Command` class.
+>> A decorator that converts the given function to a temporary [Command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclasscommand) class.
 >>> #### Parameters
 >>> - name([str](https://docs.python.org/3/library/stdtypes.html#str)) – The name of the command that should be used. 
 >>> If no name is provided, the function's name will be used.
->>> - kwargs – Key-word arguments that'll be forwarded to the :class:`Command` class.
+>>> - kwargs – Key-word arguments that'll be forwarded to the [Command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclasscommand) class.
 >
 >> ### `staticmethod` @group(name=MISSING, **kwargs)
->> A decorator that converts the given function to a temporary :class:`Group` class.
+>> A decorator that converts the given function to a temporary [Group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup) class.
 >>> #### Parameters
 >>> - name([str](https://docs.python.org/3/library/stdtypes.html#str)) – The name of the command that should be used. 
 >>> If no name is provided, the function's name will be used.
->>> - kwargs – Key-word arguments that'll be forwarded to the :class:`Group` class.
+>>> - kwargs – Key-word arguments that'll be forwarded to the [Group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup) class.
 
 > ### `class` dev.utils.baseclass.Group
 > A class that simulates [discord.ext.commands.Group](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Group).
 > This class is used to keep track of which functions be groups, and it shouldn't get called manually. 
-> Instead, consider using :meth:`root.group` to instantiate this class.
+> Instead, consider using [root.group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#staticmethod-groupnamemissing-kwargs) to instantiate this class.
 >> ### to_instance(command_mapping, /)
 >> Converts this class to an instance of its respective simulation.
 >>> #### Parameters
@@ -45,7 +45,7 @@ Baseclasses for command registration are also included here, as well as cog-rela
 > A class that simulates [discord.ext.commands.Command](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Command).
 >
 > This class is used to keep track of which functions should be commands, and it shouldn't get called manually. 
-> Instead, consider using :meth:`root.command` to instantiate this class.
+> Instead, consider using [root.command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#staticmethod-commandnamemissing-kwargs) to instantiate this class.
 >> ### to_instance(command_mapping, /)
 >> Converts this class to an instance of its respective simulation.
 >>> #### Parameters
@@ -90,7 +90,7 @@ Baseclasses for command registration are also included here, as well as cog-rela
 >> elsewhere.
 >>
 >> It first checks if the command is allowed for global use. 
->> If that check fails, it checks if the author of the invoked command is specified in :attr:`Settings.OWNERS`. 
+>> If that check fails, it checks if the author of the invoked command is specified in Settings.OWNERS. 
 >> If the owner list is empty, it'll lastly check if the author owns the bot.
 >>
 >> If all checks fail, [discord.ext.commands.NotOwner](https://discordpy.readthedocs.io/en/stable/ext/commands/api.html#discord.ext.commands.NotOwner)

@@ -207,7 +207,7 @@ or allowing pagination.
 > Replaces any instance of virtual variables with their respective values and returns the parsed string.
 >> #### Parameters
 >> - string([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should get converted.
->> - scope(:class:`LocalGlobals`) – The scope that will be used when dealing with variables.
+>> - scope([LocalGlobals](https://github.com/Lee-matod/dev/blob/main/docs/utils.md#class-devhandlersgloballocals__globalsnone-__localsnone-)) – The scope that will be used when dealing with variables.
 >
 >> #### Returns
 >> [str](https://docs.python.org/3/library/stdtypes.html#str) – The converted string with the values of the virtual 
@@ -221,12 +221,12 @@ or allowing pagination.
 > Subclass of [discord.ui.View](https://discordpy.readthedocs.io/en/latest/api.html#discord.ui.View).
 >
 >> #### Parameters
->> - paginator(:class:`Paginator`) – A pagination instance from which to get the pages from.
+>> - paginator([Paginator](https://github.com/Lee-matod/dev/blob/main/docs/api.md#class-devpaginationpaginatorpaginator_type--prefix-suffix-max_size2000-linesepn)) – A pagination instance from which to get the pages from.
 >> - author(Union[types.User, [int](https://docs.python.org/3/library/functions.html#int)]) – The user that should be 
 >> able to interact with this paginator. User ID or object can be passed.
 >
 >> #### Attributes
->> - paginator(:class:`Paginator`) – The pagination instance that was passed to the constructor.
+>> - paginator([Paginator](https://github.com/Lee-matod/dev/blob/main/docs/api.md#class-devpaginationpaginatorpaginator_type--prefix-suffix-max_size2000-linesepn)) – The pagination instance that was passed to the constructor.
 >> - author([int](https://docs.python.org/3/library/functions.html#int)) – The ID of the user that is able to interact 
 >> with this paginator. This is the result of the user ID or object that was passed to the constructor.
 >
@@ -335,5 +335,3 @@ or allowing pagination.
 >> #### Raises
 >> - [TypeError](https://docs.python.org/3/library/exceptions.html#TypeError) – A list, tuple or set contains more than 
 >> one type.
-
-
