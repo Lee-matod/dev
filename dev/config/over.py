@@ -225,7 +225,12 @@ class RootOver(Root):
             else:
                 file = read.replace(base_command.source, "")
             additional_attrs = {}
-            exec(compile(file, "<exec>", "exec"), additional_attrs)
+            with (
+                contextlib.redirect_stdout(io.StringIO()),
+                contextlib.redirect_stderr(io.StringIO()),
+                contextlib.suppress(BaseException)
+            ):
+                exec(compile(file, "<exec>", "exec"), additional_attrs)
 
         script = clean_code(replace_vars(script, Root.scope))
         scope = {"discord": discord, "commands": commands, "bot": self.bot}
