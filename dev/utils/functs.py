@@ -266,8 +266,7 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
         if ctx.message.id in Root.cached_messages:
             edit = {
                 "content": kwargs.get("content"),
-                "embed": kwargs.get("embed"),
-                "embeds": kwargs.get("embeds", []),
+                "embeds": kwargs.get("embeds", [kwargs.get("embed")]),
                 "attachments": kwargs.get("attachments", []),
                 "suppress": kwargs.get("suppress_embeds"),
                 "delete_after": kwargs.get("delete_after"),
