@@ -55,15 +55,13 @@ class _Button(discord.ui.Button):
         super().__init__(label=label)
         self.author: types.User = author
         self.setting: str = setting
-        if setting in ("Allow Global Uses", "Invoke on Edit"):
-            self.style = discord.ButtonStyle.green if getattr(
-                Settings, setting.replace(" ", "_").upper()
-            ) else discord.ButtonStyle.red
+        if label in ("Allow Global Uses", "Invoke on Edit"):
+            self.style = discord.ButtonStyle.green if getattr(Settings, setting) else discord.ButtonStyle.red
         else:
             self.style = discord.ButtonStyle.blurple
 
     async def callback(self, interaction: discord.Interaction):
-        if self.setting not in ("Allow Global Uses", "Invoke on Edit"):
+        if self.setting not in [sett for sett, ann in Settings.__annotations__.items() if ann != "bool"]:
             return await interaction.response.send_modal(
                 _SettingEditor(self.author, self.label.replace(" ", "_").upper())
             )
