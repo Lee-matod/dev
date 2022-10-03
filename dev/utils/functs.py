@@ -15,7 +15,7 @@ from copy import copy
 import io
 import json
 import math
-from typing import Any, Dict, List, Sequence, Set, Optional, Union
+from typing import Any, Dict, List, Sequence, Set, Optional, Union, overload
 
 import discord
 from discord.ext import commands
@@ -66,7 +66,7 @@ def all_commands(command_list: Set[types.Command]) -> List[types.Command]:
     return command_count
 
 
-def flag_parser(string: str, delimiter: str) -> Union[Dict[str, Any], str]:
+def flag_parser(string: str, delimiter: str) -> Dict[str, Any]:
     """Converts a string into a dictionary.
 
     This works similarly to :class:`discord.ext.commands.FlagConverter`, only that it can
@@ -90,8 +90,6 @@ def flag_parser(string: str, delimiter: str) -> Union[Dict[str, Any], str]:
     -------
     Dict[:class:`str`, Any]
         The parsed string dictionary.
-    :class:`str`
-        If an error occurred during parsing, the error will be returned instead.
     """
     keys, values = [], []
     temp_string = ""
@@ -112,10 +110,7 @@ def flag_parser(string: str, delimiter: str) -> Union[Dict[str, Any], str]:
     if temp_string:
         values.append(temp_string)
     for i in range(len(values)):
-        try:
-            values[i] = json.loads(str(values[i]).lower() if values[i] is not None else 'null')
-        except json.JSONDecodeError as error:
-            return f"{error}."
+        values[i] = json.loads(str(values[i]).lower() if values[i] is not None else 'null')
     return dict(zip(keys, values))
 
 
@@ -491,7 +486,17 @@ def _check_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     return {k: v for k, v in _kwargs.items() if v is not MISSING}
 
 
-def _check_length(content: Union[discord.Embed, str], max_length: int = 2000) -> Union[Paginator, discord.Embed, str]:
+@overload
+def _check_length(content: discord.Embed, mex_length: int = 6000) -> Union[Paginator, discord.Embed]:
+    ...
+
+
+@overload
+def _check_length(content: str, mex_length: int = 2000) -> Union[Paginator, str]:
+    ...
+
+
+def _check_length(content, max_length: int = 2000):
     if len(content) > max_length:
         highlight_lang = ""
         if isinstance(content, discord.Embed):

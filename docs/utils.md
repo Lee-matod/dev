@@ -72,6 +72,7 @@ These are some utility functions and classes that didn't fall under any other ca
 > group subcommands are also returned.
 >> #### Parameters
 >> - command_list(Set[types.Command]) – A set of commands, groups or both.
+>
 >> #### Returns
 >> List[types.Command] – 
 >> The full list of all the commands that were found within `command_list`.
@@ -91,10 +92,9 @@ These are some utility functions and classes that didn't fall under any other ca
 >> - string([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should be converted.
 >> - delimiter([str](https://docs.python.org/3/library/stdtypes.html#str)) – The character(s) that separate keys and 
 >> values.
+>
 >> #### Returns
 >> - Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), Any] – The parsed string dictionary.
->> - [str](https://docs.python.org/3/library/stdtypes.html#str) – If an error occurred during parsing, the error will be 
->> returned instead.
 
 > ### *await* dev.utils.functs.generate_ctx(ctx, author, channel, **kwargs)
 > Create a custom context with changeable attributes.

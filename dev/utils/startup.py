@@ -89,7 +89,7 @@ def check_types(bot: types.Bot) -> None:
         if not isinstance(received, expected):
             raise ValueError(
                 f"invalid type for Settings.{var}. "
-                f"Expected {expected.__name__!r} but received {type(received).__name__!r}"
+                f"Expected {expected.__name__} but received {type(received).__name__}"
             )
 
     if not Settings.VIRTUAL_VARS:
@@ -102,14 +102,14 @@ def check_types(bot: types.Bot) -> None:
         raise ValueError("Settings.FLAG_DELIMITER cannot be None")
 
     if Settings.FLAG_DELIMITER.strip() == ":":
-        raise ValueError("Settings.FLAG_DELIMITER cannot be ':' as it may interfere with dictionary parsing")
+        raise ValueError("Settings.FLAG_DELIMITER cannot be ':'")
 
     if Settings.ROOT_FOLDER:
         root_folder = pathlib.Path(Settings.ROOT_FOLDER)
         if not root_folder.exists():
-            raise ValueError(f"Path {Settings.ROOT_FOLDER!r} does not exist")
+            raise ValueError(f"Path {Settings.ROOT_FOLDER} does not exist")
         elif root_folder.is_file():
-            raise ValueError(f"Path {Settings.ROOT_FOLDER!r} is a file, not a directory")
+            raise ValueError(f"Path {Settings.ROOT_FOLDER} is a file, not a directory")
 
     if Settings.PATH_TO_FILE:
         path = pathlib.Path(Settings.PATH_TO_FILE)

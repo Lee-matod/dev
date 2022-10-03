@@ -47,11 +47,11 @@ class root:  # noqa E302
     def __init__(self):
         raise OperationNotAllowedError("Cannot instantiate root.")
 
-    def __init_subclass__(cls, **kwargs):
-        raise OperationNotAllowedError("Cannot subclass root.")
-
     def __new__(cls, *args, **kwargs):
         raise OperationNotAllowedError("Cannot instantiate root.")
+
+    def __init_subclass__(cls, **kwargs):
+        raise OperationNotAllowedError("Cannot subclass root.")
 
     @staticmethod
     def command(name: str = MISSING, **kwargs) -> Callable[[Callback], Command]:

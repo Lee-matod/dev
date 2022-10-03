@@ -35,22 +35,23 @@ def sequence(seq: Sequence[Any], type_obj: type, /) -> bool:
     return all(isinstance(elem, type_obj) for elem in seq)
 
 
-class Execute:
-    CODE_TEMPLATE = """
+CODE_TEMPLATE = """
 async def _executor({0}):
     import asyncio
-    
+
     import discord
     from discord.ext import commands
-    
+
     import dev
-    
+
     try:
         pass
     finally:
         _self_variables.update(locals())
     """
 
+
+class Execute:
     def __init__(self, code: str, global_locals: GlobalLocals, args: Dict[str, Any]):
         self.args_name = ["_self_variables", *args.keys()]
         self.args_value = [global_locals, *args.values()]
@@ -68,7 +69,7 @@ async def _executor({0}):
 
     def wrapper(self) -> ast.Module:
         code = ast.parse(self.code)
-        function: ast.Module = ast.parse(self.CODE_TEMPLATE.format(", ".join(self.args_name)))
+        function: ast.Module = ast.parse(CODE_TEMPLATE.format(", ".join(self.args_name)))
         function.body[-1].body[-1].body.extend(code.body)  # type: ignore
         ast.fix_missing_locations(function)
         ast.NodeTransformer().generic_visit(function.body[-1].body[-1])  # type: ignore
