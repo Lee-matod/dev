@@ -83,7 +83,7 @@ class SettingView(discord.ui.View):
         self.author: types.User = author
 
         for setting in [setting for setting in Settings.__dict__.keys() if not setting.startswith("__")]:
-            self.add_item(_Button(setting, self.author, label=setting))
+            self.add_item(_Button(setting, self.author, label=_format_setting(setting)))
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return self.author == interaction.user
@@ -173,3 +173,13 @@ class CodeView(discord.ui.View):
     @discord.ui.button(label="View Code", style=discord.ButtonStyle.blurple)
     async def view_code(self, interaction: discord.Interaction, _):
         await interaction.response.send_modal(_CodeEditor(self.ctx, self.command, self.root))
+
+
+def _format_setting(setting: str) -> str:
+    setting_name = []
+    for word in setting.split("_"):
+        if len(word) <= 2:
+            setting_name.append(word.lower())
+        else:
+            setting_name.append(word.title())
+    return " ".join(setting_name)
