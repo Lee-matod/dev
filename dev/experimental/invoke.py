@@ -35,7 +35,7 @@ class RootInvoke(Root):
         """Call a command a given amount of times.
         Checks can be optionally bypassed by using `dev repeat!` instead of `dev repeat`.
         """
-        kwargs = {"content": f"{ctx.prefix}{command_string}", "author": ctx.author, "channel": ctx.channel}
+        kwargs = {"content": f"{ctx.prefix}{command_string}"}
         for _ in range(amount):
             context = await generate_ctx(ctx, **kwargs)
             if not context.command:
@@ -50,7 +50,7 @@ class RootInvoke(Root):
         """Catch errors when executing a command.
         This command will probably not work with commands that already have an error handler.
         """
-        kwargs = {"content": f"{ctx.prefix}{command_string}", "author": ctx.author, "channel": ctx.channel}
+        kwargs = {"content": f"{ctx.prefix}{command_string}"}
         context: commands.Context = await generate_ctx(ctx, **kwargs)
         if not context.command:
             return await send(ctx, f"Command `{context.invoked_with}` not found.")
@@ -160,12 +160,7 @@ class RootInvoke(Root):
                     continue
                 if c == skip_message:
                     if flag_checks(message, flags):
-                        context: commands.Context = await generate_ctx(
-                            ctx,
-                            ctx.author,
-                            ctx.channel,
-                            content=message.content
-                        )
+                        context: commands.Context = await generate_ctx(ctx, content=message.content)
                         if ctx.invoked_with == "invoke":
                             return await context.command.invoke(context)
                         return await context.command.reinvoke(context)
