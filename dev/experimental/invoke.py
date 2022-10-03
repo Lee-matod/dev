@@ -111,7 +111,7 @@ class RootInvoke(Root):
             for role in roles:
                 # noinspection PyProtectedMember
                 del kwargs["author"]._roles[role]
-            return await ctx.send(f"Command `{context.invoked_with}` not found.")
+            return await send(ctx, f"Command `{context.invoked_with}` not found.")
         try:
             if ctx.invoked_with.endswith("!"):
                 return await context.command.reinvoke(context)

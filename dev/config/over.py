@@ -319,7 +319,7 @@ class RootOver(Root):
             )
             if not context.command:
                 greedy.back_to_default()
-                return await ctx.send(f"Command `{context.invoked_with}` not found.")
+                return await send(ctx, f"Command `{context.invoked_with}` not found.")
             await context.command.invoke(context)
             greedy.back_to_default()
 
@@ -417,7 +417,7 @@ class RootOver(Root):
         """
         command_string, script = command_code
         if not all([command_string, script]):
-            return await ctx.send("Malformed arguments were given.")
+            return await send(ctx, "Malformed arguments were given.")
         command: types.Command = self.bot.get_command(command_string)
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
