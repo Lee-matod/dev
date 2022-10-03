@@ -131,7 +131,7 @@ class RootPython(Root):
                 code = code.decode("utf-8")
             except UnicodeDecodeError:
                 return await send(ctx, "Unable to decode attachment. Make sure it is UTF-8 compatible.")
-        else:
+        elif code is None and not ctx.message.attachments:
             raise commands.MissingRequiredArgument(list(ctx.command.clean_params.values())[-1])
         args = {"bot": self.bot, "ctx": ctx}
         code = await __previous__(
