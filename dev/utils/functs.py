@@ -443,8 +443,6 @@ async def generate_ctx(ctx: commands.Context, **kwargs: Any) -> commands.Context
         A newly created context with the given attributes.
     """
     alt_msg: discord.Message = copy(ctx.message)
-    alt_msg.author = kwargs.pop("author", ctx.author)
-    alt_msg.channel = kwargs.pop("channel", ctx.channel)
     # noinspection PyProtectedMember
     alt_msg._update(kwargs)
     return await ctx.bot.get_context(alt_msg, cls=type(ctx))
