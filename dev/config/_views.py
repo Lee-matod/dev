@@ -61,7 +61,7 @@ class _Button(discord.ui.Button):
             self.style = discord.ButtonStyle.blurple
 
     async def callback(self, interaction: discord.Interaction):
-        if self.setting not in [sett for sett, ann in Settings.__annotations__.items() if ann != "bool"]:
+        if self.setting not in [sett for sett, ann in Settings.__annotations__.items() if ann == "bool"]:
             return await interaction.response.send_modal(
                 _SettingEditor(self.author, self.label.replace(" ", "_").upper())
             )
