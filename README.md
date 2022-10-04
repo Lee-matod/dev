@@ -66,9 +66,9 @@ VIRTUAL_VARS: str = "|%s|"
 * **ALLOW_GLOBAL_USES:** Commands that have their `global_use` property set True are allowed to be invoked by any user. 
 Defaults to `False`.
 * **FLAG_DELIMITER:** The characters that determines when to separate a key from its value when parsing strings to 
-dictionaries. Defaults to `=`
+dictionaries. Defaults to `=`.
 * **INVOKE_ON_EDIT:** Whenever a message that invoked a command is edited to another command, the bot will try to invoke 
-the new command. Defaults to `False`
+the new command. Defaults to `False`.
 * **OWNERS:** A set of user IDs that override bot ownership IDs. If specified, users that are only found in the 
 ownership ID list will not be able to use this extension.
 * **PATH_TO_FILE:** A path directory that will be removed if found inside a message. This will typically be used in 
