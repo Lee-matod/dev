@@ -283,7 +283,7 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
                 edit["attachments"] = files
             else:
                 edit["attachments"] = []
-            message = await Root.cached_messages[ctx.message.id].edit(**kwargs)
+            message = await Root.cached_messages[ctx.message.id].edit(**edit)
         else:
             message = await ctx.send(**kwargs)
         Root.cached_messages[ctx.message.id] = message
