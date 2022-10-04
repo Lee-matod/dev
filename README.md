@@ -1,40 +1,38 @@
 # dev
-A debugging, testing and editing cog for discord.py. This does not use slash commands 
-(mainly because I think they're ugly), so message intents have to be enabled! 
-(or set the bot's prefix to its tag).
+dev is a debugging, testing and editing extension for discord.py.
 
 discord.py github: https://github.com/Rapptz/discord.py  
 discord.py docs: https://discordpy.readthedocs.io/en/latest/index.html
 
-This is still under development, so I'm terribly sorry if you experience any issues.  
-This `README.md` should also get edited in the near future with more stuff to read.
+This cog is still under development, thus, certain aspects may be a bit unstable.
 ****
+# installation
+
+Python 3.8 or higher is required. To install the extension, simply execute the following command depending on what 
+operating system you use.
+
+**Windows**
+```
+py -3 -m pip install -U git+https://github.com/Lee-matod/dev
+```
+**MacOS/Linux**
+```
+python3 -m pip install -U git+https://github.com/Lee-matod/dev
+```
+
 # setup
-
-Python 3.8 or higher is required. To install the extension, simply run the following command
-on your console depending on what operating system you use.
-
-**For Windows**
-```
-py -3 -m pip install -U git+https://github.com/Lee-matod/dev.git
-```
-**For Linux/MacOS**
-```
-python3 -m pip install -U git+https://github.com/Lee-matod/dev.git
-```
-
-In-code setup is quite simple. An example is shown below
 
 ```python
 from discord.ext import commands
 
 bot = commands.Bot(command_prefix=..., intents=...)
 
-@bot.listen()  # or `@bot.event`, both work
+@bot.listen()
 async def setup_hook() -> None:
     await bot.load_extension("dev")
 ```
-if you're subclassing commands.Bot
+If you're subclassing 
+[discord.ext.commands.Bot](https://discordpy.readthedocs.io/en/stable/ext/commands/api.html#discord.ext.commands.Bot):
 ```python
 from discord.ext import commands
 
@@ -48,32 +46,33 @@ class Bot(commands.Bot):
 ****
 # settings
 
-You can customize this extension however you'd like. To do this simply import `Settings` from `dev` and change 
-its attributes accordingly. An example is shown below.
+There are a couple of ways to customize the cog. These are mostly done with the `Settings` class. An example is shown 
+below as well as what they do.
 ```python
 from dev import Settings
-Settings.OWNERS = [1234567890]
-Settings.INVOKE_ON_EDIT = False
-Settings.VIRTUAL_VARS = "-%(name)s-"
+Settings.OWNERS = {1234567890}
+Settings.INVOKE_ON_EDIT = True
+Settings.VIRTUAL_VARS = "-%s-"
 ```
-The full `settings` tree and what they do are shown below. Note that if the wrong type of value is passed, a 
-`ValueError` exception will be raised.
 ```python
 ALLOW_GLOBAL_USES: bool = False
 FLAG_DELIMITER: str = "="
-INVOKE_ON_EDIT: bool = True
-OWNERS: Optional[Set[int]] = {}
-PATH_TO_FILE: Optional[str] = os.getcwd()
-ROOT_FOLDER: Optional[str] = ""
-VIRTUAL_VARS: str = "|%(name)s|"
+INVOKE_ON_EDIT: bool = False
+OWNERS: Set[int] = {}
+PATH_TO_FILE: str = os.getcwd()
+ROOT_FOLDER: str = ""
+VIRTUAL_VARS: str = "|%s|"
 ```
-* **ALLOW_GLOBAL_USES:** Commands aren't considered very harmful or dangerous can be executed by every user. If this setting is enabled, then commands that are considered as 'not harmful' can be called by any user. This defaults to `False`.
-* **FLAG_DELIMITER:** This setting is used to determine when to separate
-keys and values when specifying any kwargs that should be passed in if the command supports these.
-* **INVOKE_ON_EDIT:** If `True`, then a command will be reinvoked if it is edited.
-* **OWNERS:** A list of user IDs that can override `bot.owner_id(s)` determining who can use the dev extension.
-If none are specified, and the bot is logged in before the extension gets loaded, then it defaults to the ID of the owner of the bot.
-* **PATH_TO_FILE:** If a traceback is sent, the path that is specified will be removed from it. This can be used to hide
-personal names or unwanted information.
-* **ROOT_FOLDER:** This is the path that is going to replace the `|root|` placeholder text.
-* **VIRTUAL_VARS:** The format in which virtual variables should be specified.
+* **ALLOW_GLOBAL_USES:** Commands that have their `global_use` property set True are allowed to be invoked by any user. 
+Defaults to `False`.
+* **FLAG_DELIMITER:** The characters that determines when to separate a key from its value when parsing strings to 
+dictionaries. Defaults to `=`
+* **INVOKE_ON_EDIT:** Whenever a message that invoked a command is edited to another command, the bot will try to invoke 
+the new command. Defaults to `False`
+* **OWNERS:** A set of user IDs that override bot ownership IDs. If specified, users that are only found in the 
+ownership ID list will not be able to use this extension.
+* **PATH_TO_FILE:** A path directory that will be removed if found inside a message. This will typically be used in 
+tracebacks. Defaults to the current working directory. This must be a valid path.
+* **ROOT_FOLDER:** The path that will replace the `|root|` text placeholder. This must be a valid path.
+* **VIRTUAL_VARS:** The format in which virtual variables are expected to be formatted. The actual place where the 
+variable's name will be should be defined as `%s`. Defaults to `|%s|`.
