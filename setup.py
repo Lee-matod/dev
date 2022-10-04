@@ -15,15 +15,16 @@ if version.endswith(("a", "b", "rc")):
             stderr=subprocess.PIPE
         ).communicate()
         if count:
-            version += count.decode("utf-8").strip()
-        count, err = subprocess.Popen(
-            ["git", "rev-list", "--short", "HEAD"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        ).communicate()
-        if count:
-            version += f"+g{count.decode('utf-8').strip()}"
-    except:  # noqa E722
+            commit, err = subprocess.Popen(
+                ["git", "rev-parse", "--short", "HEAD"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            ).communicate()
+            if commit:
+                version += count.decode("utf-8").strip() + "+g" + commit.decode("utf-8").strip()
+            else:
+                version += count.decode("utf-8").strip()
+    except Exception:  # noqa
         pass
 
 with open("requirements.txt") as file:
