@@ -330,13 +330,13 @@ def replace_vars(string: str, scope: GlobalLocals) -> str:
     :class:`str`
         The converted string with the values of the virtual variables.
     """
-    formatter = escape(Settings.VIRTUAL_VARS.replace("$var$", "(.+?)"))
+    formatter = escape(Settings.VIRTUAL_VARS.replace("%s", "(.+?)"))
     matches = re.finditer(re.compile(formatter), string)
     if matches:
         for match in matches:
             glob, loc = scope.keys()
             if match.group(1) in [*glob, *loc]:
-                var = Settings.VIRTUAL_VARS.replace("$var$", match.group(1))
+                var = Settings.VIRTUAL_VARS % match.group(1)
                 glob, loc = scope[match.group(1)]
                 string = string.replace(var, glob or loc, 1)
 
