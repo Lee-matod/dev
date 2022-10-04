@@ -47,10 +47,10 @@ class RootHTTP(Root):
         """
         if mode is None:
             return
-        kwargs = flag_parser(replace_vars(options or '', Root.scope), Settings.FLAG_DELIMITER.strip())
-        if isinstance(kwargs, str):
-            return await send(ctx, kwargs)
-        assert isinstance(kwargs, dict)
+        try:
+            kwargs = flag_parser(replace_vars(options or '', Root.scope), Settings.FLAG_DELIMITER.strip())
+        except json.JSONDecodeError as exc:
+            return await send(ctx, f"{exc}")
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(

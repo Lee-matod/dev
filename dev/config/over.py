@@ -15,6 +15,7 @@ import ast
 import contextlib
 import inspect
 import io
+import json
 import textwrap
 from random import choice
 from string import ascii_letters
@@ -45,8 +46,9 @@ class OverrideSettingConverter(commands.Converter):
 
     async def convert(self, ctx: commands.Context, argument: str):
         changed = []
-        new_settings = flag_parser(argument, "=")
-        if isinstance(new_settings, str):
+        try:
+            new_settings = flag_parser(argument, "=")
+        except json.JSONDecodeError:
             return
         assert isinstance(new_settings, dict)
         for key, value in new_settings.items():

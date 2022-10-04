@@ -41,7 +41,7 @@ P = ParamSpec("P")
 CogT = TypeVar("CogT", bound="Optional[Cog]")
 ContextT = TypeVar("ContextT", bound="Context")
 
-Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T][T]]
+Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T]]
 
 if TYPE_CHECKING:
     from typing import Sequence

@@ -283,7 +283,10 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
                 edit["attachments"] = files
             else:
                 edit["attachments"] = []
-            message = await Root.cached_messages[ctx.message.id].edit(**edit)
+            try:
+                message = await Root.cached_messages[ctx.message.id].edit(**edit)
+            except discord.HTTPException:
+                message = await ctx.send(**kwargs)
         else:
             message = await ctx.send(**kwargs)
         Root.cached_messages[ctx.message.id] = message
