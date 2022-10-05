@@ -11,10 +11,10 @@ Basic functions used within the dev extension.
 """
 from __future__ import annotations
 
-from copy import copy
 import io
 import json
 import math
+from copy import copy
 from typing import Any, Dict, List, Sequence, Set, Optional, Union, overload
 
 import discord
