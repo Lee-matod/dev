@@ -9,7 +9,7 @@ Custom converters used within the dev extension.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-from typing import List, Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional, Tuple
 
 from discord.ext import commands
 
@@ -113,7 +113,7 @@ class CodeblockConverter(commands.Converter):
 
     Subclass of :class:`discord.ext.commands.Converter`.
     """
-    async def convert(self, ctx: commands.Context, argument: str) -> Union[Tuple[Optional[str], Optional[str]], str]:
+    async def convert(self, ctx: commands.Context, argument: str) -> Tuple[Optional[str], Optional[str]]:
         """The method that converts the argument passed in.
 
         Parameters
@@ -125,8 +125,8 @@ class CodeblockConverter(commands.Converter):
 
         Returns
         -------
-        Union[Tuple[Optional[str], Optional[str]], str]
-            A tuple with the arguments and codeblocks or just the argument if IndexError was raised during parsing.
+        Tuple[Optional[str], Optional[str]]
+            A tuple with the arguments and codeblocks.
         """
 
         start: Optional[int] = False
@@ -142,38 +142,13 @@ class CodeblockConverter(commands.Converter):
                 if start is not False and end is not False:
                     break
             except IndexError:
-                return argument
+                return argument, None
         codeblock = argument[start:end]
         arguments = argument[:start]
         return arguments.strip(), codeblock
 
 
 async def __previous__(ctx: commands.Context, command_name: str, arg: str, /) -> str:
-    """Searches for instances of a string containing the '__previous__' placeholder text and
-    replaces it with the contents of the last same-type command that was sent, stripping the
-    actual command name and prefix.
-
-    This cycle continues for a limit of 25 messages, and automatically breaks if no
-    '__previous__' instance was found in the current message.
-
-    This function removes codeblocks from the message if the whole message was a codeblock.
-
-    Parameters
-    ----------
-    ctx: :class:`commands.Context`
-        The invocation context in which the argument is being using on.
-    command_name: :class:`str`
-        The fully qualified command name that is being searched for.
-    arg: :class:`str`
-        The string that should be parsed.
-
-    Returns
-    -------
-    str
-        The fully parsed argument. Note that this may return the string without replacing '__previous__'
-        if no commands where found in the last 25 messages.
-    """
-
     previous = "__previous__"
     if "__previous__" in arg:
         skip = 0  # if we don't do this, then ctx.message would be the first message and would probably break everything
@@ -228,8 +203,8 @@ def str_bool(
         additional_true: Optional[List[str]] = None,
         additional_false: Optional[List[str]] = None
 ) -> bool:
-    """Similar to the :class:`bool` type hint in commands, this converts a string to a boolean
-    with the added functionality of optionally appending new true/false statements.
+    """Similar to the :class:`bool` type hint in commands, this converts a string to a boolean with the added
+    functionality of optionally appending new true/false statements.
 
     Parameters
     ----------
@@ -252,13 +227,12 @@ def str_bool(
     BadBoolArgument
         The argument that was passed could not be identified under any true or false statement.
     """
-    additional_true: List[str] = [t.lower() for t in additional_true] or []
-    additional_false: List[str] = [f.lower() for f in additional_false] or []
+    additional_true: List[str] = [t.lower() for t in additional_true]
+    additional_false: List[str] = [f.lower() for f in additional_false]
     if str(content).lower() in ["y", "yes", "1", "true", "t", "enable", "on", *additional_true]:
         return True
     elif str(content).lower() in ["n", "no", "0", "false", "f", "disable", "off", *additional_false]:
         return False
     elif default is not None:
         return default
-    else:
-        raise commands.BadBoolArgument(content)
+    raise commands.BadBoolArgument(content)

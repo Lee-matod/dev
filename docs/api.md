@@ -29,10 +29,8 @@ are the classes that can be type hinted.
 >>> parsed.
 >>
 >>> #### Returns
->>> Union[Tuple[Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)], 
-> Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)]], [str](https://docs.python.org/3/library/stdtypes.html#str)] – 
-> A tuple with the arguments and codeblocks or just the argument if [IndexError](https://docs.python.org/3/library/exceptions.html#IndexError) 
-> was raised during parsing.
+>>> Tuple[Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)], Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)]] – 
+> A tuple with the arguments and codeblocks.
  
 > ### `class` dev.converters.LiteralModes(modes, case_sensitive)
 > A custom converter that checks if a given argument falls under a [typing.Literal](https://docs.python.org/3/library/typing.html#typing.Literal) list. 
