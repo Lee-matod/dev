@@ -1,3 +1,12 @@
+---
+name: Bug Report
+about: Found a bug with this extension? Let us know!
+title: ''
+labels: ''
+assignees: ''
+
+---
+
 # Bug Report
 
 ### Abstract

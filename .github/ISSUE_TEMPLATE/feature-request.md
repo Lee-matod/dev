@@ -1,3 +1,12 @@
+---
+name: Feature Request
+about: Neat feature in mind? Suggest it here!
+title: ''
+labels: ''
+assignees: ''
+
+---
+
 # Feature Request
 
 <!-- Add an 'x' in between the brackets to mark it -->
