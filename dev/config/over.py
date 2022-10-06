@@ -199,7 +199,7 @@ class RootOver(Root):
         This differentiates from its counterpart `dev overwrite` which permanently changes a file.
         The script that will be used as override should be specified in a codeblock (or between \`\`\`).
         """
-        command_string, script = command_code if isinstance(command_code, tuple) else (command_code, None)
+        command_string, script = command_code
         if not command_string:
             return await send(ctx, "Malformed arguments were given.")
         command: types.Command = self.bot.get_command(command_string)
