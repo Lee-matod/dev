@@ -45,6 +45,7 @@ Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T]]
 
 if TYPE_CHECKING:
     from typing import Sequence
+
     Bot = Union[commands.Bot, commands.AutoShardedBot]
     Channel = Union[
         discord.TextChannel,
@@ -68,6 +69,7 @@ if TYPE_CHECKING:
 
 else:
     from collections.abc import Sequence
+
     Bot = (commands.Bot, commands.AutoShardedBot)
     Channel = (
         discord.TextChannel,
