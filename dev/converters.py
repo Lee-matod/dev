@@ -72,17 +72,17 @@ class LiteralModes(commands.Converter):
         Optional[str]
             The mode that was accepted, if it falls under any of the specified modes.
         """
-
+        is_upper: bool = mode.isupper()
         if not self.case_sensitive:
             mode = mode.lower()
         if mode not in self.modes:
             valid = ", ".join(f"`{mode}`" for mode in self.modes)
             await ctx.send(
-                f"`{mode}` is not a valid mode."
+                f"`{mode}` is not a valid mode. "
                 f"Case-sensitive is {'enabled' if self.case_sensitive else 'disabled'}. Acceptable modes are: {valid}"
             )
             return
-        return mode
+        return mode.upper() if is_upper else mode
 
     def __class_getitem__(cls, item):
         # mostly just check that arguments were passed in correctly
@@ -96,8 +96,8 @@ class LiteralModes(commands.Converter):
                 f"LiteralModes[...[, bool]] expected a typing.Literal to be passed, "
                 f"not {item.__name__ if isinstance(item, type) else item.__class__.__name__}"
             )
-        if any(i for i in item.__args__ if isinstance(i, type)):
-            raise TypeError("LiteralModes[...[, bool]] should only have literals, not types")
+        if any(i for i in item.__args__ if not isinstance(i, str)):
+            raise TypeError("LiteralModes[...[, bool]] should only have strings")
         if not isinstance(case_sensitive, bool):
             raise TypeError(
                 f"Case sensitive argument should be a bool, "
@@ -130,22 +130,24 @@ class CodeblockConverter(commands.Converter):
         """
 
         start: Optional[int] = False
-        end: Optional[int] = False
 
         for i in range(len(argument)):
             try:
                 if "".join([argument[i], argument[i + 1], argument[i + 2]]) == "```":
                     start = i
-                i += 1
-                if "".join([argument[-i], argument[-(i + 1)], argument[-(i + 2)]]) == "```":
-                    end = -(i - 1) if i != 1 else None
-                if start is not False and end is not False:
                     break
             except IndexError:
                 return argument, None
-        codeblock = argument[start:end]
+        codeblock = None
         arguments = argument[:start]
-        return arguments.strip(), codeblock
+        if start is not False and argument.endswith("```"):
+            if len(argument[start:]) > 3:
+                codeblock = argument[start:]
+            else:
+                arguments = argument
+        elif start is not False and not argument.endswith("```"):
+            arguments = argument
+        return arguments.strip() or None, codeblock
 
 
 async def __previous__(ctx: commands.Context, command_name: str, arg: str, /) -> str:
