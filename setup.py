@@ -33,6 +33,13 @@ with open("requirements.txt") as file:
 with open("README.md", "r") as file:
     readme = file.read()
 
+extras_require = {
+    "test": [
+        "pytest",
+        "pytest-asyncio"
+    ]
+}
+
 setup(
     name="dev",
     author="Lee-matod",
