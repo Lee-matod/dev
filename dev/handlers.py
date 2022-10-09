@@ -14,7 +14,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import inspect
-import re
 from traceback import format_exception
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Tuple, Type, Optional, Union
@@ -25,7 +24,6 @@ from discord.ext import commands
 from dev import types
 
 from dev.utils.startup import Settings
-from dev.utils.utils import escape
 
 
 __all__ = (
@@ -307,7 +305,7 @@ def optional_raise(ctx: commands.Context, error: commands.CommandError, /):
     # We have to somehow check if the on_command_error event was overridden, the most logical way I could think of was
     # checking if the functions were the same which is the aim of this bit. Do note, however, that this might fail under
     # certain circumstances.
-    events = ctx.bot.on_command_error.__code__.co_code == commands.Bot.on_command_error.__code__.co_code  # type: ignore
+    events = ctx.bot.on_command_error.__code__ == commands.Bot.on_command_error.__code__  # type: ignore
     listeners = ctx.bot.extra_events.get("on_command_error")
     if events or listeners:
         ctx.bot.dispatch("command_error", ctx, error)
@@ -330,14 +328,6 @@ def replace_vars(string: str, scope: GlobalLocals) -> str:
     :class:`str`
         The converted string with the values of the virtual variables.
     """
-    formatter = escape(Settings.VIRTUAL_VARS.replace("%s", "(.+?)"))
-    matches = re.finditer(re.compile(formatter), string)
-    if matches:
-        for match in matches:
-            glob, loc = scope.keys()
-            if match.group(1) in [*glob, *loc]:
-                var = Settings.VIRTUAL_VARS % match.group(1)
-                glob, loc = scope[match.group(1)]
-                string = string.replace(var, glob or loc, 1)
-
+    for key, value in scope.globals.items():
+        string = string.replace(Settings.VIRTUAL_VARS % key, value)
     return string
