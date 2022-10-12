@@ -12,16 +12,17 @@ Direct bot reconfiguration and attributes manager.
 from __future__ import annotations
 
 import time
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord.ext import commands
 
-from dev import types
-
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import all_commands, send
 from dev.utils.utils import escape, plural
+
+if TYPE_CHECKING:
+    from dev import types
 
 
 class PermissionsSelector(discord.ui.View):

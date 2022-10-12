@@ -9,15 +9,16 @@ Views and Modals to be used in dev.config.over.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
+from __future__ import annotations
+
 import ast
 import contextlib
 import io
 import textwrap
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
-
-from dev import types
 
 from dev.converters import str_ints
 from dev.handlers import ExceptionHandler
@@ -27,6 +28,9 @@ from dev.types import InteractionResponseType, Over
 from dev.utils.baseclass import Root
 from dev.utils.functs import interaction_response
 from dev.utils.startup import Settings
+
+if TYPE_CHECKING:
+    from dev import types
 
 
 class _SettingEditor(discord.ui.Modal):

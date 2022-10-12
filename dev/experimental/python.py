@@ -15,12 +15,10 @@ import ast
 import contextlib
 import inspect
 import io
-from typing import Any, AsyncGenerator, Dict, Sequence, Optional
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, Sequence, Optional
 
 import discord
 from discord.ext import commands
-
-from dev import types
 
 from dev.converters import __previous__
 from dev.handlers import ExceptionHandler, GlobalLocals, replace_vars
@@ -29,6 +27,9 @@ from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper
+
+if TYPE_CHECKING:
+    from dev import types
 
 
 def sequence(seq: Sequence[Any], type_obj: type, /) -> bool:

@@ -19,12 +19,10 @@ import json
 import textwrap
 from random import choice
 from string import ascii_letters
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import discord
 from discord.ext import commands
-
-from dev import types
 
 from dev.types import Over, OverType
 from dev.converters import CodeblockConverter, str_bool, str_ints
@@ -37,6 +35,9 @@ from dev.utils.baseclass import Root, root
 from dev.utils.functs import flag_parser, generate_ctx, table_creator, send
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper, plural
+
+if TYPE_CHECKING:
+    from dev import types
 
 
 class OverrideSettingConverter(commands.Converter):

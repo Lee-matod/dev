@@ -13,11 +13,14 @@ from __future__ import annotations
 
 from datetime import datetime
 import inspect
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from dev import types
-from dev.types import Callback, ManagementOperation, Over, OverType
+from dev.types import ManagementOperation, Over, OverType
 
+if TYPE_CHECKING:
+    from dev import types
+
+    from dev.types import Callback
 
 __all__ = (
     "BaseCommandRegistration",

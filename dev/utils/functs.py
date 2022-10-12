@@ -15,19 +15,21 @@ import io
 import json
 import math
 from copy import copy
-from typing import Any, Dict, List, Sequence, Set, Optional, Union, overload
+from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Set, Optional, Union, overload
 
 import discord
 from discord.ext import commands
-from discord.http import HTTPClient
 from discord.utils import MISSING
-
-from dev import types
 
 from dev.types import InteractionResponseType
 from dev.pagination import Interface, Paginator
 
 from dev.utils.baseclass import Root
+
+if TYPE_CHECKING:
+    from discord.http import HTTPClient
+
+    from dev import types
 
 
 __all__ = (

@@ -9,14 +9,18 @@ Global search command.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
+from __future__ import annotations
+
 import difflib
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import discord
-from discord.ext import commands
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import all_commands, send
+
+if TYPE_CHECKING:
+    from discord.ext import commands
 
 
 class Dropdown(discord.ui.View):

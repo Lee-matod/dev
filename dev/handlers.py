@@ -15,8 +15,7 @@ import asyncio
 import contextlib
 import inspect
 from traceback import format_exception
-from types import TracebackType
-from typing import Any, Callable, Dict, List, Tuple, Type, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type, Optional, Union
 
 import discord
 from discord.ext import commands
@@ -25,6 +24,8 @@ from dev import types
 
 from dev.utils.startup import Settings
 
+if TYPE_CHECKING:
+    from types import TracebackType
 
 __all__ = (
     "BoolInput",

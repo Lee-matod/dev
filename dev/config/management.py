@@ -15,12 +15,9 @@ import io
 import os
 import pathlib
 import shutil
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import discord
-from discord.ext import commands
-
-from dev import types
 
 from dev.handlers import BoolInput
 from dev.registrations import ManagementRegistration
@@ -29,6 +26,11 @@ from dev.types import ManagementOperation
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send, table_creator
 from dev.utils.startup import Settings
+
+if TYPE_CHECKING:
+    from discord.ext import commands
+
+    from dev import types
 
 
 class RootManagement(Root):

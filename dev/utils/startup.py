@@ -13,9 +13,10 @@ from __future__ import annotations
 
 import os
 import pathlib
-from typing import Set
+from typing import TYPE_CHECKING, Set
 
-from dev import types
+if TYPE_CHECKING:
+    from dev import types
 
 
 __all__ = (

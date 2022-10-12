@@ -43,7 +43,7 @@ CogT = TypeVar("CogT", bound=commands.Cog)
 ContextT = TypeVar("ContextT", bound=commands.Context)
 
 Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T]]
-ErrorCallback = Callable[[Concatenate[CogT, ContextT, commands.CommandError]], Coroutine[Any, Any, T]]
+ErrorCallback = Callable[[CogT, ContextT, commands.CommandError], Coroutine[Any, Any, T]]
 
 if TYPE_CHECKING:
     from typing import Sequence

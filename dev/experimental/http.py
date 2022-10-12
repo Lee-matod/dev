@@ -9,13 +9,14 @@ HTTP requests and response evaluator.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
+from __future__ import annotations
+
 import io
 import json
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 import aiohttp
 import discord
-from discord.ext import commands
 
 from dev.converters import LiteralModes
 from dev.handlers import replace_vars
@@ -24,6 +25,9 @@ from dev.utils.baseclass import Root, root
 from dev.utils.functs import flag_parser, send
 from dev.utils.startup import Settings
 from dev.utils.utils import responses
+
+if TYPE_CHECKING:
+    from discord.ext import commands
 
 
 class RootHTTP(Root):

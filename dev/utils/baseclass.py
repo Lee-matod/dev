@@ -12,17 +12,23 @@ Basic classes used within the dev extension.
 from __future__ import annotations
 
 import asyncio
-from typing import Callable, Dict, Optional, List, Tuple, Union, overload
+from typing import TYPE_CHECKING, Callable, Dict, Optional, List, Tuple, Union, overload
 
-import discord
 from discord.ext import commands
 from discord.utils import MISSING
 
-from dev import types
-
 from dev.handlers import GlobalLocals
-from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
-from dev.types import Callback, ErrorCallback, Over
+from dev.registrations import BaseCommandRegistration, CommandRegistration
+from dev.types import Over
+
+if TYPE_CHECKING:
+    import discord
+
+    from dev import types
+
+    from dev.registrations import SettingRegistration
+    from dev.types import Callback, ErrorCallback
+
 
 __all__ = (
     "Command",
