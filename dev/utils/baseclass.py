@@ -12,7 +12,7 @@ Basic classes used within the dev extension.
 from __future__ import annotations
 
 import asyncio
-from typing import Callable, Dict, Optional, List, Tuple, TypeVar, Union, overload
+from typing import Callable, Dict, Optional, List, Tuple, Union, overload
 
 import discord
 from discord.ext import commands
@@ -22,8 +22,7 @@ from dev import types
 
 from dev.handlers import GlobalLocals
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
-from dev.types import Callback, Over
-
+from dev.types import Callback, ErrorCallback, Over
 
 __all__ = (
     "Command",
@@ -31,8 +30,6 @@ __all__ = (
     "Root",
     "root"
 )
-
-CST = TypeVar("CST", CommandRegistration, SettingRegistration)
 
 
 class OperationNotAllowedError(BaseException):
@@ -90,6 +87,80 @@ class root:  # noqa E302
         return decorator
 
 
+class _DiscordCommand(commands.Command):
+    def __init__(self, func: Callback, **kwargs):
+        self.__global_use = kwargs.pop("global_use", None)
+        self.__virtual_vars = kwargs.pop("virtual_vars", False)
+        self.__root_placeholder = kwargs.pop("root_placeholder", False)
+        super().__init__(func, **kwargs)
+
+    @property
+    def global_use(self) -> bool:
+        """:class:`bool`:
+        Check whether this command is allowed to be invoked by any user.
+        """
+        return self.__global_use
+
+    @global_use.setter
+    def global_use(self, value: bool):
+        if self.__global_use is None:
+            raise TypeError("Cannot toggle global use value for a command that didn't have it enabled on startup")
+        if not isinstance(value, bool):
+            raise TypeError(f"Expected type bool but received {type(value).__name__}")
+        self.__global_use = value
+
+    @property
+    def virtual_vars(self) -> bool:
+        """:class:`bool`:
+        Check whether this command is compatible with the use of out-of-scope variables.
+        """
+        return self.__virtual_vars
+
+    @property
+    def root_placeholder(self) -> bool:
+        """:class:`bool`:
+        Check whether this command is compatible with the `|root|` placeholder text.
+        """
+        return self.__root_placeholder
+
+
+class _DiscordGroup(commands.Group):
+    def __init__(self, *args, **kwargs):
+        self.__global_use = kwargs.pop("global_use", None)
+        self.__virtual_vars = kwargs.pop("virtual_vars", False)
+        self.__root_placeholder = kwargs.pop("root_placeholder", False)
+        super().__init__(*args, **kwargs)
+
+    @property
+    def global_use(self) -> bool:
+        """:class:`bool`:
+        Check whether this command is allowed to be invoked by any user.
+        """
+        return self.__global_use
+
+    @global_use.setter
+    def global_use(self, value: bool):
+        if self.__global_use is None:
+            raise TypeError("Cannot toggle global use value for a command that didn't have it enabled on startup")
+        if not isinstance(value, bool):
+            raise TypeError(f"Expected type bool but received {type(value).__name__}")
+        self.__global_use = value
+
+    @property
+    def virtual_vars(self) -> bool:
+        """:class:`bool`:
+        Check whether this command is compatible with the use of out-of-scope variables.
+        """
+        return self.__virtual_vars
+
+    @property
+    def root_placeholder(self) -> bool:
+        """:class:`bool`:
+        Check whether this command is compatible with the `|root|` placeholder text.
+        """
+        return self.__root_placeholder
+
+
 class BaseCommand:
     def __init__(self, func: Callback, **kwargs):
         if not asyncio.iscoroutinefunction(func):
@@ -106,75 +177,17 @@ class BaseCommand:
         if self.parent:
             self.level = len(self.parent.split())
 
-        self.extras: Dict[str, bool] = {
-            "global_use": kwargs.pop("global_use", None),
-            "virtual_vars": kwargs.pop("virtual_vars", False),
-            "root_placeholder": kwargs.pop("root_placeholder", False)
-        }
-        extras = self.kwargs.setdefault("extras", self.extras)
-        if extras:
-            extras.update(self.extras)
+        self.on_error: Optional[ErrorCallback] = None
 
-    @property
-    def global_use(self) -> bool:
-        """:class:`bool`:
-        Check whether this command is allowed to be invoked by any user.
-        """
-        return self.extras.get("global_use")
+    def to_instance(self, command_mapping: Dict[str, types.Command], /):
+        raise NotImplementedError
 
-    @global_use.setter
-    def global_use(self, value: bool):
-        if self.extras.get("global_use") is None:
-            raise TypeError("Cannot toggle global use value for a group that didn't have it enabled in the first place")
-        if not isinstance(value, bool):
-            raise TypeError(f"Expected type bool but received {type(value).__name__}")
-        self.extras["global_use"] = value
-
-    @property
-    def virtual_vars(self) -> bool:
-        """:class:`bool`:
-        Check whether this command is compatible with the use of out-of-scope variables.
-        """
-        return self.extras.get("virtual_vars")
-
-    @property
-    def root_placeholder(self) -> bool:
-        """:class:`bool`:
-        Check whether this command is compatible with the `|root|` placeholder text.
-        """
-        return self.extras.get("root_placeholder")
-
-
-class Group(BaseCommand):
-    """A class that simulates :class:`discord.ext.commands.Group`.
-
-    This class is used to keep track of which functions be groups, and it shouldn't get called manually.
-    Instead, consider using :meth:`root.group` to instantiate this class.
-    """
-
-    def to_instance(self, command_mapping: Dict[str, types.Command], /) -> commands.Group:
-        """Converts this class to an instance of its respective simulation.
-
-        Parameters
-        ----------
-        command_mapping: Dict[str, types.Command]
-            A mapping of commands from which this group will get their corresponding parents from.
-
-        Returns
-        -------
-        discord.ext.commands.Group
-            The group class made using the given attributes of this temporary class.
-        """
-        if self.parent:
-            command = command_mapping.get(self.parent)
-            if not command:
-                raise RuntimeError("Couldn't find group command's parent")
-            if not isinstance(command, commands.Group):
-                raise RuntimeError("Group's parent command is not commands.Group instance")
-            deco = command.group
-        else:
-            deco = commands.group
-        return deco(name=self.name, **self.kwargs)(self.callback)
+    def error(self, func: ErrorCallback) -> Callable[[], ErrorCallback]:
+        """Set a local error handler"""
+        def inner():
+            self.on_error = func
+            return func
+        return inner
 
 
 class Command(BaseCommand):
@@ -206,7 +219,43 @@ class Command(BaseCommand):
             deco = command.command
         else:
             deco = commands.command
-        return deco(name=self.name, **self.kwargs)(self.callback)
+        cmd = deco(name=self.name, cls=_DiscordCommand, **self.kwargs)(self.callback)
+        cmd.error(self.on_error)
+        return cmd
+
+
+class Group(BaseCommand):
+    """A class that simulates :class:`discord.ext.commands.Group`.
+
+    This class is used to keep track of which functions be groups, and it shouldn't get called manually.
+    Instead, consider using :meth:`root.group` to instantiate this class.
+    """
+
+    def to_instance(self, command_mapping: Dict[str, types.Command], /) -> commands.Group:
+        """Converts this class to an instance of its respective simulation.
+
+        Parameters
+        ----------
+        command_mapping: Dict[str, types.Command]
+            A mapping of commands from which this group will get their corresponding parents from.
+
+        Returns
+        -------
+        discord.ext.commands.Group
+            The group class made using the given attributes of this temporary class.
+        """
+        if self.parent:
+            command = command_mapping.get(self.parent)
+            if not command:
+                raise RuntimeError("Couldn't find group command's parent")
+            if not isinstance(command, commands.Group):
+                raise RuntimeError("Group's parent command is not commands.Group instance")
+            deco = command.group
+        else:
+            deco = commands.group
+        cmd = deco(name=self.name, cls=_DiscordGroup, **self.kwargs)(self.callback)
+        cmd.error(self.on_error)
+        return cmd
 
 
 class Root(commands.Cog):
@@ -282,7 +331,15 @@ class Root(commands.Cog):
                     command_list.append(rgs)
         return command_list or [self.get_base_command(qualified_name)]
 
-    def update_register(self, register: CST, mode: Union[Over, Over], /) -> CST:
+    @overload
+    def update_register(self, register: CommandRegistration, mode: Over, /) -> CommandRegistration:
+        ...
+
+    @overload
+    def update_register(self, register: SettingRegistration, mode: Over, /) -> SettingRegistration:
+        ...
+
+    def update_register(self, register, mode: Over, /):
         if mode is Over.DELETE and register not in self.registrations.values():
             raise IndexError("Registration cannot be deleted because it does not exist")
         if mode is Over.DELETE:
@@ -321,7 +378,7 @@ class Root(commands.Cog):
         """
         from dev.utils.startup import Settings  # circular import
 
-        if isinstance(ctx.command, (Command, Group)):
+        if isinstance(ctx.command, (_DiscordCommand, _DiscordGroup)):
             if ctx.command.global_use and Settings.ALLOW_GLOBAL_USES:
                 return True
         # not sure if it'd be best to do an elif or an `or` operation here.
