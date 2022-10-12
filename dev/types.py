@@ -26,6 +26,7 @@ __all__ = (
     "CogT",
     "Command",
     "ContextT",
+    "ErrorCallback",
     "InteractionResponseType",
     "ManagementOperation",
     "MessageContent",
@@ -42,6 +43,7 @@ CogT = TypeVar("CogT", bound="Optional[Cog]")
 ContextT = TypeVar("ContextT", bound="Context")
 
 Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T]]
+ErrorCallback = Callable[[Concatenate[CogT, ContextT, commands.CommandError]], Coroutine[Any, Any, T]]
 
 if TYPE_CHECKING:
     from typing import Sequence
