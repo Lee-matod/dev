@@ -10,15 +10,17 @@ Flag-like commands for command analysis.
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 import inspect
+from typing import TYPE_CHECKING, Union
 
 import discord
 from discord.ext import commands
 
-from dev import types
-
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 from dev.utils.utils import codeblock_wrapper
+
+if TYPE_CHECKING:
+    from dev.utils.baseclass import _DiscordCommand, _DiscordGroup  # noqa
 
 
 class RootFlags(Root):
@@ -28,7 +30,7 @@ class RootFlags(Root):
         """Help command made exclusively made for the `dev` extensions.
         Flags are hidden, but they can still be accessed and attributes can still be viewed.
         """
-        command: types.Command = self.bot.get_command(f"dev {command_string}".strip())
+        command: Union[_DiscordCommand, _DiscordGroup] = self.bot.get_command(f"dev {command_string}".strip())  # type: ignore
         if not command:
             return await send(ctx, f"Command `dev {command_string}` not found.")
         docs = '\n'.join(command.help.split("\n")[1:]) or 'No docs available.'
@@ -53,9 +55,9 @@ class RootFlags(Root):
             embed.add_field(name="subcommands", value=subcommands or 'No subcommands', inline=False)
         embed.add_field(
             name="misc",
-            value=f"Supports Variables: `{command.extras.get('supports_virtual_vars', False)}`\n"
-                  f"Supports Root Placeholder: `{command.extras.get('supports_root_placeholder', False)}`\n"
-                  f"Global Use: `{command.extras.get('global_use', False)}`",
+            value=f"Supports Variables: `{command.virtual_vars}`\n"
+                  f"Supports Root Placeholder: `{command.root_placeholder}`\n"
+                  f"Global Use: `{command.global_use}`",
             inline=False
         )
         return await send(ctx, embed)
