@@ -39,8 +39,8 @@ __all__ = (
 T = TypeVar("T")
 P = ParamSpec("P")
 
-CogT = TypeVar("CogT", bound="Optional[Cog]")
-ContextT = TypeVar("ContextT", bound="Context")
+CogT = TypeVar("CogT", bound=commands.Cog)
+ContextT = TypeVar("ContextT", bound=commands.Context)
 
 Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T]]
 ErrorCallback = Callable[[Concatenate[CogT, ContextT, commands.CommandError]], Coroutine[Any, Any, T]]
