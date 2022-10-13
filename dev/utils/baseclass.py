@@ -188,12 +188,10 @@ class BaseCommand:
     def to_instance(self, command_mapping: Dict[str, types.Command], /):
         raise NotImplementedError
 
-    def error(self, func: ErrorCallback) -> Callable[[], ErrorCallback]:
+    def error(self, func: ErrorCallback) -> ErrorCallback:
         """Set a local error handler"""
-        def inner():
-            self.on_error = func
-            return func
-        return inner
+        self.on_error = func
+        return func
 
 
 class Command(BaseCommand):
