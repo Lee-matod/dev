@@ -90,7 +90,8 @@ class RootCommand(Root):
         if isinstance(exception, commands.TooManyArguments):
             return await send(
                 ctx,
-                f"`{ctx.invoked_with}` has no subcommand `{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)}`."
+                f"`{ctx.invoked_with}` has no subcommand "
+                f"`{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).split()}`."
             )
         optional_raise(ctx, exception)
 
