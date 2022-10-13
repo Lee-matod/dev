@@ -91,7 +91,7 @@ class RootCommand(Root):
             return await send(
                 ctx,
                 f"`{ctx.invoked_with}` has no subcommand "
-                f"`{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).split()}`."
+                f"`{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()}`."
             )
         optional_raise(ctx, exception)
 
