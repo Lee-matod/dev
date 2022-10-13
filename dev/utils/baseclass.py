@@ -226,7 +226,8 @@ class Command(BaseCommand):
         else:
             deco = commands.command
         cmd = deco(name=self.name, cls=_DiscordCommand, **self.kwargs)(self.callback)
-        cmd.error(self.on_error)
+        if self.on_error:
+            cmd.error(self.on_error)
         return cmd
 
 
@@ -260,7 +261,8 @@ class Group(BaseCommand):
         else:
             deco = commands.group
         cmd = deco(name=self.name, cls=_DiscordGroup, **self.kwargs)(self.callback)
-        cmd.error(self.on_error)
+        if self.on_error:
+            cmd.error(self.on_error)
         return cmd
 
 
