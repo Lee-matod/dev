@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 import discord
 
-from dev.handlers import BoolInput
+from dev.handlers import BoolInput, optional_raise
 from dev.registrations import ManagementRegistration
 from dev.types import ManagementOperation
 
@@ -257,6 +257,24 @@ class RootManagement(Root):
             path.rmdir()
             self.folders_rgs.append(ManagementRegistration(directory, ManagementOperation.DELETE))
             await ctx.message.add_reaction("☑")
+
+    @root_files.error
+    async def root_files_error(self, ctx: commands.Context, exception: commands.CommandError):
+        if isinstance(exception, commands.TooManyArguments):
+            return await send(
+                ctx,
+                f"`{ctx.invoked_with}` has no subcommand `{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)}`."
+            )
+        optional_raise(ctx, exception)
+
+    @root_folders.error
+    async def root_folders_error(self, ctx: commands.Context, exception: commands.CommandError):
+        if isinstance(exception, commands.TooManyArguments):
+            return await send(
+                ctx,
+                f"`{ctx.invoked_with}` has no subcommand `{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)}`."
+            )
+        optional_raise(ctx, exception)
 
     def format_path(self, directory: str, *, back: bool = True) -> str:
         directory = directory.replace("\\", "/").replace("|root|", Settings.ROOT_FOLDER)

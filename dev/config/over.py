@@ -26,7 +26,7 @@ from discord.ext import commands
 
 from dev.types import Over, OverType
 from dev.converters import CodeblockConverter, str_bool, str_ints
-from dev.handlers import ExceptionHandler, replace_vars
+from dev.handlers import ExceptionHandler, replace_vars, optional_raise
 from dev.registrations import CommandRegistration, SettingRegistration
 
 from dev.config._views import CodeView, SettingView
@@ -529,3 +529,21 @@ class RootOver(Root):
                 color=discord.Color.green() if changed else discord.Color.red()
             )
         )
+
+    @root_override.error
+    async def root_override_error(self, ctx: commands.Context, exception: commands.CommandError):
+        if isinstance(exception, commands.TooManyArguments):
+            return await send(
+                ctx,
+                f"`{ctx.invoked_with}` has no subcommand `{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)}`."
+            )
+        optional_raise(ctx, exception)
+
+    @root_overwrite.error
+    async def root_overwrite_error(self, ctx: commands.Context, exception: commands.CommandError):
+        if isinstance(exception, commands.TooManyArguments):
+            return await send(
+                ctx,
+                f"`{ctx.invoked_with}` has no subcommand `{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)}`."
+            )
+        optional_raise(ctx, exception)

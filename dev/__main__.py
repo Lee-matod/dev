@@ -18,6 +18,8 @@ import discord
 import psutil
 from discord.ext import commands
 
+from dev.handlers import optional_raise
+
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
@@ -82,6 +84,15 @@ class RootCommand(Root):
                 return await send(ctx, f"`dev` is already visible.")
             root_command.hidden = False
             await ctx.message.add_reaction("☑")
+
+    @root_.error
+    async def root_error(self, ctx: commands.Context, exception: commands.CommandError):
+        if isinstance(exception, commands.TooManyArguments):
+            return await send(
+                ctx,
+                f"`{ctx.invoked_with}` has no subcommand `{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)}`."
+            )
+        optional_raise(ctx, exception)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):

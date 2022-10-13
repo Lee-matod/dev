@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING, Optional
 import discord
 from discord.ext import commands
 
+from dev.handlers import optional_raise
+
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import all_commands, send
 from dev.utils.utils import escape, plural
@@ -245,3 +247,12 @@ class RootBot(Root):
         """Close the bot."""
         await ctx.message.add_reaction("👋")
         await self.bot.close()
+
+    @root_bot.error
+    async def root_bot_error(self, ctx: commands.Context, exception: commands.CommandError):
+        if isinstance(exception, commands.TooManyArguments):
+            return await send(
+                ctx,
+                f"`{ctx.invoked_with}` has no subcommand `{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)}`."
+            )
+        optional_raise(ctx, exception)
