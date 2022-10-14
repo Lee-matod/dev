@@ -185,6 +185,9 @@ class BaseCommand:
 
         self.on_error: Optional[ErrorCallback] = None
 
+    async def __call__(self, *args, **kwargs):
+        return await self.callback(*args, **kwargs)
+
     def to_instance(self, command_mapping: Dict[str, types.Command], /):
         raise NotImplementedError
 
