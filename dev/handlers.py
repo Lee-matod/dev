@@ -200,11 +200,11 @@ class BoolInput(discord.ui.View):
                 await self.func()
             else:
                 self.func()
-        await interaction.response.edit_message(content="Task has been executed.", view=None)
+        await interaction.delete_original_response()
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.red)
     async def no_button(self, interaction: discord.Interaction, _):
-        await interaction.response.edit_message(content="Task has been canceled.", view=None)
+        await interaction.delete_original_response()
 
 
 class ExceptionHandler:
