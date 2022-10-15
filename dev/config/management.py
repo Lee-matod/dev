@@ -89,7 +89,7 @@ class RootManagement(Root):
                     files_exist.append(attachment.filename)
                 else:
                     self.explorer_rgs.append(
-                        ManagementRegistration(directory + attachment.filename, ManagementOperation.CREATE)
+                        ManagementRegistration(directory + attachment.filename, ManagementOperation.UPLOAD)
                     )
             if files_exist:
                 await send(ctx, f"{plural(len(files_exist), 'File', False)} {', '.join(files_exist)} already exist.")
@@ -167,7 +167,7 @@ class RootManagement(Root):
             old_path.rename(new_path)
         except FileNotFoundError:
             return await send(ctx, "Could not locate parent directory or it simply does not exist.")
-        self.explorer_rgs.append(ManagementRegistration(f"{old_path}", ManagementOperation.EDIT, f"{new_path}"))
+        self.explorer_rgs.append(ManagementRegistration(f"{old_path}", ManagementOperation.RENAME, f"{new_path}"))
         await ctx.message.add_reaction("☑")
 
     @root.command(name="show", parent="dev explorer", root_placeholder=True, aliases=["view", "tree", "tree!"])
