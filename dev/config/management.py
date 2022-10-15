@@ -4,7 +4,7 @@
 dev.config.management
 ~~~~~~~~~~~~~~~~~~~~~
 
-Files, folders and anything that has to do with directory-related commands.
+Directory and path-related commands.
 
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
@@ -26,6 +26,7 @@ from dev.types import ManagementOperation
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send, table_creator
 from dev.utils.startup import Settings
+from dev.utils.utils import escape, plural
 
 if TYPE_CHECKING:
     from discord.ext import commands
@@ -37,8 +38,7 @@ class RootManagement(Root):
     def __init__(self, bot: types.Bot):
         super().__init__(bot)
         self.cwd: str = os.getcwd() + "/"
-        self.files_rgs: List[ManagementRegistration] = []
-        self.folders_rgs: List[ManagementRegistration] = []
+        self.explorer_rgs: List[ManagementRegistration] = []
 
     @root.command(name="cwd", parent="dev", root_placeholder=True, aliases=["change_cwd"])
     async def root_files_cwd(self, ctx: commands.Context, *, new_cwd: Optional[str] = None):
@@ -51,201 +51,178 @@ class RootManagement(Root):
         self.cwd = new_cwd + "/" if not new_cwd.endswith("/") else new_cwd
         await ctx.message.add_reaction("☑")
 
-    @root.group(name="files", parent="dev", aliases=["file"], invoke_without_command=True)
-    async def root_files(self, ctx: commands.Context):
-        """View modifications made to files."""
-        if files := self.files_rgs:
+    @root.group(name="explorer", parent="dev", invoke_without_command=True, ignore_extra=True)
+    async def root_explorer(self, ctx: commands.Context):
+        """View modifications made to directories."""
+        if operations := self.explorer_rgs:
             rows = [
-                [index, rgs.operation_type.name, f"{rgs}. Date modified: {rgs.created_at}"]
-                for index, rgs in enumerate(files, start=1)
-            ]
-            return await send(ctx, f"```py\n{table_creator(rows, ['IDs', 'Types', 'Descriptions'])}\n```")
-        await send(ctx, "No modifications have been made.")
-
-    @root.command(name="upload", parent="dev files", root_placeholder=True, aliases=["new"])
-    async def root_files_upload(
-            self,
-            ctx: commands.Context,
-            attachment: discord.Attachment,
-            *,
-            directory: Optional[str] = None
-    ):
-        """Upload a new file to a given directory.
-        If `directory` is None, then it will be set to the current working directory.
-        Use `!` at the beginning of the directory to ignore the current working directory.
-        """
-        directory = self.format_path(directory or self.cwd)
-        if not pathlib.Path(directory).exists():
-            return await send(ctx, f"Directory `{directory}` does not exist.")
-        if pathlib.Path(directory + attachment.filename).is_file():
-            return await send(ctx, f"File `{directory.replace(Settings.PATH_TO_FILE, '')}` already exists.")
-        with open(directory + attachment.filename, "x") as file:
-            content = await attachment.read()
-            file.write(content.decode("utf-8"))
-        self.files_rgs.append(ManagementRegistration(directory + attachment.filename, ManagementOperation.UPLOAD))
-        await ctx.message.add_reaction("☑")
-
-    @root.command(
-        name="edit",
-        parent="dev files",
-        root_placeholder=True,
-        aliases=["change"],
-        require_var_positional=True
-    )
-    async def root_files_edit(self, ctx: commands.Context, attachment: discord.Attachment, *, directory: str):
-        """Edit an existing file.
-        This command does not change the file's name. Consider using `dev files|file rename`.
-        Use `!` at the beginning of the directory to ignore the current working directory.
-        """
-        directory = self.format_path(directory, back=False)
-        if not pathlib.Path(directory).is_file():
-            return await send(ctx, f"File `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
-        with open(directory, "w") as file:
-            content = await attachment.read()
-            file.write(content.decode("utf-8"))
-        self.files_rgs.append(ManagementRegistration(directory, ManagementOperation.EDIT))
-        await ctx.message.add_reaction("☑")
-
-    @root.command(name="rename", parent="dev files", root_placeholder=True, require_var_positional=True)
-    async def root_files_rename(self, ctx: commands.Context, new_name: str, *, directory: str):
-        """Rename an existing file.
-        The directory path should include the full name of the file that should be renamed.
-        Use `!` at the beginning of the directory to ignore the current working directory.
-        The new file name can't already exist.
-        """
-        directory = self.format_path(directory)
-        new_name = self.format_path(new_name, back=False)
-        path = pathlib.Path(directory)
-        if not path.is_file():
-            return await send(ctx, f"File `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
-        new_name = new_name.lstrip('/').lstrip("\\")
-        renamed = f"{(parent := '/'.join(directory.split('/')[:-1])) + ('/' if parent else '')}{new_name}"
-        if pathlib.Path(renamed).exists():
-            return await send(ctx, f"A file with the name {new_name} already exists in this directory.")
-        path.rename(renamed)
-        self.files_rgs.append(ManagementRegistration(directory, ManagementOperation.RENAME, new_name))
-        await ctx.message.add_reaction("☑")
-
-    @root.command(name="show", parent="dev files", root_placeholder=True, aliases=["view"], require_var_positional=True)
-    async def root_files_show(self, ctx: commands.Context, *, directory: str):
-        """Show an existing file.
-        Files are checked before sending, so the token of this bot will be replaced with `[token]`.
-        Use `!` at the beginning of the directory to ignore the current working directory.
-        """
-        directory = self.format_path(directory, back=False)
-        if not pathlib.Path(directory).is_file():
-            return await send(ctx, f"File `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
-        with open(directory, "r") as file:
-            await send(ctx, discord.File(fp=io.BytesIO(file.read().encode('utf-8')), filename=directory.split("/")[-1]))
-
-    @root.command(
-        name="delete",
-        parent="dev files",
-        root_placeholder=True,
-        aliases=["del", "remove", "rm"],
-        require_var_positional=True
-    )
-    async def root_files_delete(self, ctx: commands.Context, *, directory: str):
-        """Delete an existing file.
-        Use `!` at the beginning of the directory to ignore the current working directory.
-        """
-        directory = self.format_path(directory)
-        path = pathlib.Path(directory)
-        if not path.is_file():
-            return await send(ctx, f"File `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
-        path.unlink()
-        self.files_rgs.append(ManagementRegistration(directory, ManagementOperation.DELETE))
-        await ctx.message.add_reaction("☑")
-
-    @root.group(name="folders", parent="dev", aliases=["folder", "dir", "directory"], invoke_without_command=True)
-    async def root_folders(self, ctx: commands.Context):
-        """View modifications made to folders."""
-        if folders := self.folders_rgs:
-            rows = [
-                [index, rgs.operation_type.name, f"{rgs}. Date modified: {rgs.created_at}"]
-                for index, rgs in enumerate(folders, start=1)
+                [index, index, rgs.operation_type.name, f"{rgs}. Date modified: {rgs.created_at}"]
+                for index, rgs in enumerate(operations, start=1)
             ]
             return await send(ctx, f"```py\n{table_creator(rows, ['IDs', 'Types', 'Descriptions'])}\n```")
         await send(ctx, "No modifications have been made.")
 
     @root.command(
         name="new",
-        parent="dev folders",
+        parent="dev explorer",
         root_placeholder=True,
-        aliases=["create", "mkdir"],
+        aliases=["upload", "mkdir", "create"],
+        usage="<folder>"
+    )
+    async def root_explorer_new(self, ctx: commands.Context, *, folder: str = ""):
+        """Create an empty file/directory or upload a series of files.
+        If `directory` is None, then it will be set to the current working directory.
+        Use `!` at the beginning of the directory to ignore the current working directory.
+        """
+        attachments = ctx.message.attachments
+        if folder is None and not attachments:
+            raise commands.MissingRequiredArgument(ctx.command.clean_params.get("folder"))
+        directory = self.format_path(folder) or self.cwd
+        if attachments:  # upload files
+            files_exist = []
+            for attachment in attachments:
+                b = await attachment.read()
+                try:
+                    with open(directory + attachment.filename, "xb") as fh:
+                        fh.write(b)
+                except FileExistsError:
+                    files_exist.append(attachment.filename)
+                else:
+                    self.explorer_rgs.append(
+                        ManagementRegistration(directory + attachment.filename, ManagementOperation.CREATE)
+                    )
+            if files_exist:
+                await send(ctx, f"{plural(len(files_exist), 'File', False)} {', '.join(files_exist)} already exist.")
+            return await ctx.message.add_reaction("☑")
+        path = pathlib.Path(directory)
+        if path.exists() and ctx.invoked_with == "upload":
+            await self.root_explorer_show(self, ctx, directory=folder)
+        elif not path.exists() and not path.suffix:  # create new directory
+            path.mkdir()
+            self.explorer_rgs.append(ManagementRegistration(f"{path.absolute()}", ManagementOperation.CREATE))
+            await ctx.message.add_reaction("☑")
+        elif path.suffix:  # create new empty file
+            try:
+                fh = path.open("x")
+                fh.close()
+            except FileExistsError:
+                return await send(
+                    ctx,
+                    f"File {str(path.absolute()).replace(Settings.PATH_TO_FILE, '')} already exists."
+                )
+            self.explorer_rgs.append(ManagementRegistration(f"{path.absolute()}", ManagementOperation.CREATE))
+            await ctx.message.add_reaction("☑")
+        elif path.exists():
+            await send(ctx, f"Path {str(path.absolute()).replace(Settings.PATH_TO_FILE, '')} already exists.")
+
+    @root.command(
+        name="edit",
+        parent="dev explorer",
+        root_placeholder=True,
+        aliases=["change"],
         require_var_positional=True
     )
-    async def root_folders_new(self, ctx: commands.Context, *, directory: str):
-        """Create a new folder.
-        The name of the new folder cannot already exist in the directory given.
+    async def root_explorer_edit(self, ctx: commands.Context, attachment: discord.Attachment, *, directory: str):
+        """Edit an existing file.
+        This command does not change the file's name. Consider using `dev explorer rename`.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
-        directory = self.format_path(directory)
+        directory = self.format_path(directory, tailing=False)
         path = pathlib.Path(directory)
-        if path.exists():
-            return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` already exists.")
-        path.mkdir()
-        self.folders_rgs.append(ManagementRegistration(directory, ManagementOperation.CREATE))
+        if not path.is_file():
+            return await send(ctx, f"File `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
+        with path.open("wb") as file:
+            file.write(await attachment.read())
+        self.explorer_rgs.append(ManagementRegistration(f"{path.absolute()}", ManagementOperation.EDIT))
         await ctx.message.add_reaction("☑")
 
-    @root.command(name="rename", parent="dev folders", root_placeholder=True, require_var_positional=True)
-    async def root_folders_rename(self, ctx: commands.Context, new_name: str, *, directory: str):
-        """Rename an already existing folder.
-        The directory path should include the full name of the folder that should be renamed.
-        Use `!` at the beginning of the directory to ignore the current working directory.
-        The new folder name can't already exist.
+    @root.command(name="rename", parent="dev explorer", root_placeholder=True)
+    async def root_explorer_rename(self, ctx: commands.Context, old_name: str, new_name: str):
+        """Rename an existing file or directory.
+        By default, the new path will be relative to the old path. Use `?` at the beginning of `new_name` to ignore this
+        behavior and use the current working directory instead.
+        Use `!` at the beginning of `old_name` and/or `new_name` to ignore the current working directory.
+        The new item's name can't already exist.
         """
-        directory = self.format_path(directory)
-        new_name = self.format_path(new_name, back=False)
-        path = pathlib.Path(directory)
-        if not path.exists():
-            return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
-        path.rename(new_name)
-        self.folders_rgs.append(ManagementRegistration(directory, ManagementOperation.RENAME, new_name))
+        old_name = self.format_path(old_name)
+        old_path = pathlib.Path(old_name)
+        new_name = new_name.lstrip("/")
+        if new_name.startswith("?"):
+            new_path = pathlib.Path(self.format_path(new_name.lstrip("?")))
+        elif new_name.startswith("!"):
+            new_path = pathlib.Path(self.format_path(new_name))
+        else:
+            new_path = pathlib.Path(str(old_path.parent.absolute()) + "/" + self.format_path("!" + new_name))
+        if not old_path.exists():
+            return await send(
+                ctx,
+                f"Path `{str(old_path.absolute()).replace(Settings.PATH_TO_FILE, '')}` does not exist."
+            )
+        if new_path.exists():
+            return await send(
+                ctx,
+                f"Path `{str(old_path.absolute()).replace(Settings.PATH_TO_FILE, '')}` already exists."
+            )
+        try:
+            old_path.rename(new_path)
+        except FileNotFoundError:
+            return await send(ctx, "Could not locate parent directory or it simply does not exist.")
+        self.explorer_rgs.append(ManagementRegistration(f"{old_path}", ManagementOperation.EDIT, f"{new_path}"))
         await ctx.message.add_reaction("☑")
 
-    @root.command(name="tree", parent="dev folders", root_placeholder=True, aliases=["tree!"])
-    async def root_folders_tree(self, ctx: commands.Context, *, directory: Optional[str] = None):
-        """Get the files and folders inside a given directory.
-        If `directory` is None, then it will show the tree of the current working directory.
+    @root.command(name="show", parent="dev explorer", root_placeholder=True, aliases=["view", "tree", "tree!"])
+    async def root_explorer_show(self, ctx: commands.Context, *, directory: str = ""):
+        """Uploads an existing file to Discord or shows the tree of a directory.
         Execute `tree!` instead of `tree` to show the full path of the files and folders.
+        Files are checked before sending, so the token of this bot will be replaced with `[token]`.
+        If `directory` is None, then it will show the tree of the current working directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
-        directory = self.format_path(directory or self.cwd)
+        directory = self.format_path(directory, tailing=False) or self.cwd
         path = pathlib.Path(directory)
         if not path.exists():
-            return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
-        replace = not ctx.invoked_with.endswith("!")
-        tree = [
-            "```",
-            directory.replace(Settings.PATH_TO_FILE, '') if replace else directory,
-            *[f"   ├─ {str(file).replace(Settings.PATH_TO_FILE, '') if replace else file} "
-              f"({'file' if file.is_file() else 'folder'})" for file in path.iterdir()]
-        ]
-        tree[-1] = f"{tree[-1].replace('├', '└')}"
-        tree.append("```")
-        await send(ctx, "\n".join(tree))
+            return await send(ctx, f"Path `{str(path.absolute()).replace(Settings.PATH_TO_FILE, '')}` does not exist.")
+        elif ctx.invoked_with.startswith("tree"):
+            if not path.is_dir():
+                return await send(ctx, "Path is not a directory.")
+            replace = not ctx.invoked_with.endswith("!")
+            tree = [
+                f"📂 {escape(directory.replace(Settings.PATH_TO_FILE, '') if replace else directory) or '/'}",
+                *[f"\t ├─ {'📄' if sub.is_file() else '📁'} "
+                  + escape(f"{sub.name}")
+                  for sub in path.iterdir()]
+            ]
+            if len(tree) == 1:
+                return await send(ctx, "Directory is empty.")
+            tree[-1] = tree[-1].replace("├", "└", 1)
+            return await send(ctx, discord.Embed(description="\n".join(tree), color=discord.Color.blurple()))
+        elif not path.is_file():
+            return await send(ctx, "Path is not a file.")
+        await send(ctx, discord.File(fp=io.BytesIO(path.read_bytes()), filename=path.name))
 
     @root.command(
         name="delete",
-        parent="dev folders",
+        parent="dev explorer",
         root_placeholder=True,
-        aliases=["del", "remove", "rmdir", "rm"],
+        aliases=["del", "remove", "rm", "rmdir"],
         require_var_positional=True
     )
-    async def root_folders_delete(self, ctx: commands.Context, *, directory: str):
-        """Delete an already existing folder.
-        If the folder is not empty, a prompt will be sent asking if you're sure you want to delete the directory.
+    async def root_explorer_delete(self, ctx: commands.Context, *, directory: str):
+        """Delete an existing file or directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
+        A prompt will be shown if a directory is specified, and it is not empty.
         """
         directory = self.format_path(directory)
         path = pathlib.Path(directory)
         if not path.exists():
-            return await send(ctx, f"Directory `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
-        if path.iterdir():
+            return await send(ctx, f"Path `{str(path.absolute()).replace(Settings.PATH_TO_FILE, '')}` does not exist.")
+        elif path.is_file():
+            path.unlink()
+            return await ctx.message.add_reaction("☑")
+        if any(path.iterdir()):
             async def func():
                 shutil.rmtree(path.name)  # thank you aperture!
-                self.folders_rgs.append(ManagementRegistration(directory, ManagementOperation.DELETE))
+                self.explorer_rgs.append(ManagementRegistration(f"{path.absolute()}", ManagementOperation.DELETE))
                 await ctx.message.add_reaction("☑")
             await send(
                 ctx,
@@ -255,10 +232,10 @@ class RootManagement(Root):
             )
         else:
             path.rmdir()
-            self.folders_rgs.append(ManagementRegistration(directory, ManagementOperation.DELETE))
+            self.explorer_rgs.append(ManagementRegistration(f"{path.absolute()}", ManagementOperation.DELETE))
             await ctx.message.add_reaction("☑")
 
-    @root_files.error
+    @root_explorer.error
     async def root_files_error(self, ctx: commands.Context, exception: commands.CommandError):
         if isinstance(exception, commands.TooManyArguments):
             return await send(
@@ -268,22 +245,14 @@ class RootManagement(Root):
             )
         optional_raise(ctx, exception)
 
-    @root_folders.error
-    async def root_folders_error(self, ctx: commands.Context, exception: commands.CommandError):
-        if isinstance(exception, commands.TooManyArguments):
-            return await send(
-                ctx,
-                f"`{ctx.invoked_with}` has no subcommand "
-                f"`{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()}`."
-            )
-        optional_raise(ctx, exception)
-
-    def format_path(self, directory: str, *, back: bool = True) -> str:
+    def format_path(self, directory: str, *, tailing: bool = True) -> str:
         directory = directory.replace("\\", "/").replace("|root|", Settings.ROOT_FOLDER)
         if not directory.startswith("!"):
             directory = self.cwd + directory.lstrip("/")
-        if back and not directory.endswith("/"):
+        if tailing and not directory.endswith("/"):
             directory += "/"
-        elif not back and directory.endswith("/"):
+        elif not tailing and directory.endswith("/"):
             directory = directory[:-1]
+        if directory.startswith("!"):
+            directory = "/" + directory.replace("!", "", 1).lstrip("/")
         return directory
