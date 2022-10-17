@@ -49,14 +49,19 @@ class GlobalLocals:
         Defaults to ``None``.
     """
 
-    def __init__(self, __globals: Optional[Dict[str, Any]] = None, __locals: Optional[Dict[str, Any]] = None, /):
+    def __init__(
+            self,
+            __globals: Optional[Dict[str, Any]] = None,
+            __locals: Optional[Dict[str, Any]] = None,
+            /
+    ) -> None:
         self.globals: Dict[str, Any] = __globals or {}
         self.locals: Dict[str, Any] = __locals or {}
 
     def __bool__(self) -> bool:
         return bool(self.globals or self.locals)
 
-    def __delitem__(self, key: Any):
+    def __delitem__(self, key: Any) -> None:
         glob_exc, loc_exc = False, False
         try:
             del self.globals[key]
@@ -146,7 +151,12 @@ class GlobalLocals:
                 return default
         return res
 
-    def update(self, __new_globals: Optional[Dict[str, Any]] = None, __new_locals: Optional[Dict[str, Any]] = None, /):
+    def update(
+            self,
+            __new_globals: Optional[Dict[str, Any]] = None,
+            __new_locals: Optional[Dict[str, Any]] = None,
+            /
+    ) -> None:
         """Update the current instance of variables with new ones.
 
         Parameters
@@ -185,7 +195,7 @@ class BoolInput(discord.ui.View):
         The function that should get called if the user clicks on the "Yes" button. This function cannot have arguments.
     """
 
-    def __init__(self, author: Union[types.User, int], func: Optional[Callable[[], Any]] = None):
+    def __init__(self, author: Union[types.User, int], func: Optional[Callable[[], Any]] = None) -> None:
         super().__init__()
         self.func: Optional[Callable[[], Any]] = func
         self.author: int = author.id if isinstance(author, types.User) else author
@@ -239,7 +249,7 @@ class ExceptionHandler:
             /,
             on_error: Optional[Callable[[], Any]] = None,
             save_traceback: bool = False
-    ):
+    ) -> None:
         self.message: discord.Message = message
         self.on_error: Optional[Callable[..., Any]] = on_error
         if save_traceback:
@@ -248,7 +258,7 @@ class ExceptionHandler:
     async def __aenter__(self) -> ExceptionHandler:
         return self
 
-    async def __aexit__(self, exc_type: Type[Exception], exc_val: Exception, exc_tb: TracebackType):
+    async def __aexit__(self, exc_type: Type[Exception], exc_val: Exception, exc_tb: TracebackType) -> bool:
         if exc_val is None:
             if not self.debug:
                 with contextlib.suppress(discord.NotFound):
@@ -274,7 +284,7 @@ class ExceptionHandler:
                     )
             ):
                 if isinstance(exc_val, commands.CommandInvokeError):
-                    exc_val = exc_val.original
+                    exc_val = getattr(exc_val, "original", exc_val)
                     exc_tb = exc_val.__traceback__
                 await self.message.add_reaction("❗")
             elif isinstance(exc_val, ArithmeticError):
@@ -294,7 +304,7 @@ class ExceptionHandler:
         return True
 
     @classmethod
-    def cleanup(cls):
+    def cleanup(cls) -> None:
         """Deletes any tracebacks that were saved if send_traceback was set to True.
         This method should always get called once you have finished handling any tracebacks
         """
@@ -302,7 +312,7 @@ class ExceptionHandler:
         cls.debug = False
 
 
-def optional_raise(ctx: commands.Context, error: commands.CommandError, /):
+def optional_raise(ctx: commands.Context, error: commands.CommandError, /) -> None:
     # We have to somehow check if the on_command_error event was overridden, the most logical way I could think of was
     # checking if the functions were the same which is the aim of this bit. Do note, however, that this might fail under
     # certain circumstances.

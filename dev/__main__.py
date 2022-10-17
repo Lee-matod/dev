@@ -12,7 +12,7 @@ Root command and other that do not fall under any other category.
 import os
 import sys
 import time
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import discord
 import psutil
@@ -25,9 +25,12 @@ from dev.utils.functs import send
 from dev.utils.startup import Settings
 from dev.utils.utils import plural
 
+if TYPE_CHECKING:
+    from dev import types
+
 
 class RootCommand(Root):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
         self.load_time: str = str(round(time.time()))
 
@@ -50,11 +53,16 @@ class RootCommand(Root):
         process = psutil.Process()
         version = sys.version.replace("\n", "")
         description = f"dev is a simple debugging, testing and editing extension for discord.py. " \
-                      f"It features a total of {plural(len(self.commands), 'command')} which were loaded <t:{self.load_time}:R>.\n" \
-                      f"\nThis process (`{process.name()} {str(__file__).split('/')[-1]}`) is currently running on Python version `{version}` on a `{sys.platform}` machine, " \
-                      f"with discord version `{discord.__version__}` and dev version `{sys.modules['dev'].__version__}`.\n" \
-                      f"Running with a PID of `{os.getpid()}` and {plural(process.num_threads(), 'thread')} which are using " \
-                      f"`{round((psutil.getloadavg()[2] / os.cpu_count()) * 100, 2)}%` of CPU power and `{round(process.memory_percent(), 2)}%` of memory.\n"
+                      f"It features a total of {plural(len(self.commands), 'command')} " \
+                      f"which were loaded <t:{self.load_time}:R>.\n" \
+                      f"\nThis process (`{process.name()} {str(__file__).split('/')[-1]}`) " \
+                      f"is currently running on Python version `{version}` on a `{sys.platform}` machine, " \
+                      f"with discord version `{discord.__version__}` " \
+                      f"and dev version `{sys.modules['dev'].__version__}`.\n" \
+                      f"Running with a PID of `{os.getpid()}` " \
+                      f"and {plural(process.num_threads(), 'thread')} which are using " \
+                      f"`{round((psutil.getloadavg()[2] / os.cpu_count()) * 100, 2)}%` of CPU power " \
+                      f"and `{round(process.memory_percent(), 2)}%` of memory.\n"
         await send(ctx, description)
 
     @root.command(name="exit", parent="dev", aliases=["quit", "kys"])

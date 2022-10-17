@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 class RootManagement(Root):
-    def __init__(self, bot: types.Bot):
+    def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
         self.cwd: str = os.getcwd() + "/"
         self.explorer_rgs: List[ManagementRegistration] = []
@@ -220,7 +220,7 @@ class RootManagement(Root):
             path.unlink()
             return await ctx.message.add_reaction("☑")
         if any(path.iterdir()):
-            async def func():
+            async def func() -> None:
                 shutil.rmtree(path.name)  # thank you aperture!
                 self.explorer_rgs.append(ManagementRegistration(f"{path.absolute()}", ManagementOperation.DELETE))
                 await ctx.message.add_reaction("☑")

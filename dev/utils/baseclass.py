@@ -12,7 +12,7 @@ Basic classes used within the dev extension.
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Callable, Dict, Optional, List, Tuple, Union, overload
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, List, Tuple, Union, overload
 
 from discord.ext import commands
 from discord.utils import MISSING
@@ -49,13 +49,13 @@ class root:  # noqa E302
     Even though this class was made for internal uses, it cannot be instantiated nor subclassed.
     It should be used as-is.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         raise OperationNotAllowedError("Cannot instantiate root.")
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: Any, **kwargs: Any) -> None:
         raise OperationNotAllowedError("Cannot instantiate root.")
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         raise OperationNotAllowedError("Cannot subclass root.")
 
     @staticmethod
@@ -94,7 +94,7 @@ class root:  # noqa E302
 
 
 class _DiscordCommand(commands.Command):
-    def __init__(self, func: Callback, **kwargs):
+    def __init__(self, func: Callback, **kwargs) -> None:
         self.__global_use = kwargs.pop("global_use", None)
         self.__virtual_vars = kwargs.pop("virtual_vars", False)
         self.__root_placeholder = kwargs.pop("root_placeholder", False)
@@ -131,7 +131,7 @@ class _DiscordCommand(commands.Command):
 
 
 class _DiscordGroup(commands.Group):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.__global_use = kwargs.pop("global_use", None)
         self.__virtual_vars = kwargs.pop("virtual_vars", False)
         self.__root_placeholder = kwargs.pop("root_placeholder", False)
@@ -145,7 +145,7 @@ class _DiscordGroup(commands.Group):
         return self.__global_use
 
     @global_use.setter
-    def global_use(self, value: bool):
+    def global_use(self, value: bool) -> None:
         if self.__global_use is None:
             raise TypeError("Cannot toggle global use value for a command that didn't have it enabled on startup")
         if not isinstance(value, bool):
@@ -168,7 +168,7 @@ class _DiscordGroup(commands.Group):
 
 
 class BaseCommand:
-    def __init__(self, func: Callback, **kwargs):
+    def __init__(self, func: Callback, **kwargs: Any) -> None:
         if not asyncio.iscoroutinefunction(func):
             raise TypeError("Callback must be a coroutine.")
         name = kwargs.pop("name", None) or func.__name__
@@ -185,10 +185,10 @@ class BaseCommand:
 
         self.on_error: Optional[ErrorCallback] = None
 
-    async def __call__(self, *args, **kwargs):
-        return await self.callback(*args, **kwargs)
+    async def __call__(self, *args: Any, **kwargs: Any) -> None:
+        await self.callback(*args, **kwargs)
 
-    def to_instance(self, command_mapping: Dict[str, types.Command], /):
+    def to_instance(self, command_mapping: Dict[str, types.Command], /) -> None:
         raise NotImplementedError
 
     def error(self, func: ErrorCallback) -> ErrorCallback:
@@ -294,7 +294,7 @@ class Root(commands.Cog):
     scope: GlobalLocals = GlobalLocals()
     cached_messages: Dict[int, discord.Message] = {}
 
-    def __init__(self, bot: types.Bot):
+    def __init__(self, bot: types.Bot) -> None:
         from dev.utils.functs import all_commands  # circular import
 
         self.bot: types.Bot = bot

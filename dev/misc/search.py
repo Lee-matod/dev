@@ -45,7 +45,7 @@ class Dropdown(discord.ui.View):
             emojis: List[str],
             members: List[str],
             roles: List[str]
-    ):
+    ) -> None:
         self.mapping = {
             "all": join_multi_iter([cogs, cmds, channels, emojis, members, roles], max_amount=7),
             "cogs": "\n".join(cogs),

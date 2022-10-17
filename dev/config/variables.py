@@ -23,13 +23,13 @@ from dev.utils.baseclass import Root, root
 class ValueSubmitter(discord.ui.Modal):
     value = discord.ui.TextInput(label="Value", style=discord.TextStyle.paragraph)
 
-    def __init__(self, name: str, new: bool, default: str):
+    def __init__(self, name: str, new: bool, default: str) -> None:
         self.value.default = default
         super().__init__(title="Value Submitter")
         self.name = name
         self.new = new
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction) -> None:
         Root.scope.update({self.name: self.value.value})
         await interaction.response.edit_message(
             content=f"Successfully {'created a new variable called' if self.new else 'edited'} `{self.name}`",
@@ -38,7 +38,7 @@ class ValueSubmitter(discord.ui.Modal):
 
 
 class ModalSubmitter(discord.ui.View):
-    def __init__(self, name: str, new: bool, author: discord.Member, default: str = None):
+    def __init__(self, name: str, new: bool, author: discord.Member, default: str = None) -> None:
         super().__init__()
         self.name = name
         self.new = new

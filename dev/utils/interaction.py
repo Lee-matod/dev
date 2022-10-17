@@ -16,7 +16,7 @@ import datetime
 import inspect
 import shlex
 import time
-from typing import Any, Dict, List, NamedTuple, Optional, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Sequence, Type, Union
 
 import discord
 from discord import app_commands
@@ -82,7 +82,7 @@ class Parameter(NamedTuple):
 
 
 class InvalidChoice(app_commands.AppCommandError):
-    def __init__(self, parameter: Parameter, choices: List[app_commands.Choice]):
+    def __init__(self, parameter: Parameter, choices: List[app_commands.Choice]) -> None:
         super().__init__(
             f"Choice value {parameter.argument!r} "
             f"passed to {parameter.name} "
@@ -91,7 +91,7 @@ class InvalidChoice(app_commands.AppCommandError):
 
 
 class SyntheticInteraction:
-    def __init__(self, context: commands.Context, command: app_commands.Command):
+    def __init__(self, context: commands.Context, command: app_commands.Command) -> None:
         self._context: commands.Context = context
         self._command: app_commands.Command = command
         self._created_at: int = round(time.time())
@@ -155,7 +155,7 @@ class SyntheticInteraction:
                 kwargs[param.name] = param.argument
         return kwargs
 
-    async def invoke(self):  # Acts as commands.Command.invoke
+    async def invoke(self) -> None:  # Acts as commands.Command.invoke
         # noinspection PyProtectedMember
         if not await self._command._check_can_run(self):  # type: ignore  # This works for the time being
             raise app_commands.CheckFailure(f"The check functions for command {self._command.qualified_name!r} failed.")
@@ -170,7 +170,7 @@ class SyntheticInteraction:
         self._context.bot.loop.create_task(self._wait_for_response())
         await self._command.callback(*required, **parameters)
 
-    async def reinvoke(self):  # Acts as commands.Command.reinvoke
+    async def reinvoke(self) -> None:  # Acts as commands.Command.reinvoke
         arguments = self._context.message.content.removeprefix(f"/{self._command.qualified_name}")
         if len(self._command.parameters) == 1:
             arguments = [arguments]
@@ -182,7 +182,7 @@ class SyntheticInteraction:
         self._context.bot.loop.create_task(self._wait_for_response())
         await self._command.callback(*required, **parameters)
 
-    async def _wait_for_response(self):
+    async def _wait_for_response(self) -> None:
         await asyncio.sleep(3)  # simulate maximum of 3 seconds for a response
         # noinspection PyProtectedMember
         if self._interaction_response._response_type is None:
@@ -192,13 +192,13 @@ class SyntheticInteraction:
             await self._context.message.add_reaction("❗")
 
     @property
-    def __class__(self):
+    def __class__(self) -> Type[discord.Interaction]:
         return discord.Interaction
 
-    def __instancecheck__(self, instance) -> bool:
+    def __instancecheck__(self, instance: Any) -> bool:
         return type(instance) is self.__class__
 
-    def __subclasscheck__(self, subclass) -> bool:
+    def __subclasscheck__(self, subclass: Any) -> bool:
         return subclass == self.__class__
 
     @property
@@ -253,7 +253,7 @@ class SyntheticInteraction:
             return self._context.message
         return self._original_response
 
-    async def edit_original_response(self, **kwargs) -> discord.Message:
+    async def edit_original_response(self, **kwargs: Any) -> discord.Message:
         return await self._context.message.edit(**kwargs)
 
     async def delete_original_response(self) -> None:
@@ -267,23 +267,23 @@ class SyntheticWebhook:
     # We can't really create a webhook, so I just resolved to creating a class that mimics common functionality
     # of an actual webhook. Just like with SyntheticInteraction, there are a few attributes and methods that I cannot
     # synthesize given the command invocation context, which is why most of these features do nothing.
-    def __init__(self, ctx: commands.Context):
+    def __init__(self, ctx: commands.Context) -> None:
         self.ctx: commands.Context = ctx
 
     @property
     def url(self) -> str:
         return ""
 
-    async def fetch(self, **kwargs) -> SyntheticWebhook:  # noqa
+    async def fetch(self, **kwargs: Any) -> SyntheticWebhook:  # noqa
         return self
 
-    async def delete(self, **kwargs):
+    async def delete(self, **kwargs: Any) -> None:
         pass
 
-    async def edit(self, **kwargs) -> SyntheticWebhook:  # noqa
+    async def edit(self, **kwargs: Any) -> SyntheticWebhook:  # noqa
         return self
 
-    async def send(self, *args, **kwargs) -> discord.Message:
+    async def send(self, *args: Any, **kwargs: Any) -> discord.Message:
         return await self.ctx.send(*args, **kwargs)
 
     async def fetch_message(self, _id: int, /, *, thread: discord.abc.Snowflake = MISSING) -> discord.Message:
@@ -292,7 +292,7 @@ class SyntheticWebhook:
             return await self.ctx.guild.get_thread(thread_id).fetch_message(_id)
         return await self.ctx.channel.fetch_message(_id)
 
-    async def edit_message(self, message_id: int, **kwargs) -> discord.Message:
+    async def edit_message(self, message_id: int, **kwargs: Any) -> discord.Message:
         thread: discord.abc.Snowflake = kwargs.pop("thread", MISSING)
         if thread is not MISSING:
             thread_id = thread.id
@@ -309,7 +309,7 @@ class SyntheticWebhook:
 
 
 class InteractionResponse(discord.InteractionResponse):
-    def __init__(self, parent: SyntheticInteraction):
+    def __init__(self, parent: SyntheticInteraction) -> None:
         self._parent = parent
         self._response_type: Optional[discord.InteractionResponseType] = None
 
@@ -325,7 +325,9 @@ class InteractionResponse(discord.InteractionResponse):
             raise discord.InteractionResponded(self._parent)  # type: ignore
         # noinspection PyProtectedMember
         if self._parent._unknown_interaction:
-            raise discord.NotFound(UnknownInteraction, {"code": 10062, "message": "Unknown interaction"})  # type: ignore
+            raise discord.NotFound(
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
+            )  # type: ignore
         self._response_type = discord.InteractionResponseType.deferred_channel_message
 
     async def pong(self) -> None:
@@ -333,27 +335,33 @@ class InteractionResponse(discord.InteractionResponse):
             raise discord.InteractionResponded(self._parent)  # type: ignore
         # noinspection PyProtectedMember
         if self._parent._unknown_interaction:
-            raise discord.NotFound(UnknownInteraction, {"code": 10062, "message": "Unknown interaction"})  # type: ignore
+            raise discord.NotFound(
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
+            )  # type: ignore
         self._response_type = discord.InteractionResponseType.pong
 
-    async def send_message(self, content: Optional[Any] = None, **kwargs) -> None:
+    async def send_message(self, content: Optional[Any] = None, **kwargs: Any) -> None:
         if self._response_type is not None:
             raise discord.InteractionResponded(self._parent)  # type: ignore
         # noinspection PyProtectedMember
         if self._parent._unknown_interaction:
-            raise discord.NotFound(UnknownInteraction, {"code": 10062, "message": "Unknown interaction"})  # type: ignore
+            raise discord.NotFound(
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
+            )  # type: ignore
         kwargs.pop("ephemeral", None)
         # noinspection PyProtectedMember
         message = await self._parent._context.send(content, **kwargs)
         self._parent._original_response = message
         self._response_type = discord.InteractionResponseType.channel_message
 
-    async def edit_message(self, **kwargs) -> None:
+    async def edit_message(self, **kwargs: Any) -> None:
         if self._response_type is not None:
             raise discord.InteractionResponded(self._parent)  # type: ignore
         # noinspection PyProtectedMember
         if self._parent._unknown_interaction:
-            raise discord.NotFound(UnknownInteraction, {"code": 10062, "message": "Unknown interaction"})  # type: ignore
+            raise discord.NotFound(
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
+            )  # type: ignore
         # noinspection PyProtectedMember
         await self._parent._context.message.edit(**kwargs)
         self._response_type = discord.InteractionResponseType.message_update
@@ -363,13 +371,17 @@ class InteractionResponse(discord.InteractionResponse):
             raise discord.InteractionResponded(self._parent)  # type: ignore
         # noinspection PyProtectedMember
         if self._parent._unknown_interaction:
-            raise discord.NotFound(UnknownInteraction, {"code": 10062, "message": "Unknown interaction"})  # type: ignore
+            raise discord.NotFound(
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
+            )  # type: ignore
         self._response_type = discord.InteractionResponseType.modal
 
-    async def autocomplete(self, choices) -> None:
+    async def autocomplete(self, choices: Sequence[app_commands.Choice]) -> None:
         if self._response_type is not None:
             raise discord.InteractionResponded(self._parent)  # type: ignore
         # noinspection PyProtectedMember
         if self._parent._unknown_interaction:
-            raise discord.NotFound(UnknownInteraction, {"code": 10062, "message": "Unknown interaction"})  # type: ignore
+            raise discord.NotFound(
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
+            )  # type: ignore
         self._response_type = discord.InteractionResponseType.autocomplete_result

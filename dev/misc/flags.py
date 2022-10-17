@@ -30,7 +30,9 @@ class RootFlags(Root):
         """Help command made exclusively made for the `dev` extensions.
         Flags are hidden, but they can still be accessed and attributes can still be viewed.
         """
-        command: Union[_DiscordCommand, _DiscordGroup] = self.bot.get_command(f"dev {command_string}".strip())  # type: ignore
+        command: Union[_DiscordCommand, _DiscordGroup] = self.bot.get_command(  # type: ignore
+            f"dev {command_string}".strip()
+        )
         if not command:
             return await send(ctx, f"Command `dev {command_string}` not found.")
         docs = '\n'.join(command.help.split("\n")[1:]) or 'No docs available.'
@@ -85,21 +87,27 @@ class RootFlags(Root):
                     f"`*, {name}"
                     f"{'*' if sign.required else ''}`: "
                     f"_{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_"
-                    f"{' = ' + str(sign.default) if not isinstance(sign.default, type) else sign.default.__name__ if sign.default is inspect.Parameter.empty else ''}"
+                    + ' = ' + str(sign.default) if not isinstance(
+                        sign.default, type
+                    ) else sign.default.__name__ if sign.default is inspect.Parameter.empty else ''
                 )
             elif sign.kind == inspect.Parameter.VAR_POSITIONAL:
                 params.append(
                     f"`*{name}"
                     f"{'*' if sign.required else ''}`: "
                     f"_{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_"
-                    f"{' = ' + str(sign.default) if not isinstance(sign.default, type) else sign.default.__name__ if sign.default is inspect.Parameter.empty else ''}"
+                    + ' = ' + str(sign.default) if not isinstance(
+                        sign.default, type
+                    ) else sign.default.__name__ if sign.default is inspect.Parameter.empty else ''
                 )
             else:
                 params.append(
                     f"`{name}"
                     f"{'*' if sign.required else ''}`: "
                     f"_{sign.converter.__name__ if isinstance(sign.converter, type) else sign.converter}_"
-                    f"{' = ' + str(sign.default) if not isinstance(sign.default, type) else sign.default.__name__ if sign.default is inspect.Parameter.empty else ''}"
+                    + ' = ' + str(sign.default) if not isinstance(
+                        sign.default, type
+                    ) else sign.default.__name__ if sign.default is inspect.Parameter.empty else ''
                 )
         embed = discord.Embed(
             title=command_string,
@@ -146,4 +154,3 @@ class RootFlags(Root):
             return await send(ctx, f"Couldn't get the source file for the command `{command_string}`.")
         with open(directory, "r") as source:
             await send(ctx, discord.File(fp=source.read(), filename=command.module))
-

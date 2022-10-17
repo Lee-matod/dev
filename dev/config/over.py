@@ -45,7 +45,7 @@ class OverrideSettingConverter(commands.Converter):
     script: str = ""
     command_string: str = ""
 
-    async def convert(self, ctx: commands.Context, argument: str):
+    async def convert(self, ctx: commands.Context, argument: str) -> None:
         changed = []
         try:
             new_settings = flag_parser(argument, "=")
@@ -84,7 +84,7 @@ class OverrideSettingConverter(commands.Converter):
         else:
             self.command_string = argument
 
-    def back_to_default(self):
+    def back_to_default(self) -> None:
         for module, value in self.default_settings.items():
             setattr(Settings, module, value)
 
@@ -228,11 +228,9 @@ class RootOver(Root):
             else:
                 file = read.replace(base_command.source, "")
             additional_attrs = {}
-            with (
-                contextlib.redirect_stdout(io.StringIO()),
-                contextlib.redirect_stderr(io.StringIO()),
-                contextlib.suppress(BaseException)
-            ):
+            with contextlib.redirect_stdout(io.StringIO()), \
+                    contextlib.redirect_stderr(io.StringIO()), \
+                    contextlib.suppress(BaseException):
                 exec(compile(file, "<exec>", "exec"), additional_attrs)
 
         script = clean_code(replace_vars(script, Root.scope))
@@ -379,7 +377,7 @@ class RootOver(Root):
             # make sure that we have the correct amount of lines necessary to include the new script
             if len(old_lines_split) > len(lines):
                 with open(directory, "w") as f:
-                    read_lines[end] = read_lines[end] + "\n" * (len(old_lines_split) - len(lines))
+                    read_lines[end] += "\n" * (len(old_lines_split) - len(lines))
                     end += len(old_lines_split) - len(lines)
                     f.writelines(read_lines)
                 with open(directory, "r") as f:
@@ -462,7 +460,7 @@ class RootOver(Root):
         code_split = code.split("\n")
         if len(code_split) > len(lines):
             with open(directory, "w") as f:
-                read_lines[end] = read_lines[end] + "\n" * (len(code_split) - len(lines))
+                read_lines[end] += "\n" * (len(code_split) - len(lines))
                 end += len(code_split) - len(lines)
                 f.writelines(read_lines)
             with open(directory, "r") as f:

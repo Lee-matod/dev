@@ -9,7 +9,9 @@ Custom converters used within the dev extension.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-from typing import List, Literal, Optional, Tuple
+from __future__ import annotations
+
+from typing import Any, List, Literal, Optional, Tuple
 
 from discord.ext import commands
 
@@ -50,7 +52,7 @@ class LiteralModes(commands.Converter):
         Whether the modes should be case-sensitive. Defaults to `False`
     """
 
-    def __init__(self, modes: Literal[...], case_sensitive: bool):  # type: ignore
+    def __init__(self, modes: Literal[...], case_sensitive: bool) -> None:  # type: ignore
         self.case_sensitive: bool = case_sensitive
         if not case_sensitive:
             self.modes: List[str] = [mode.lower() for mode in map(str, modes.__args__)]
@@ -84,7 +86,7 @@ class LiteralModes(commands.Converter):
             return
         return mode.upper() if is_upper else mode
 
-    def __class_getitem__(cls, item):
+    def __class_getitem__(cls, item: Any) -> LiteralModes:
         # mostly just check that arguments were passed in correctly
         if not isinstance(item, tuple):
             item = (item, False)

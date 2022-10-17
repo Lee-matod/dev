@@ -72,6 +72,6 @@ class Dev(
     """The frontend root cog of the dev extension that implements all features."""
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: commands.Bot) -> None:
     await set_settings(bot)
     await bot.add_cog(Dev(bot))

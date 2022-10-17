@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 
 class _SettingEditor(discord.ui.Modal):
-    def __init__(self, author: types.User, setting: str):
+    def __init__(self, author: types.User, setting: str) -> None:
         self.author: types.User = author
         self.setting: str = setting
         self.setting_obj: types.Setting = getattr(Settings, setting)
@@ -55,7 +55,7 @@ class _SettingEditor(discord.ui.Modal):
 
 
 class _Button(discord.ui.Button):
-    def __init__(self, setting: str, author: types.User, *, label: str):
+    def __init__(self, setting: str, author: types.User, *, label: str) -> None:
         super().__init__(label=label)
         self.author: types.User = author
         self.setting: str = setting
@@ -64,7 +64,7 @@ class _Button(discord.ui.Button):
         else:
             self.style = discord.ButtonStyle.blurple
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction) -> None:
         if self.setting not in [sett for sett, ann in Settings.__annotations__.items() if ann == "bool"]:
             return await interaction.response.send_modal(
                 _SettingEditor(self.author, self.label.replace(" ", "_").upper())
@@ -80,7 +80,7 @@ class _Button(discord.ui.Button):
 
 
 class SettingView(discord.ui.View):
-    def __init__(self, author: types.User):
+    def __init__(self, author: types.User) -> None:
         super().__init__()
         self.author: types.User = author
 
@@ -94,7 +94,7 @@ class SettingView(discord.ui.View):
 class _CodeEditor(discord.ui.Modal):
     code = discord.ui.TextInput(label="Code Inspection for 'command'", style=discord.TextStyle.long)
 
-    def __init__(self, ctx: commands.Context, command: types.Command, root: Root):
+    def __init__(self, ctx: commands.Context, command: types.Command, root: Root) -> None:
         self.code.label = self.code.label.replace("command", command.qualified_name)
         self.code.default = root.match_register_command(command.qualified_name)[-1].source
 
@@ -103,7 +103,7 @@ class _CodeEditor(discord.ui.Modal):
         self.ctx: commands.Context = ctx
         self.root: Root = root
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction) -> None:
         self.ctx.bot.remove_command(self.command.qualified_name)
         lcls = {"discord": discord, "commands": commands, "bot": self.ctx.bot}
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -163,7 +163,7 @@ class _CodeEditor(discord.ui.Modal):
 
 
 class CodeView(discord.ui.View):
-    def __init__(self, ctx: commands.Context, command: types.Command, root: Root):
+    def __init__(self, ctx: commands.Context, command: types.Command, root: Root) -> None:
         super().__init__()
         self.ctx: commands.Context = ctx
         self.command: types.Command = command
@@ -173,7 +173,7 @@ class CodeView(discord.ui.View):
         return self.ctx.author == interaction.user
 
     @discord.ui.button(label="View Code", style=discord.ButtonStyle.blurple)
-    async def view_code(self, interaction: discord.Interaction, _):
+    async def view_code(self, interaction: discord.Interaction, _) -> None:
         await interaction.response.send_modal(_CodeEditor(self.ctx, self.command, self.root))
 
 

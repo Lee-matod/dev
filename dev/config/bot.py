@@ -12,7 +12,7 @@ Direct bot reconfiguration and attributes manager.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Generator, Optional
 
 import discord
 from discord.ext import commands
@@ -77,13 +77,13 @@ class PermissionsSelector(discord.ui.View):
         )
     ]
 
-    def __init__(self, target: discord.Member, channel: Optional[types.Channel] = None):
+    def __init__(self, target: discord.Member, channel: Optional[types.Channel] = None) -> None:
         super().__init__()
         self.user_target: discord.Member = target
         self.channel_target: Optional[types.Channel] = channel
 
     @discord.ui.select(options=options)
-    async def callback(self, interaction: discord.Interaction, select: discord.ui.Select):
+    async def callback(self, interaction: discord.Interaction, select: discord.ui.Select) -> None:
         for option in select.options:
             if option.value != select.values[0]:
                 option.default = False
@@ -95,7 +95,7 @@ class PermissionsSelector(discord.ui.View):
             view=self
         )
 
-    def sort_perms(self, permission: str):
+    def sort_perms(self, permission: str) -> Generator[str, None, None]:
         perms = getattr(discord.Permissions, permission)()
         for perm, value in perms:
             if not value:
@@ -121,26 +121,40 @@ class RootBot(Root):
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         mapping = {True: "enabled", False: "disabled", None: "unknown"}
         bot_field = ""
-        visibility_field = (f"This bot can see {plural(len(self.bot.guilds), 'guild')}, "
-                            f"{plural(len([c for c in self.bot.get_all_channels() if not isinstance(c, discord.CategoryChannel)]), 'channel')} "
-                            f"and {plural(len(self.bot.users), 'account')}, "
-                            f"{len([user for user in self.bot.users if not user.bot])} of which are users.")
-        commands_field = (f"There is a total of {len(all_commands(self.bot.commands))} commands "
-                          f"and {len(self.bot.extensions)} loaded {plural(len(self.bot.extensions), 'extension', False)}.")
-        information_field = (f"This bot is running with an average websocket latency of {round(self.bot.latency * 1000, 2)}ms. "
-                             f"Members intent is {mapping.get(self.bot.intents.members)}, "
-                             f"message content intent is {mapping.get(self.bot.intents.message_content)} "
-                             f"and presences intent is {mapping.get(self.bot.intents.presences)}.")
+        visibility_field = (
+                f"This bot can see {plural(len(self.bot.guilds), 'guild')}, "
+                + plural(
+                    len([c for c in self.bot.get_all_channels() if not isinstance(c, discord.CategoryChannel)]),
+                    "channel"
+                )
+                + f"and {plural(len(self.bot.users), 'account')}, "
+                  f"{len([user for user in self.bot.users if not user.bot])} of which are users."
+        )
+        commands_field = (
+            f"There is a total of {len(all_commands(self.bot.commands))} commands "
+            f"and {len(self.bot.extensions)} loaded "
+            f"{plural(len(self.bot.extensions), 'extension', False)}."
+        )
+        information_field = (
+            f"This bot is running with an average websocket latency of {round(self.bot.latency * 1000, 2)}ms. "
+            f"Members intent is {mapping.get(self.bot.intents.members)}, "
+            f"message content intent is {mapping.get(self.bot.intents.message_content)} "
+            f"and presences intent is {mapping.get(self.bot.intents.presences)}."
+        )
         if self.bot.owner_ids:
-            bot_field += (f"<@!{'>, <@!'.join(f'{owner}' for owner in self.bot.owner_ids)}> are the owners of this bot. "
-                          f"The prefix of this bot is `{escape(ctx.prefix)}` "
-                          f"(case insensitive is {mapping.get(self.bot.case_insensitive)} "
-                          f"and strip after prefix is {mapping.get(self.bot.strip_after_prefix)}) ")
+            bot_field += (
+                f"<@!{'>, <@!'.join(f'{owner}' for owner in self.bot.owner_ids)}> are the owners of this bot. "
+                f"The prefix of this bot is `{escape(ctx.prefix)}` "
+                f"(case insensitive is {mapping.get(self.bot.case_insensitive)} "
+                f"and strip after prefix is {mapping.get(self.bot.strip_after_prefix)}) "
+            )
         elif self.bot.owner_id:
-            bot_field += (f"<@!{self.bot.owner_id}> is the owner of this bot. "
-                          f"The prefix of this bot is `{escape(ctx.prefix)}` "
-                          f"(case insensitive is {mapping.get(self.bot.case_insensitive)} "
-                          f"and strip after prefix is {mapping.get(self.bot.strip_after_prefix)}) ")
+            bot_field += (
+                f"<@!{self.bot.owner_id}> is the owner of this bot. "
+                f"The prefix of this bot is `{escape(ctx.prefix)}` "
+                f"(case insensitive is {mapping.get(self.bot.case_insensitive)} "
+                f"and strip after prefix is {mapping.get(self.bot.strip_after_prefix)}) "
+            )
         if isinstance(self.bot, commands.AutoShardedBot):
             bot_field += f"and it's automatically sharded: shards {self.bot.shard_id} of {self.bot.shard_count} "
         elif self.bot.shard_count:
@@ -212,7 +226,7 @@ class RootBot(Root):
             color=discord.Color.blurple()
         )
         embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
-        return await send(ctx, embed)
+        await send(ctx, embed)
 
     @root.command(name="enable", parent="dev bot", require_var_positional=True)
     async def root_bot_enable(self, ctx: commands.Context, *, command_name: str):

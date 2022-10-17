@@ -524,7 +524,7 @@ def _check_length(content: str, mex_length: int = 2000) -> Union[Paginator, str]
     ...
 
 
-def _check_length(content, max_length: int = 2000):
+def _check_length(content: Any, max_length: int = 2000) -> Any:
     if len(content) > max_length:
         highlight_lang = ""
         if isinstance(content, discord.Embed):
@@ -532,7 +532,7 @@ def _check_length(content, max_length: int = 2000):
             if string.startswith("```") and string.endswith("```"):
                 highlight_lang = string.split("\n")[0].removeprefix("```")
                 string = "\n".join(content.description.split("\n")[1:-1])
-            paginator = Paginator(content, prefix=f"```{highlight_lang}", suffix="```", max_size=max_length)
+            paginator = Paginator(content, prefix=f"```{highlight_lang}", max_size=max_length)
             for line in string.split("\n"):
                 paginator.add_line(line.replace("``", "`\u200b`"))
             return paginator
@@ -541,7 +541,7 @@ def _check_length(content, max_length: int = 2000):
             if content.startswith("```") and content.endswith("```"):
                 highlight_lang = content.split("\n")[0].removeprefix("```")
                 string = "\n".join(content.split("\n")[1:-1])
-            paginator = Paginator(content, prefix=f"```{highlight_lang}", suffix="```", max_size=max_length)
+            paginator = Paginator(content, prefix=f"```{highlight_lang}", max_size=max_length)
             for line in string.split("\n"):
                 paginator.add_line(line.replace("``", "`\u200b`"))
             return paginator

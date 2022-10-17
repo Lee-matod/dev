@@ -33,7 +33,10 @@ if TYPE_CHECKING:
 
 
 def sequence(seq: Sequence[Any], type_obj: type, /) -> bool:
-    return all(isinstance(elem, type_obj) for elem in seq)
+    for item in seq:
+        if not isinstance(item, type_obj):
+            return False
+    return True
 
 
 CODE_TEMPLATE = """
@@ -53,7 +56,7 @@ async def _executor({0}):
 
 
 class Execute:
-    def __init__(self, code: str, global_locals: GlobalLocals, args: Dict[str, Any]):
+    def __init__(self, code: str, global_locals: GlobalLocals, args: Dict[str, Any]) -> None:
         self.args_name = ["_self_variables", *args.keys()]
         self.args_value = [global_locals, *args.values()]
         self.code = code
@@ -90,7 +93,7 @@ class Execute:
 
 
 class RootPython(Root):
-    def __init__(self, bot: types.Bot):
+    def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
         self.retain: bool = False
         self.vars: Optional[GlobalLocals] = None

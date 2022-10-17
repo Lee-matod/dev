@@ -32,7 +32,7 @@ __all__ = (
 
 
 class BaseCommandRegistration:
-    def __init__(self, __command: types.Command, /):
+    def __init__(self, __command: types.Command, /) -> None:
         self.command: types.Command = __command
         self.callback: Callback = __command.callback
         self.qualified_name: str = __command.qualified_name
@@ -46,16 +46,16 @@ class BaseCommandRegistration:
 
 
 class BaseRegistration:
-    def __init__(self):
+    def __init__(self) -> None:
         self.created_at: str = datetime.utcnow().strftime("%b %d, %Y at %H:%M:%S UTC")
         self.timestamp: int = round(datetime.utcnow().timestamp())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} created_at={self.created_at} timestamp={self.timestamp}>"
 
 
 class ManagementRegistration(BaseRegistration):
-    def __init__(self, directory: str, operation_type: ManagementOperation, other: Optional[str] = None):
+    def __init__(self, directory: str, operation_type: ManagementOperation, other: Optional[str] = None) -> None:
         super().__init__()
         self.directory: str = directory
         self.operation_type: ManagementOperation = operation_type
@@ -74,7 +74,7 @@ class ManagementRegistration(BaseRegistration):
 
 
 class CommandRegistration(BaseRegistration):
-    def __init__(self, __command: types.Command, register_type: Over, /, *, source: str = ""):
+    def __init__(self, __command: types.Command, register_type: Over, /, *, source: str = "") -> None:
         super().__init__()
         self.command: types.Command = __command
         self.register_type: Over = register_type
@@ -83,17 +83,17 @@ class CommandRegistration(BaseRegistration):
         self.qualified_name: str = __command.qualified_name
         self.source: str = source or inspect.getsource(__command.callback)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Command name: {self.qualified_name}"
 
 
 class SettingRegistration(BaseRegistration):
-    def __init__(self, default_settings: Dict[str, Any], new_settings: Dict[str, Any], /):
+    def __init__(self, default_settings: Dict[str, Any], new_settings: Dict[str, Any], /) -> None:
         super().__init__()
         self.defaults: Dict[str, Any] = default_settings
         self.changed: Dict[str, Any] = new_settings
         self.register_type: Over = Over.OVERWRITE
         self.over_type: OverType = OverType.SETTING
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Changed settings: {', '.join(self.changed.keys())}"

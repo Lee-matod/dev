@@ -28,12 +28,12 @@ __all__ = (
 class _PageSetter(discord.ui.Modal):
     page_num = discord.ui.TextInput(label="Page Number", min_length=1)
 
-    def __init__(self, view: Interface):
+    def __init__(self, view: Interface) -> None:
         self.page_num.max_length = len(view.paginator.pages)
         super().__init__(title="Skip to page...")
         self.view: Interface = view
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction) -> None:
         if not self.page_num.value.isnumeric():
             return await interaction.response.send_message("Input value should be numeric.", ephemeral=True)
         if int(self.page_num.value) not in range(1, len(self.view.paginator.pages) + 1):
@@ -84,7 +84,7 @@ class Paginator(commands.Paginator):
             suffix: str = "```",
             max_size: int = 2000,
             linesep: str = "\n"
-    ):
+    ) -> None:
         super().__init__(prefix, suffix, max_size, linesep)
         self.type: Union[discord.Embed, str] = paginator_type
 
@@ -159,7 +159,7 @@ class Interface(discord.ui.View):
         This is the result of the user ID or object that was passed to the constructor.
     """
 
-    def __init__(self, paginator: Paginator, author: Union[types.User, int]):
+    def __init__(self, paginator: Paginator, author: Union[types.User, int]) -> None:
         super().__init__()
         self.paginator: Paginator = paginator
         self.author: int = author.id if isinstance(author, types.User) else author
@@ -180,7 +180,7 @@ class Interface(discord.ui.View):
         return self._display_page
 
     @current_page.setter
-    def current_page(self, item: int):
+    def current_page(self, item: int) -> None:
         self._display_page = item
         self._real_page = item - 1
         self.current.label = str(item)
