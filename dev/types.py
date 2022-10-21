@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable, Coroutine, TypeVar, Union
-from typing_extensions import Concatenate, ParamSpec
 
 import discord
 from discord.ext import commands
@@ -37,16 +36,13 @@ __all__ = (
 )
 
 T = TypeVar("T")
-P = ParamSpec("P")
 
 CogT = TypeVar("CogT", bound=commands.Cog)
 ContextT = TypeVar("ContextT", bound=commands.Context)
 
-Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T]]
-ErrorCallback = Callable[[CogT, ContextT, commands.CommandError], Coroutine[Any, Any, T]]
-
 if TYPE_CHECKING:
     from typing import Sequence
+    from typing_extensions import Concatenate, ParamSpec
 
     Bot = Union[commands.Bot, commands.AutoShardedBot]
     Channel = Union[
@@ -68,6 +64,11 @@ if TYPE_CHECKING:
     ]
     Setting = Union[bool, set, str]
     User = Union[discord.ClientUser, discord.Member, discord.User]
+
+    P = ParamSpec("P")
+
+    Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T]]
+    ErrorCallback = Callable[[CogT, ContextT, commands.CommandError], Coroutine[Any, Any, T]]
 
 else:
     from collections.abc import Sequence
