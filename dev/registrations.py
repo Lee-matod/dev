@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import inspect
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from dev.types import ManagementOperation, Over, OverType
 
@@ -88,10 +88,10 @@ class CommandRegistration(BaseRegistration):
 
 
 class SettingRegistration(BaseRegistration):
-    def __init__(self, default_settings: Dict[str, Any], new_settings: Dict[str, Any], /) -> None:
+    def __init__(self, default_settings: dict[str, Any], new_settings: dict[str, Any], /) -> None:
         super().__init__()
-        self.defaults: Dict[str, Any] = default_settings
-        self.changed: Dict[str, Any] = new_settings
+        self.defaults: dict[str, Any] = default_settings
+        self.changed: dict[str, Any] = new_settings
         self.register_type: Over = Over.OVERWRITE
         self.over_type: OverType = OverType.SETTING
 

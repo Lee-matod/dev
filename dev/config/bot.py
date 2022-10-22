@@ -111,8 +111,10 @@ class PermissionsSelector(discord.ui.View):
 class RootBot(Root):
 
     @root.group(name="bot", parent="dev", global_use=True, invoke_without_command=True)
-    async def root_bot(self, ctx: commands.Context):
+    async def root_bot(self, ctx: commands.Context) -> Optional[discord.Message]:
         """Get a briefing on some bot information."""
+        if self.bot.user is None:
+            return await send(ctx, "This is not a bot.")
         embed = discord.Embed(
             title=self.bot.user,
             description=self.bot.description or '',
@@ -144,14 +146,14 @@ class RootBot(Root):
         if self.bot.owner_ids:
             bot_field += (
                 f"<@!{'>, <@!'.join(f'{owner}' for owner in self.bot.owner_ids)}> are the owners of this bot. "
-                f"The prefix of this bot is `{escape(ctx.prefix)}` "
+                f"The prefix of this bot is `{escape(ctx.prefix or 'None')}` "
                 f"(case insensitive is {mapping.get(self.bot.case_insensitive)} "
                 f"and strip after prefix is {mapping.get(self.bot.strip_after_prefix)}) "
             )
         elif self.bot.owner_id:
             bot_field += (
                 f"<@!{self.bot.owner_id}> is the owner of this bot. "
-                f"The prefix of this bot is `{escape(ctx.prefix)}` "
+                f"The prefix of this bot is `{escape(ctx.prefix or 'None')}` "
                 f"(case insensitive is {mapping.get(self.bot.case_insensitive)} "
                 f"and strip after prefix is {mapping.get(self.bot.strip_after_prefix)}) "
             )
@@ -168,11 +170,17 @@ class RootBot(Root):
         await send(ctx, embed)
 
     @root.command(name="perms", parent="dev bot", aliases=["permissions"])
-    async def root_bot_here(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
+    async def root_bot_here(
+            self,
+            ctx: commands.Context,
+            channel: Optional[discord.TextChannel] = None
+    ) -> Optional[discord.Message]:
         """Show which permissions the bot has.
         A text channel may be optionally passed to check for permissions in the given channel.
         """
-        view = PermissionsSelector(ctx.me, channel)
+        if ctx.guild is None:
+            return await send(ctx, "Please execute this command in a guild.")
+        view = PermissionsSelector(ctx.guild.me, channel)
         await send(
             ctx,
             discord.Embed(
@@ -183,7 +191,7 @@ class RootBot(Root):
         )
 
     @root.command(name="reload", parent="dev bot")
-    async def root_bot_reload(self, ctx: commands.Context, *cogs: str):
+    async def root_bot_reload(self, ctx: commands.Context, *cogs: str) -> Optional[discord.Message]:
         """Reload all or a specific set of bot cog(s).
         When adding specific cogs, each extension must be separated but a blank space.
         """
@@ -229,7 +237,7 @@ class RootBot(Root):
         await send(ctx, embed)
 
     @root.command(name="enable", parent="dev bot", require_var_positional=True)
-    async def root_bot_enable(self, ctx: commands.Context, *, command_name: str):
+    async def root_bot_enable(self, ctx: commands.Context, *, command_name: str) -> Optional[discord.Message]:
         """Enable a command.
         For obvious reasons, it is not recommended to disable this command using `dev bot disable`.
         """
@@ -242,7 +250,7 @@ class RootBot(Root):
         await ctx.message.add_reaction("☑")
 
     @root.command(name="disable", parent="dev bot", require_var_positional=True)
-    async def root_bot_disable(self, ctx: commands.Context, *, command_name: str):
+    async def root_bot_disable(self, ctx: commands.Context, *, command_name: str) -> Optional[discord.Message]:
         """Disable a command.
         For obvious reasons, it is not recommended to disable the `dev bot enable` command.
         """
@@ -257,14 +265,19 @@ class RootBot(Root):
         await ctx.message.add_reaction("☑")
 
     @root.command(name="close", parent="dev bot")
-    async def root_bot_close(self, ctx: commands.Context):
+    async def root_bot_close(self, ctx: commands.Context) -> None:
         """Close the bot."""
         await ctx.message.add_reaction("👋")
         await self.bot.close()
 
     @root_bot.error
-    async def root_bot_error(self, ctx: commands.Context, exception: commands.CommandError):
+    async def root_bot_error(
+            self,
+            ctx: commands.Context,
+            exception: commands.CommandError
+    ) -> Optional[discord.Message]:
         if isinstance(exception, commands.TooManyArguments):
+            assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(
                 ctx,
                 f"`{ctx.invoked_with}` has no subcommand "

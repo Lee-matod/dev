@@ -55,7 +55,7 @@ class RootCommand(Root):
         description = f"dev is a simple debugging, testing and editing extension for discord.py. " \
                       f"It features a total of {plural(len(self.commands), 'command')} " \
                       f"which were loaded <t:{self.load_time}:R>.\n" \
-                      f"\nThis process (`{process.name()} {str(__file__).split('/')[-1]}`) " \
+                      f"\nThis process (`{process.name()} {str(__file__).rsplit('/', maxsplit=1)[-1]}`) " \
                       f"is currently running on Python version `{version}` on a `{sys.platform}` machine, " \
                       f"with discord version `{discord.__version__}` " \
                       f"and dev version `{sys.modules['dev'].__version__}`.\n" \
@@ -71,17 +71,18 @@ class RootCommand(Root):
         This uses the :meth:`exit` method, so beware!
         """
         await ctx.message.add_reaction("👋")
-        exit()
+        exit()  # pylint: disable=exit-used
 
     @root.command(name="visibility", parent="dev")
-    async def root_visibility(self, ctx: commands.Context, toggle: Optional[bool] = None):
+    async def root_visibility(self, ctx: commands.Context, toggle: Optional[bool] = None) -> Optional[discord.Message]:
         """Toggle whether the dev command is hidden.
         Pass no arguments to check current status
         """
         root_command = self.commands.get("dev")
+        assert root_command is not None
         if toggle:
             if root_command.hidden:
-                return await send(ctx, f"`dev` is already hidden.")
+                return await send(ctx, "`dev` is already hidden.")
             root_command.hidden = True
             await ctx.message.add_reaction("☑")
         elif toggle is None:
@@ -89,13 +90,14 @@ class RootCommand(Root):
             await send(ctx, f"`dev` is currently {translate.get(root_command.hidden)}.")
         else:
             if not root_command.hidden:
-                return await send(ctx, f"`dev` is already visible.")
+                return await send(ctx, "`dev` is already visible.")
             root_command.hidden = False
             await ctx.message.add_reaction("☑")
 
     @root_.error
-    async def root_error(self, ctx: commands.Context, exception: commands.CommandError):
+    async def root_error(self, ctx: commands.Context, exception: commands.CommandError) -> Optional[discord.Message]:
         if isinstance(exception, commands.TooManyArguments):
+            assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(
                 ctx,
                 f"`{ctx.invoked_with}` has no subcommand "
@@ -104,13 +106,13 @@ class RootCommand(Root):
         optional_raise(ctx, exception)
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+    async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
         if Settings.INVOKE_ON_EDIT:
             prefix = await self.bot.get_prefix(after)
-            if callable(prefix):
-                prefix = prefix(self.bot, after)
+            if isinstance(prefix, list):
+                prefix = tuple(prefix)
             if before.content.startswith(prefix) and after.content.startswith(prefix):
-                if before.id in Root.cached_messages.keys():
+                if before.id in Root.cached_messages:
                     message = Root.cached_messages.pop(before.id)
                     Root.cached_messages[after.id] = message
                 await after.clear_reactions()

@@ -15,7 +15,7 @@ import io
 import json
 import math
 from copy import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Set, Optional, Union, overload
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 import discord
 from discord.ext import commands
@@ -27,6 +27,8 @@ from dev.pagination import Interface, Paginator
 from dev.utils.baseclass import Root
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from discord.http import HTTPClient
 
     from dev import types
@@ -41,8 +43,10 @@ __all__ = (
     "table_creator"
 )
 
+TypeT = TypeVar("TypeT", str, discord.Embed)
 
-def all_commands(command_list: Set[types.Command]) -> List[types.Command]:
+
+def all_commands(command_list: set[types.Command]) -> set[types.Command]:
     """Retrieve all commands that are currently available from a given set.
 
     Unlike :meth:`discord.ext.commands.Bot.commands`, group subcommands are also returned.
@@ -57,18 +61,18 @@ def all_commands(command_list: Set[types.Command]) -> List[types.Command]:
     List[types.Command]
         The full list of all the commands that were found within `command_list`.
     """
-    command_count = []
+    command_count = set()
     for command in command_list:
         if isinstance(command, commands.Group):
-            command_count.append(command)
+            command_count.add(command)
             for cmd in all_commands(command.commands):
-                command_count.append(cmd)
+                command_count.add(cmd)
         else:
-            command_count.append(command)
+            command_count.add(command)
     return command_count
 
 
-def flag_parser(string: str, delimiter: str) -> Dict[str, Any]:
+def flag_parser(string: str, delimiter: str) -> dict[str, Any]:
     """Converts a string into a dictionary.
 
     This works similarly to :class:`discord.ext.commands.FlagConverter`, only that it can
@@ -116,8 +120,8 @@ def flag_parser(string: str, delimiter: str) -> Dict[str, Any]:
     return dict(zip(keys, values))
 
 
-def table_creator(rows: List[List[Any]], labels: List[str]) -> str:
-    table: List[Dict[Any, List[Any]]] = []
+def table_creator(rows: list[list[Any]], labels: list[str]) -> str:
+    table: list[dict[Any, list[Any]]] = []
     table_str = ""
     for label in labels:
         if label == labels[1]:
@@ -298,14 +302,9 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
 async def interaction_response(
         interaction: discord.Interaction,
         response_type: InteractionResponseType,
-        *args: Union[
-            Sequence[Union[discord.Embed, discord.File]],
-            discord.Embed,
-            discord.File,
-            discord.ui.View,
-            discord.ui.Modal,
-            str
-        ],
+        *args: Sequence[
+                   discord.Embed | discord.File
+               ] | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | str,
         **options: Any
 ) -> None:
     """Evaluates how to safely respond to a Discord interaction.
@@ -353,6 +352,8 @@ async def interaction_response(
         Multiple arguments were passed when `response_type` was selected to `MODAL`.
         A list, tuple or set contains more than one type.
     """
+    token = interaction.client.http.token
+    assert token is not None
     if response_type is InteractionResponseType.SEND:
         method = interaction.response.send_message
     elif response_type is InteractionResponseType.EDIT:
@@ -360,19 +361,20 @@ async def interaction_response(
     elif response_type is InteractionResponseType.MODAL:
         if tuple(map(type, args)) != (discord.ui.Modal,):
             raise TypeError("discord.ui.Modal should be the only argument passed to the function")
-        modal: discord.ui.Modal = args[0]
+        modal: discord.ui.Modal = args[0]  # type: ignore
         #  just making sure
-        modal.title.replace(interaction.client.http.token, "[token]")
-        children: discord.ui.TextInput
+        modal.title.replace(token, "[token]")
         for children in modal.children:
-            children.label.replace(interaction.client.http.token, "[token]")
-            children.default.replace(interaction.client.http.token, "[token]")
-            children.placeholder.replace(interaction.client.http.token, "[token]")
+            children.label.replace(token, "[token]")  # type: ignore
+            if children.default is not None:  # type: ignore
+                children.default.replace(token, "[token]")  # type: ignore
+            if children.placeholder is not None:  # type: ignore
+                children.placeholder.replace(token, "[token]")  # type:ignore
         return await interaction.response.send_modal(modal)
     else:
         raise TypeError("Invalid response type")
     kwargs = _check_kwargs(options)
-    paginators: List[Dict[str, Any]] = []
+    paginators: list[dict[str, Any]] = []
     for arg in args:
         if isinstance(arg, discord.Embed):
             arg = _embed_inspector(interaction.client.http, arg)
@@ -386,7 +388,7 @@ async def interaction_response(
 
         elif isinstance(arg, discord.File):
             string = _revert_virtual_var_value(
-                arg.fp.read().decode("utf-8").replace(interaction.client.http.token, "[token]")
+                arg.fp.read().decode("utf-8").replace(token, "[token]")
             ).encode("utf-8")
             kwargs["file"] = discord.File(filename=arg.filename, fp=io.BytesIO(string))
 
@@ -403,7 +405,7 @@ async def interaction_response(
                             )
                     inst_type = discord.File
                     string = _revert_virtual_var_value(
-                        item.fp.read().decode("utf-8").replace(interaction.client.http.token, "[token]")
+                        item.fp.read().decode("utf-8").replace(token, "[token]")
                     ).encode("utf-8")
                     items.append(discord.File(filename=item.filename, fp=io.BytesIO(string)))
                 elif isinstance(item, discord.Embed):
@@ -429,7 +431,7 @@ async def interaction_response(
             kwargs["view"] = arg
 
         else:
-            content = _revert_virtual_var_value(str(arg)).replace(interaction.client.http.token, "[token]")
+            content = _revert_virtual_var_value(str(arg)).replace(token, "[token]")
             return_type = _check_length(content)
             if isinstance(return_type, Paginator):
                 view = Interface(return_type, interaction.user.id)
@@ -472,11 +474,12 @@ async def generate_ctx(ctx: commands.Context, **kwargs: Any) -> commands.Context
     """
     alt_msg: discord.Message = copy(ctx.message)
     # noinspection PyProtectedMember
-    alt_msg._update(kwargs)
+    alt_msg._update(kwargs)  # type: ignore
     return await ctx.bot.get_context(alt_msg, cls=type(ctx))
 
 
 def _embed_inspector(http: HTTPClient, embed: discord.Embed) -> discord.Embed:
+    assert http.token is not None
     if embed.title:
         embed.title = _revert_virtual_var_value(embed.title).replace(http.token, "[token]")
     if embed.description:
@@ -486,12 +489,13 @@ def _embed_inspector(http: HTTPClient, embed: discord.Embed) -> discord.Embed:
             ).replace(http.token, "[token]").replace("``", "`\u200b`") + "```"
         else:
             embed.description = _revert_virtual_var_value(embed.description).replace(http.token, "[token]")
-    if embed.author:
+    if embed.author.name is not None:
         embed.author.name = _revert_virtual_var_value(embed.author.name).replace(http.token, "[token]")
-    if embed.footer:
+    if embed.footer.text is not None:
         embed.footer.text = _revert_virtual_var_value(embed.footer.text).replace(http.token, "[token]")
     if embed.fields:
         for field in embed.fields:
+            assert field.name is not None and field.value is not None
             field.name = _revert_virtual_var_value(field.name).replace(http.token, "[token]")
             if field.value.startswith("```") and field.value.endswith("```"):
                 field.value = field.value.split("\n")[0] + "\n" + _revert_virtual_var_value(  # type: ignore
@@ -502,7 +506,7 @@ def _embed_inspector(http: HTTPClient, embed: discord.Embed) -> discord.Embed:
     return embed
 
 
-def _check_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+def _check_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
     _kwargs = {
         "content": kwargs.pop("content", MISSING),
         "embed": kwargs.get("embed", MISSING),
@@ -514,20 +518,14 @@ def _check_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     return {k: v for k, v in _kwargs.items() if v is not MISSING}
 
 
-@overload
-def _check_length(content: discord.Embed, mex_length: int = 6000) -> Union[Paginator, discord.Embed]:
-    ...
-
-
-@overload
-def _check_length(content: str, mex_length: int = 2000) -> Union[Paginator, str]:
-    ...
-
-
-def _check_length(content: Any, max_length: int = 2000) -> Any:
+def _check_length(content: TypeT, max_length: int = 2000) -> Paginator | TypeT:
     if len(content) > max_length:
         highlight_lang = ""
         if isinstance(content, discord.Embed):
+            if content.description is None:
+                raise TypeError(
+                    "Support for pagination in fields other than the description are not supported for embeds"
+                )
             string = content.description
             if string.startswith("```") and string.endswith("```"):
                 highlight_lang = string.split("\n")[0].removeprefix("```")

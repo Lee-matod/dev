@@ -2,9 +2,10 @@ import re
 from setuptools import setup
 
 with open("dev/__init__.py") as file:
-    version = re.search(r'__version__ = \"(\d+\.\d+\.\d(a|b|rc)?)\"', file.read()).group(1)
-    if not version:
+    version = re.search(r'__version__ = \"(\d+\.\d+\.\d(a|b|rc)?)\"', file.read())
+    if version is None:
         raise RuntimeError("version is not set")
+    version = version.group(1)
 
 if version.endswith(("a", "b", "rc")):
     try:

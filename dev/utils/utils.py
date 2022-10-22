@@ -9,8 +9,6 @@ Basic utilities used within the dev extension.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-from typing import Dict
-
 from discord.utils import escape_markdown, escape_mentions
 
 
@@ -23,7 +21,7 @@ __all__ = (
 )
 
 
-responses: Dict[str, str] = {
+responses: dict[str, str] = {
     "1": "Informational response",
     "2": "Successful response",
     "3": "Redirection response",

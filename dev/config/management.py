@@ -15,7 +15,7 @@ import io
 import os
 import pathlib
 import shutil
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 import discord
 
@@ -38,10 +38,15 @@ class RootManagement(Root):
     def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
         self.cwd: str = os.getcwd() + "/"
-        self.explorer_rgs: List[ManagementRegistration] = []
+        self.explorer_rgs: list[ManagementRegistration] = []
 
     @root.command(name="cwd", parent="dev", root_placeholder=True, aliases=["change_cwd"])
-    async def root_files_cwd(self, ctx: commands.Context, *, new_cwd: Optional[str] = None):
+    async def root_files_cwd(
+            self,
+            ctx: commands.Context,
+            *,
+            new_cwd: Optional[str] = None
+    ) -> Optional[discord.Message]:
         """Change or view the current working directory that the bot should use."""
         if new_cwd is None:
             return await send(ctx, f"Current working directory is: `{self.cwd}`")
@@ -52,7 +57,7 @@ class RootManagement(Root):
         await ctx.message.add_reaction("☑")
 
     @root.group(name="explorer", parent="dev", invoke_without_command=True, ignore_extra=True)
-    async def root_explorer(self, ctx: commands.Context):
+    async def root_explorer(self, ctx: commands.Context) -> Optional[discord.Message]:
         """View modifications made to directories."""
         if operations := self.explorer_rgs:
             rows = [
@@ -69,14 +74,14 @@ class RootManagement(Root):
         aliases=["upload", "mkdir", "create"],
         usage="<folder>"
     )
-    async def root_explorer_new(self, ctx: commands.Context, *, folder: str = ""):
+    async def root_explorer_new(self, ctx: commands.Context, *, folder: str = "") -> Optional[discord.Message]:
         """Create an empty file/directory or upload a series of files.
         If `directory` is None, then it will be set to the current working directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
         attachments = ctx.message.attachments
         if folder is None and not attachments:
-            raise commands.MissingRequiredArgument(ctx.command.clean_params.get("folder"))
+            raise commands.MissingRequiredArgument(ctx.command.clean_params.get("folder"))  # type: ignore
         directory = self.format_path(folder) or self.cwd
         if attachments:  # upload files
             files_exist = []
@@ -96,7 +101,7 @@ class RootManagement(Root):
             return await ctx.message.add_reaction("☑")
         path = pathlib.Path(directory)
         if path.exists() and ctx.invoked_with == "upload":
-            await self.root_explorer_show(self, ctx, directory=folder)
+            await self.root_explorer_show(ctx, directory=folder)
         elif not path.exists() and not path.suffix:  # create new directory
             path.mkdir()
             self.explorer_rgs.append(ManagementRegistration(f"{path.absolute()}", ManagementOperation.CREATE))
@@ -122,7 +127,13 @@ class RootManagement(Root):
         aliases=["change"],
         require_var_positional=True
     )
-    async def root_explorer_edit(self, ctx: commands.Context, attachment: discord.Attachment, *, directory: str):
+    async def root_explorer_edit(
+            self,
+            ctx: commands.Context,
+            attachment: discord.Attachment,
+            *,
+            directory: str
+    ) -> Optional[discord.Message]:
         """Edit an existing file.
         This command does not change the file's name. Consider using `dev explorer rename`.
         Use `!` at the beginning of the directory to ignore the current working directory.
@@ -137,7 +148,12 @@ class RootManagement(Root):
         await ctx.message.add_reaction("☑")
 
     @root.command(name="rename", parent="dev explorer", root_placeholder=True)
-    async def root_explorer_rename(self, ctx: commands.Context, old_name: str, new_name: str):
+    async def root_explorer_rename(
+            self,
+            ctx: commands.Context,
+            old_name: str,
+            new_name: str
+    ) -> Optional[discord.Message]:
         """Rename an existing file or directory.
         By default, the new path will be relative to the old path. Use `?` at the beginning of `new_name` to ignore this
         behavior and use the current working directory instead.
@@ -171,7 +187,7 @@ class RootManagement(Root):
         await ctx.message.add_reaction("☑")
 
     @root.command(name="show", parent="dev explorer", root_placeholder=True, aliases=["view", "tree", "tree!"])
-    async def root_explorer_show(self, ctx: commands.Context, *, directory: str = ""):
+    async def root_explorer_show(self, ctx: commands.Context, *, directory: str = "") -> Optional[discord.Message]:
         """Uploads an existing file to Discord or shows the tree of a directory.
         Execute `tree!` instead of `tree` to show the full path of the files and folders.
         Files are checked before sending, so the token of this bot will be replaced with `[token]`.
@@ -180,6 +196,7 @@ class RootManagement(Root):
         """
         directory = self.format_path(directory, tailing=False) or self.cwd
         path = pathlib.Path(directory)
+        assert ctx.invoked_with is not None
         if not path.exists():
             return await send(ctx, f"Path `{str(path.absolute()).replace(Settings.PATH_TO_FILE, '')}` does not exist.")
         elif ctx.invoked_with.startswith("tree"):
@@ -207,7 +224,7 @@ class RootManagement(Root):
         aliases=["del", "remove", "rm", "rmdir"],
         require_var_positional=True
     )
-    async def root_explorer_delete(self, ctx: commands.Context, *, directory: str):
+    async def root_explorer_delete(self, ctx: commands.Context, *, directory: str) -> Optional[discord.Message]:
         """Delete an existing file or directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
         A prompt will be shown if a directory is specified, and it is not empty.
@@ -236,8 +253,13 @@ class RootManagement(Root):
             await ctx.message.add_reaction("☑")
 
     @root_explorer.error
-    async def root_files_error(self, ctx: commands.Context, exception: commands.CommandError):
+    async def root_files_error(
+            self,
+            ctx: commands.Context,
+            exception: commands.CommandError
+    ) -> Optional[discord.Message]:
         if isinstance(exception, commands.TooManyArguments):
+            assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(
                 ctx,
                 f"`{ctx.invoked_with}` has no subcommand "

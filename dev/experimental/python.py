@@ -15,7 +15,7 @@ import ast
 import contextlib
 import inspect
 import io
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, Sequence, Optional
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Optional
 
 import discord
 from discord.ext import commands
@@ -29,6 +29,8 @@ from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from dev import types
 
 
@@ -56,7 +58,7 @@ async def _executor({0}):
 
 
 class Execute:
-    def __init__(self, code: str, global_locals: GlobalLocals, args: Dict[str, Any]) -> None:
+    def __init__(self, code: str, global_locals: GlobalLocals, args: dict[str, Any]) -> None:
         self.args_name = ["_self_variables", *args.keys()]
         self.args_value = [global_locals, *args.values()]
         self.code = code
@@ -99,7 +101,7 @@ class RootPython(Root):
         self.vars: Optional[GlobalLocals] = None
 
     @root.command(name="retain", parent="dev")
-    async def root_retain(self, ctx: commands.Context, toggle: Optional[bool] = None):
+    async def root_retain(self, ctx: commands.Context, toggle: Optional[bool] = None) -> Optional[discord.Message]:
         if toggle is None:
             translate_dict = {True: "enabled", False: "disabled"}
             await send(ctx, f"Retention is currently {translate_dict[self.retain]}.")
@@ -124,19 +126,21 @@ class RootPython(Root):
         aliases=["py"],
         require_var_positional=False,
     )
-    async def root_python(self, ctx: commands.Context, *, code: Optional[str] = None):
+    async def root_python(self, ctx: commands.Context, *, code: Optional[str] = None) -> Optional[discord.Message]:
         """Evaluate or execute Python code.
         You may specify `__previous__` in the code, and it'll get replaced with the previous script that was executed.
         The bot will search through the history of the channel with a limit of 25 messages.
         """
+        assert ctx.command is not None
         if code is None and ctx.message.attachments:
-            code = await ctx.message.attachments[0].read()
+            filed_code = await ctx.message.attachments[0].read()
             try:
-                code = code.decode("utf-8")
+                code = filed_code.decode("utf-8")
             except UnicodeDecodeError:
                 return await send(ctx, "Unable to decode attachment. Make sure it is UTF-8 compatible.")
         elif code is None and not ctx.message.attachments:
             raise commands.MissingRequiredArgument(list(ctx.command.clean_params.values())[-1])
+        assert code is not None
         args = {"bot": self.bot, "ctx": ctx}
         code = await __previous__(
             ctx,
@@ -148,7 +152,7 @@ class RootPython(Root):
 
         async with ExceptionHandler(ctx.message):
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-                async for expr in Execute(code, self.vars if self.retain else GlobalLocals(), args):
+                async for expr in Execute(code, (self.vars or GlobalLocals()) if self.retain else GlobalLocals(), args):
                     if expr is None:
                         continue
                     if not isinstance(

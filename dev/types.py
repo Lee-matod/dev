@@ -31,7 +31,6 @@ __all__ = (
     "MessageContent",
     "Over",
     "OverType",
-    "Setting",
     "User"
 )
 
@@ -62,12 +61,11 @@ if TYPE_CHECKING:
         Union[discord.GuildSticker, discord.StickerItem],
         discord.ui.View
     ]
-    Setting = Union[bool, set, str]
     User = Union[discord.ClientUser, discord.Member, discord.User]
 
     P = ParamSpec("P")
 
-    Callback = Callable[[Concatenate[CogT, ContextT, P]], Coroutine[Any, Any, T]]
+    Callback = Callable[Concatenate[CogT, ContextT, P], Coroutine[Any, Any, T]]
     ErrorCallback = Callable[[CogT, ContextT, commands.CommandError], Coroutine[Any, Any, T]]
 
 else:
@@ -92,7 +90,6 @@ else:
         discord.StickerItem,
         discord.ui.View
     )
-    Setting = (bool, set, str)
     User = (discord.ClientUser, discord.Member, discord.User)
 
 

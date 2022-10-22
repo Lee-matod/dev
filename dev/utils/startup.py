@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import os
 import pathlib
-from typing import TYPE_CHECKING, Set
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dev import types
@@ -52,7 +52,7 @@ class Settings:
     ALLOW_GLOBAL_USES: bool = False
     FLAG_DELIMITER: str = "="
     INVOKE_ON_EDIT: bool = False
-    OWNERS: Set[int] = {}
+    OWNERS: set[int] = set()
     PATH_TO_FILE: str = os.getcwd()
     ROOT_FOLDER: str = ""
     VIRTUAL_VARS: str = "|%s|"
@@ -61,10 +61,10 @@ class Settings:
 async def set_settings(bot: types.Bot) -> None:
     if not Settings.OWNERS:
         try:
-            if bot.application.owner:
-                Settings.OWNERS = {bot.application.owner.id}
-            elif bot.application.team:
-                Settings.OWNERS = {owner.id for owner in bot.application.team.members}
+            if bot.application.owner:  # type: ignore
+                Settings.OWNERS = {bot.application.owner.id}  # type: ignore
+            elif bot.application.team:  # type: ignore
+                Settings.OWNERS = {owner.id for owner in bot.application.team.members}  # type: ignore
         except AttributeError:
             Settings.OWNERS = set()
     check_types(bot)

@@ -19,7 +19,7 @@ import json
 import textwrap
 from random import choice
 from string import ascii_letters
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import discord
 from discord.ext import commands
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 
 
 class OverrideSettingConverter(commands.Converter):
-    default_settings: Dict[str, Any] = {}
+    default_settings: dict[str, Any] = {}
     script: str = ""
     command_string: str = ""
 
@@ -92,7 +92,7 @@ class OverrideSettingConverter(commands.Converter):
 class RootOver(Root):
 
     @root.group(name="override", parent="dev", ignore_extra=False, invoke_without_command=True)
-    async def root_override(self, ctx: commands.Context):
+    async def root_override(self, ctx: commands.Context) -> Optional[discord.Message]:
         """Get a table of overrides that have been made with their respective IDs.
         Name of the command and date modified are also included in the table.
         """
@@ -105,7 +105,7 @@ class RootOver(Root):
         await send(ctx, "No overrides have been made.")
 
     @root.command(name="undo", parent="dev override")
-    async def root_override_undo(self, ctx: commands.Context, index: int = 0):
+    async def root_override_undo(self, ctx: commands.Context, index: int = 0) -> Optional[discord.Message]:
         """Undo an override.
         If the specified override ID is not the last override, then it will simply get deleted.
         """
@@ -118,12 +118,17 @@ class RootOver(Root):
         except IndexError:
             return await send(ctx, f"Override with ID of `{index}` not found.")
         self.update_register(override, Over.DELETE)
-        command: types.Command = self.bot.get_command(override.qualified_name)
+        command: types.Command = self.bot.get_command(override.qualified_name)  # type: ignore
         command.callback = self.match_register_command(override.qualified_name)[-1].callback
         await ctx.message.add_reaction("☑")
 
     @root.command(name="changes", parent="dev override")
-    async def root_override_changes(self, ctx: commands.Context, index1: int = 0, index2: int = None):
+    async def root_override_changes(
+            self,
+            ctx: commands.Context,
+            index1: int = 0,
+            index2: Optional[int] = None
+    ) -> Optional[discord.Message]:
         """Compare changes made between overrides. Optionally compare unique overrides."""
         if not (overrides := self.registers_from_type(Over.OVERRIDE)):
             return await send(ctx, "No overrides have been made.")
@@ -149,8 +154,8 @@ class RootOver(Root):
             except IndexError:
                 previous = self.get_base_command(override.qualified_name)
             # source could raise an OSError when trying to be fetched inside BaseCommandRegistration
-            if not hasattr(previous, "source"):
-                return await send(ctx, "Couldn't compare source codes.")
+            if previous is None or not hasattr(previous, "source"):
+                return await send(ctx, "Could not compare source codes.")
             if override.source == previous.source:
                 return await send(ctx, "No changes were made.")
             return await send(
@@ -170,6 +175,7 @@ class RootOver(Root):
             )
         if override.source == override2.source:
             return await send(ctx, "No changes were made.")
+        index2 = index2 if index2 is not None else index1 - 1  # 0 evaluates to False
         first_embed, second_embed = (index1, index2) if index1 < index2 else (index2, index1)
         return await send(
             ctx,
@@ -194,16 +200,21 @@ class RootOver(Root):
         require_var_positional=True,
         usage="<command_name> <script>"
     )
-    async def root_override_command(self, ctx: commands.Context, *, command_code: CodeblockConverter):
+    async def root_override_command(
+            self,
+            ctx: commands.Context,
+            *,
+            command_code: CodeblockConverter
+    ) -> Optional[discord.Message]:
         r"""Temporarily override a command.
         All changes will be undone once the bot is restarted or the cog is reloaded.
         This differentiates from its counterpart `dev overwrite` which permanently changes a file.
         The script that will be used as override should be specified in a codeblock (or between \`\`\`).
         """
-        command_string, script = command_code
+        command_string, script = command_code  # type: ignore
         if not command_string:
             return await send(ctx, "Malformed arguments were given.")
-        command: types.Command = self.bot.get_command(command_string)
+        command: types.Command = self.bot.get_command(command_string)  # type: ignore
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
         # modals have a maximum of 4000 characters
@@ -219,9 +230,11 @@ class RootOver(Root):
         additional_attrs = {}
         if base_command is not None:
             file = inspect.getsourcefile(base_command.callback)
+            if file is None:
+                return await send(ctx, "Could not find source.")
             with open(file, "r") as f:
                 read = f.read()
-            command_registrations = [cmd for cmd in self.registers_from_type(OverType.COMMAND)
+            command_registrations = [cmd for cmd in self.registers_from_type(Over.OVERRIDE)
                                      if cmd.qualified_name == command.qualified_name]
             if command_registrations:
                 file = read.replace(command_registrations[-1].source, "")
@@ -296,7 +309,12 @@ class RootOver(Root):
         require_var_positional=True,
         usage="<setting>... <command_name|script>"
     )
-    async def root_override_setting(self, ctx: commands.Context, *, greedy: OverrideSettingConverter):
+    async def root_override_setting(
+            self,
+            ctx: commands.Context,
+            *,
+            greedy: OverrideSettingConverter
+    ) -> Optional[discord.Message]:
         """Temporarily override a (some) setting(s).
         All changes will be undone once the command or script have finished executing.
         This differentiates from `dev overwrite`, which does not switch back once the command has been terminated.
@@ -325,7 +343,7 @@ class RootOver(Root):
             greedy.back_to_default()
 
     @root.group(name="overwrite", parent="dev", ignore_extra=False, invoke_without_command=True)
-    async def root_overwrite(self, ctx: commands.Context):
+    async def root_overwrite(self, ctx: commands.Context) -> Optional[discord.Message]:
         """Get a table of overwrites that have been made with their respective IDs.
         Overwrite type, changes made, and date modified are also included in the table.
         """
@@ -338,7 +356,7 @@ class RootOver(Root):
         await send(ctx, "No overwrites have been made.")
 
     @root.command(name="undo", parent="dev overwrite", aliases=["del", "delete"])
-    async def root_overwrite_undo(self, ctx: commands.Context, index: int = 0):
+    async def root_overwrite_undo(self, ctx: commands.Context, index: int = 0) -> Optional[discord.Message]:
         """Undoes or deletes an overwrite.
         If the specified overwrite ID is not the last overwrite, then it will simply get deleted.
         However, settings will get converted back to the value of the previous overwrite, unlike commands.
@@ -359,11 +377,16 @@ class RootOver(Root):
             )
         if overwrite.over_type is OverType.COMMAND:
             assert isinstance(overwrite, CommandRegistration)
-            directory = inspect.getsourcefile(self.get_base_command(overwrite.command.qualified_name).callback)
+            base = self.get_base_command(overwrite.command.qualified_name)
+            if base is None:
+                return await send(ctx, "Could not find base command.")
+            directory = inspect.getsourcefile(base.callback)
+            if directory is None:
+                return await send(ctx, "Could not find source.")
             lines = overwrite.source.split("\n")
             base_command = self.get_base_command(overwrite.qualified_name)
-            if not hasattr(base_command, "line_no"):
-                return await send(ctx, f"Couldn't get source lines for the command `{overwrite.qualified_name}`.")
+            if base_command is None or not hasattr(base_command, "line_no"):
+                return await send(ctx, f"Could not get source lines for the command `{overwrite.qualified_name}`.")
             line_no = base_command.line_no
             with open(directory, "r") as f:
                 read_lines = f.readlines()
@@ -371,7 +394,7 @@ class RootOver(Root):
             self.update_register(overwrite, Over.DELETE)
             old_command = self.match_register_command(overwrite.qualified_name)[-1]
             if not hasattr(old_command, "source"):
-                return await send(ctx, f"Couldn't get source lines for the command `{overwrite.qualified_name}`.")
+                return await send(ctx, f"Could not get source lines for the command `{overwrite.qualified_name}`.")
             old_lines = old_command.source
             old_lines_split = old_lines.split("\n")
             # make sure that we have the correct amount of lines necessary to include the new script
@@ -409,21 +432,31 @@ class RootOver(Root):
         require_var_positional=True,
         usage="<command_name> <script>"
     )
-    async def root_overwrite_command(self, ctx: commands.Context, *, command_code: CodeblockConverter):
+    async def root_overwrite_command(
+            self,
+            ctx: commands.Context,
+            *,
+            command_code: CodeblockConverter
+    ) -> Optional[discord.Message]:
         r"""Completely change a command's execution script to be permanently overwritten.
         The script that will be used as the command overwrite should be specified inside a codeblock
         (or in between \`\`\`).
         This command edits the command's file with the new script, thus the bot must be restarted for actual changes
         during execution to take place once the bot is restarted.
         """
-        command_string, script = command_code
+        command_string, script = command_code  # type: ignore
         if not all([command_string, script]):
             return await send(ctx, "Malformed arguments were given.")
-        command: types.Command = self.bot.get_command(command_string)
+        command: types.Command = self.bot.get_command(command_string)  # type: ignore
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
-        callback = self.get_base_command(command_string).callback
+        base = self.get_base_command(command_string)
+        if base is None:
+            return await send(ctx, "Could not find base command.")
+        callback = base.callback
         directory = inspect.getsourcefile(callback)
+        if directory is None:
+            return await send(ctx, "Could not find source.")
         lines, line_no = inspect.getsourcelines(callback)
         line_no -= 1
         code = clean_code(replace_vars(script, Root.scope))
@@ -480,7 +513,12 @@ class RootOver(Root):
         await ctx.message.add_reaction("☑")
 
     @root.command(name="setting", parent="dev overwrite", aliases=["settings"])
-    async def root_overwrite_setting(self, ctx: commands.Context, *, settings: Optional[str] = None):
+    async def root_overwrite_setting(
+            self,
+            ctx: commands.Context,
+            *,
+            settings: Optional[str] = None
+    ) -> Optional[discord.Message]:
         """Temporarily change a setting's value. Settings will be reverted once the bot has been restarted.
         Command execution after setting specification isn't available in this mode.
         Multiple settings can be specified, and they should be specified as follows: `setting=attr`.
@@ -529,8 +567,13 @@ class RootOver(Root):
         )
 
     @root_override.error
-    async def root_override_error(self, ctx: commands.Context, exception: commands.CommandError):
+    async def root_override_error(
+            self,
+            ctx: commands.Context,
+            exception: commands.CommandError
+    ) -> Optional[discord.Message]:
         if isinstance(exception, commands.TooManyArguments):
+            assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(
                 ctx,
                 f"`{ctx.invoked_with}` has no subcommand "
@@ -539,8 +582,13 @@ class RootOver(Root):
         optional_raise(ctx, exception)
 
     @root_overwrite.error
-    async def root_overwrite_error(self, ctx: commands.Context, exception: commands.CommandError):
+    async def root_overwrite_error(
+            self,
+            ctx: commands.Context,
+            exception: commands.CommandError
+    ) -> Optional[discord.Message]:
         if isinstance(exception, commands.TooManyArguments):
+            assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(
                 ctx,
                 f"`{ctx.invoked_with}` has no subcommand "

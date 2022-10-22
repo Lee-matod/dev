@@ -31,11 +31,18 @@ class ReinvokeFlags(commands.FlagConverter):
 class RootInvoke(Root):
 
     @root.command(name="repeat", parent="dev", aliases=["repeat!"], require_var_positional=True)
-    async def root_repeat(self, ctx: commands.Context, amount: int, *, command_string: str):
+    async def root_repeat(
+            self,
+            ctx: commands.Context,
+            amount: int,
+            *,
+            command_string: str
+    ) -> Optional[discord.Message]:
         """Call a command a given amount of times.
         Checks can be optionally bypassed by using `dev repeat!` instead of `dev repeat`.
         """
         kwargs = {"content": f"{ctx.prefix}{command_string}"}
+        assert ctx.invoked_with is not None
         for _ in range(amount):
             context = await generate_ctx(ctx, **kwargs)
             if not context.command:
@@ -46,7 +53,7 @@ class RootInvoke(Root):
                 await context.command.invoke(context)
 
     @root.command(name="debug", parent="dev", aliases=["dbg"], require_var_positional=True)
-    async def root_debug(self, ctx: commands.Context, *, command_string: str):
+    async def root_debug(self, ctx: commands.Context, *, command_string: str) -> Optional[discord.Message]:
         """Catch errors when executing a command.
         This command will probably not work with commands that already have an error handler.
         """
@@ -78,7 +85,7 @@ class RootInvoke(Root):
             ],
             *,
             command_attr: str
-    ):
+    ) -> Optional[discord.Message]:
         """Execute a command with custom attributes.
         Attribute support types are `discord.Member`, `discord.Role`, `discord.TextChannel` and `discord.Thread`.
         These will override the current context, thus executing the command in a different virtual environment.
@@ -95,6 +102,7 @@ class RootInvoke(Root):
                 # noinspection PyProtectedMember
                 kwargs["author"]._roles.add(attr.id)
                 roles.append(attr.id)
+        assert ctx.invoked_with is not None
         if command_attr.startswith("/"):
             app_commands = self.bot.tree.get_commands(type=discord.AppCommandType.chat_input)
             app_command = get_app_command(command_attr.removeprefix("/"), app_commands.copy())  # type: ignore
@@ -129,7 +137,7 @@ class RootInvoke(Root):
             author: Optional[discord.Member] = None,
             *,
             flags: ReinvokeFlags
-    ):
+    ) -> Optional[discord.Message]:
         """Reinvoke the last command that was executed.
         By default, it will try to get the last command that was executed. However, this can be altered by supplying
         `skip_message`.
@@ -143,24 +151,31 @@ class RootInvoke(Root):
         """
         if not self.bot.intents.message_content:
             return await send(ctx, "Message content intent is not enabled on this bot.")
-        if ctx.message.reference:
-            if ctx.message.reference.resolved.content.startswith(ctx.prefix):
-                context: commands.Context = await self.bot.get_context(ctx.message.reference.resolved)
+        if ctx.message.reference and ctx.message.reference.resolved:
+            reference = ctx.message.reference
+            if reference.resolved is not None and reference.resolved.content.startswith(ctx.prefix):  # type: ignore
+                if isinstance(reference.resolved, discord.DeletedReferencedMessage):
+                    return await send(ctx, "Reference is a deleted message.")
+                context: commands.Context = await self.bot.get_context(reference.resolved)
+                if context.command is None:
+                    return await send(ctx, f"Command `{context.invoked_with} not found.")
                 if ctx.invoked_with == "invoke":
                     return await context.command.invoke(context)
                 return await context.command.reinvoke(context)
             return await send(ctx, "No command found in the message reference.")
-        author = author or ctx.author
+        author = author or ctx.author  # type: ignore
         c = 0
-        async for message in ctx.channel.history(limit=100):
+        async for message in ctx.channel.history():
             if message.author == author and message.content.startswith(ctx.clean_prefix):
                 if "dev reinvoke" in message.content or "dev invoke" in message.content:
-                    skip_message += 1
+                    skip_message += 1  # type: ignore
                     c += 1
                     continue
                 if c == skip_message:
                     if flag_checks(message, flags):
                         context: commands.Context = await generate_ctx(ctx, content=message.content)
+                        if context.command is None:
+                            return await send(ctx, f"Command `{context.invoked_with}` not found.")
                         if ctx.invoked_with == "invoke":
                             return await context.command.invoke(context)
                         return await context.command.reinvoke(context)

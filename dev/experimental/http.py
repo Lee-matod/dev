@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 class RootHTTP(Root):
 
     @root.group(name="http", parent="dev", virtual_vars=True)
-    async def root_http_get(
+    async def root_http(
             self,
             ctx: commands.Context,
             url: str,
@@ -41,7 +41,7 @@ class RootHTTP(Root):
             allow_redirects: bool = False,
             *,
             options: Optional[str] = None
-    ):
+    ) -> Optional[discord.Message]:
         """Send an HTTP request using GET method.
         **Modes:**
         `json` = Converts the response to JSON. This isn't always available.

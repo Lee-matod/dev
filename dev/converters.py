@@ -11,7 +11,7 @@ Custom converters used within the dev extension.
 """
 from __future__ import annotations
 
-from typing import Any, List, Literal, Optional, Tuple
+from typing import Any, Literal, Optional
 
 from discord.ext import commands
 
@@ -55,9 +55,9 @@ class LiteralModes(commands.Converter):
     def __init__(self, modes: Literal[...], case_sensitive: bool) -> None:  # type: ignore
         self.case_sensitive: bool = case_sensitive
         if not case_sensitive:
-            self.modes: List[str] = [mode.lower() for mode in map(str, modes.__args__)]
+            self.modes: list[str] = [mode.lower() for mode in map(str, modes.__args__)]
         else:
-            self.modes: List[str] = list(map(str, modes.__args__))
+            self.modes: list[str] = list(map(str, modes.__args__))
 
     async def convert(self, ctx: commands.Context, mode: str) -> Optional[str]:
         """The method that converts the argument passed in.
@@ -115,7 +115,7 @@ class CodeblockConverter(commands.Converter):
 
     Subclass of :class:`discord.ext.commands.Converter`.
     """
-    async def convert(self, ctx: commands.Context, argument: str) -> Tuple[Optional[str], Optional[str]]:
+    async def convert(self, ctx: commands.Context, argument: str) -> tuple[Optional[str], Optional[str]]:
         """The method that converts the argument passed in.
 
         Parameters
@@ -173,7 +173,7 @@ async def __previous__(ctx: commands.Context, command_name: str, arg: str, /) ->
     return arg.replace("__previous__", previous)
 
 
-def str_ints(content: str) -> List[int]:
+def str_ints(content: str) -> list[int]:
     """Converts a string to a list of integers.
     Integer separation is determined whenever a non-numeric character appears when iterating through the characters of
     `content`.
@@ -188,7 +188,7 @@ def str_ints(content: str) -> List[int]:
     List[int]
         A list of the integers found in the string.
     """
-    int_list: List[int] = []
+    int_list: list[int] = []
     ints: str = ""
     for char in content:
         if char.isnumeric():
@@ -204,8 +204,8 @@ def str_ints(content: str) -> List[int]:
 def str_bool(
         content: str,
         default: Optional[bool] = None, *,
-        additional_true: Optional[List[str]] = None,
-        additional_false: Optional[List[str]] = None
+        additional_true: Optional[list[str]] = None,
+        additional_false: Optional[list[str]] = None
 ) -> bool:
     """Similar to the :class:`bool` type hint in commands, this converts a string to a boolean with the added
     functionality of optionally appending new true/false statements.
@@ -231,11 +231,15 @@ def str_bool(
     BadBoolArgument
         The argument that was passed could not be identified under any true or false statement.
     """
-    additional_true: List[str] = [t.lower() for t in additional_true]
-    additional_false: List[str] = [f.lower() for f in additional_false]
-    if str(content).lower() in ["y", "yes", "1", "true", "t", "enable", "on", *additional_true]:
+    true = ["y", "yes", "1", "true", "t", "enable", "on"]
+    false = ["n", "no", "0", "false", "f", "disable", "off"]
+    if additional_true is not None:
+        true.extend(additional_true)
+    if additional_false is not None:
+        false.extend(additional_false)
+    if str(content).lower() in true:
         return True
-    elif str(content).lower() in ["n", "no", "0", "false", "f", "disable", "off", *additional_false]:
+    elif str(content).lower() in false:
         return False
     elif default is not None:
         return default

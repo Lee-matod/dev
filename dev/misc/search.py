@@ -12,7 +12,7 @@ Global search command.
 from __future__ import annotations
 
 import difflib
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import discord
 
@@ -39,12 +39,12 @@ class Dropdown(discord.ui.View):
             ctx: commands.Context,
             embed: discord.Embed,
             *,
-            cogs: List[str],
-            cmds: List[str],
-            channels: List[str],
-            emojis: List[str],
-            members: List[str],
-            roles: List[str]
+            cogs: list[str],
+            cmds: list[str],
+            channels: list[str],
+            emojis: list[str],
+            members: list[str],
+            roles: list[str]
     ) -> None:
         self.mapping = {
             "all": join_multi_iter([cogs, cmds, channels, emojis, members, roles], max_amount=7),
@@ -67,7 +67,7 @@ class Dropdown(discord.ui.View):
         return self.ctx.author == interaction.user
 
     @discord.ui.select(options=options)
-    async def callback(self, interaction: discord.Interaction, select: discord.ui.Select):
+    async def callback(self, interaction: discord.Interaction, select: discord.ui.Select) -> None:
         for option in select.options:
             if option.value != select.values[0]:
                 option.default = False
@@ -78,26 +78,31 @@ class Dropdown(discord.ui.View):
         await interaction.response.edit_message(embed=self.embed, view=self)
 
     async def on_timeout(self) -> None:
-        for child in self.children:
-            child.disabled = True
-        await self.message.edit(view=self)
+        self.callback.disabled = True
+        message = self.message
+        if message is None:
+            raise RuntimeError("Message could not be set")
+        await message.edit(view=self)
 
 
 class RootSearch(Root):
     @root.command(name="search", parent="dev", require_var_positional=True, global_use=True)
-    async def root_search(self, ctx: commands.Context, *, query: str):
+    async def root_search(self, ctx: commands.Context, *, query: str) -> Optional[discord.Message]:
         """Search for different items given a query.
         Items include cogs, command names, channels, emojis, members, and roles.
         """
-        channels = match(query, [(channel.name, channel.mention) for channel in ctx.guild.channels])
-        members = match(query, [(member.name, member.mention) for member in ctx.guild.members])
+        if ctx.guild is not None:
+            channels = match(query, [(channel.name, channel.mention) for channel in ctx.guild.channels])
+            members = match(query, [(member.name, member.mention) for member in ctx.guild.members])
+            emojis = match(query, [(emoji.name, f"{emoji}") for emoji in ctx.guild.emojis])
+            roles = match(query, [(role.name, role.mention) for role in ctx.guild.roles])
+        else:
+            channels = members = emojis = roles = []
         cmds = match(
             query,
             [(cmd.qualified_name, f"`{cmd.qualified_name}`") for cmd in all_commands(self.bot.commands)]
         )
-        emojis = match(query, [(emoji.name, f"{emoji}") for emoji in ctx.guild.emojis])
         cogs = match(query, [(cog, f"`{cog}`") for cog in self.bot.cogs])
-        roles = match(query, [(role.name, role.mention) for role in ctx.guild.roles])
         if not any(_ for _ in [channels, members, cmds, emojis, cogs, roles]):
             return await send(ctx, "Couldn't find anything.")
         embed = discord.Embed(
@@ -120,7 +125,7 @@ class RootSearch(Root):
         view.message = message
 
 
-def join_multi_iter(iterables, delimiter: str = "\n", max_amount: int = None) -> str:
+def join_multi_iter(iterables, delimiter: str = "\n", max_amount: Optional[int] = None) -> str:
     joined_iter = []
     for iterable in iterables:
         if iterable:
@@ -128,7 +133,7 @@ def join_multi_iter(iterables, delimiter: str = "\n", max_amount: int = None) ->
     return f"{delimiter}".join(joined_iter[:max_amount]).strip(f"{delimiter}")
 
 
-def match(query: str, array: List[Tuple[str, str]]) -> List[str]:
+def match(query: str, array: list[tuple[str, str]]) -> list[str]:
     results = []
     for m in difflib.get_close_matches(query, [item[0] for item in array], 7, 0.5):
         results.append([item[1] for item in array][[item[0] for item in array].index(str(m))])

@@ -37,7 +37,7 @@ class _SettingEditor(discord.ui.Modal):
     def __init__(self, author: types.User, setting: str) -> None:
         self.author: types.User = author
         self.setting: str = setting
-        self.setting_obj: types.Setting = getattr(Settings, setting)
+        self.setting_obj: set | str = getattr(Settings, setting)
         self.item = discord.ui.TextInput(
             label=setting.replace("_", " ").title(),
             default=", ".join([str(i) for i in self.setting_obj])
@@ -66,8 +66,16 @@ class _Button(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction) -> None:
         if self.setting not in [sett for sett, ann in Settings.__annotations__.items() if ann == "bool"]:
-            return await interaction.response.send_modal(
-                _SettingEditor(self.author, self.label.replace(" ", "_").upper())
+            label = self.label
+            if label is not None:
+                return await interaction.response.send_modal(
+                    _SettingEditor(self.author, label.replace(" ", "_").upper())
+                )
+            return await interaction_response(
+                interaction,
+                InteractionResponseType.SEND,
+                "Something broke, this should not have happened.",
+                ephemeral=True
             )
         setting = self.setting.upper().replace(" ", "_")
         if self.style == discord.ButtonStyle.green:

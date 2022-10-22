@@ -9,8 +9,10 @@ Flag-like commands for command analysis.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
+from __future__ import annotations
+
 import inspect
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord.ext import commands
@@ -26,16 +28,16 @@ if TYPE_CHECKING:
 class RootFlags(Root):
 
     @root.command(name="--help", parent="dev", global_use=True, aliases=["--man"], hidden=True)
-    async def root_help(self, ctx: commands.Context, *, command_string: str = ""):
+    async def root_help(self, ctx: commands.Context, *, command_string: str = "") -> Optional[discord.Message]:
         """Help command made exclusively made for the `dev` extensions.
         Flags are hidden, but they can still be accessed and attributes can still be viewed.
         """
-        command: Union[_DiscordCommand, _DiscordGroup] = self.bot.get_command(  # type: ignore
+        command: _DiscordCommand | _DiscordGroup = self.bot.get_command(  # type: ignore
             f"dev {command_string}".strip()
         )
         if not command:
             return await send(ctx, f"Command `dev {command_string}` not found.")
-        docs = '\n'.join(command.help.split("\n")[1:]) or 'No docs available.'
+        docs = '\n'.join((command.help or "").split("\n")[1:]) or 'No docs available.'
         embed = discord.Embed(
             title=command.qualified_name,
             description=command.short_doc or 'No description found.',
@@ -72,7 +74,7 @@ class RootFlags(Root):
         hidden=True,
         require_var_positional=True
     )
-    async def root_types(self, ctx: commands.Context, *, command_string: str):
+    async def root_types(self, ctx: commands.Context, *, command_string: str) -> Optional[discord.Message]:
         """Inspect a command.
         This is not exclusive to the `dev` extension.
         Command signature, as well as some useful attributes will be returned.
@@ -115,17 +117,17 @@ class RootFlags(Root):
             color=discord.Color.darker_gray()
         )
         embed.add_field(name="Aliases", value=f"`{'`, `'.join(command.aliases) or 'None'}`")
-        embed.add_field(name="Cog", value=f"`{command.cog_name}`", inline=True)
-        embed.add_field(name="Command ID", value=f"`{hex(id(command))}`", inline=True)
-        embed.add_field(name="Enabled", value=f"`{command.enabled}`", inline=True)
-        embed.add_field(name="Has Error Handler", value=f"`{command.has_error_handler()}`", inline=True)
-        embed.add_field(name="Module", value=f"`{command.module}`", inline=True)
-        embed.add_field(name="Type", value=f"`{type(command).__name__}`", inline=True)
+        embed.add_field(name="Cog", value=f"`{command.cog_name}`")
+        embed.add_field(name="Command ID", value=f"`{hex(id(command))}`")
+        embed.add_field(name="Enabled", value=f"`{command.enabled}`")
+        embed.add_field(name="Has Error Handler", value=f"`{command.has_error_handler()}`")
+        embed.add_field(name="Module", value=f"`{command.module}`")
+        embed.add_field(name="Type", value=f"`{type(command).__name__}`")
         embed.add_field(name="Signature", value="\n".join(params) or '`None`')
         await send(ctx, embed)
 
     @root.command(name="--source", parent="dev", aliases=["-src"], hidden=True)
-    async def root_source(self, ctx: commands.Context, *, command_string: str = ""):
+    async def root_source(self, ctx: commands.Context, *, command_string: str = "") -> Optional[discord.Message]:
         """View the source code of a command.
         This is not exclusive to the `dev` extension.
         The token of the bot will be hidden as `[token]` if it is found within the source code.
@@ -140,7 +142,7 @@ class RootFlags(Root):
         return await send(ctx, codeblock_wrapper(over[-1].source, "py"))
 
     @root.command(name="--file", parent="dev", aliases=["-f"], hidden=True)
-    async def root_file(self, ctx: commands.Context, *, command_string: str = ""):
+    async def root_file(self, ctx: commands.Context, *, command_string: str = "") -> Optional[discord.Message]:
         """View the file of a command.
         This is not exclusive to the `dev` extension.
         The token of the bot will be hidden as `[token]` if it is found within the file.
@@ -148,9 +150,14 @@ class RootFlags(Root):
         command = self.bot.get_command(command_string)
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
+        base = self.get_base_command(command.qualified_name)
+        if base is None:
+            return await send(ctx, "Could not find base command.")
         try:
-            directory = inspect.getsourcefile(self.get_base_command(command.qualified_name).callback)
+            directory = inspect.getsourcefile(base.callback)
         except OSError:
-            return await send(ctx, f"Couldn't get the source file for the command `{command_string}`.")
+            return await send(ctx, f"Could not get the source file for the command `{command_string}`.")
+        if directory is None:
+            return await send(ctx, "Could not find source.")
         with open(directory, "r") as source:
             await send(ctx, discord.File(fp=source.read(), filename=command.module))

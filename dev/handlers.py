@@ -15,7 +15,7 @@ import asyncio
 import contextlib
 import inspect
 from traceback import format_exception
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 
 import discord
 from discord.ext import commands
@@ -75,7 +75,7 @@ class GlobalLocals:
         if glob_exc and loc_exc:
             raise KeyError(key)
 
-    def __getitem__(self, item: Any) -> Tuple[Any, Any]:
+    def __getitem__(self, item: Any) -> tuple[Any, Any]:
         glob, loc = None, None
         glob_exc, loc_exc = False, False
         try:
@@ -94,7 +94,7 @@ class GlobalLocals:
     def __len__(self) -> int:
         return len(self.globals) + len(self.locals)
 
-    def items(self) -> Tuple[Tuple[str, ...], Tuple[Any, ...]]:
+    def items(self) -> tuple[tuple[tuple[str, Any], ...], tuple[tuple[str, Any], ...]]:
         """Returns a tuple of all global and local scopes with their respective key-value pairs.
 
         Returns
@@ -104,7 +104,7 @@ class GlobalLocals:
         """
         return tuple(self.globals.items()), tuple(self.locals.items())
 
-    def keys(self) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+    def keys(self) -> tuple[tuple[str, ...], tuple[str, ...]]:
         """Returns a tuple of keys of all global and local scopes.
 
         Returns
@@ -114,7 +114,7 @@ class GlobalLocals:
         """
         return tuple(self.globals.keys()), tuple(self.locals.keys())
 
-    def values(self) -> Tuple[Tuple[Any, ...], Tuple[Any, ...]]:
+    def values(self) -> tuple[tuple[Any, ...], tuple[Any, ...]]:
         """Returns a tuple of values of all global and local scopes.
 
         Returns
@@ -195,7 +195,7 @@ class BoolInput(discord.ui.View):
         The function that should get called if the user clicks on the "Yes" button. This function cannot have arguments.
     """
 
-    def __init__(self, author: Union[types.User, int], func: Optional[Callable[[], Any]] = None) -> None:
+    def __init__(self, author: types.User | int, func: Optional[Callable[[], Any]] = None) -> None:
         super().__init__()
         self.func: Optional[Callable[[], Any]] = func
         self.author: int = author.id if isinstance(author, types.User) else author
@@ -204,7 +204,7 @@ class BoolInput(discord.ui.View):
         return self.author == interaction.user.id
 
     @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
-    async def yes_button(self, interaction: discord.Interaction, _):
+    async def yes_button(self, interaction: discord.Interaction, _) -> None:
         if self.func is not None:
             if inspect.iscoroutinefunction(self.func):
                 await self.func()
@@ -213,7 +213,7 @@ class BoolInput(discord.ui.View):
         await interaction.delete_original_response()
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.red)
-    async def no_button(self, interaction: discord.Interaction, _):
+    async def no_button(self, interaction: discord.Interaction, _) -> None:
         await interaction.delete_original_response()
 
 
@@ -240,7 +240,7 @@ class ExceptionHandler:
         Whether to save a traceback if an exception is raised.
         Defaults to `False`.
     """
-    error: List[Tuple[str, str]] = []
+    error: list[tuple[str, str]] = []
     debug: bool = False
 
     def __init__(
@@ -258,7 +258,7 @@ class ExceptionHandler:
     async def __aenter__(self) -> ExceptionHandler:
         return self
 
-    async def __aexit__(self, exc_type: Type[Exception], exc_val: Exception, exc_tb: TracebackType) -> bool:
+    async def __aexit__(self, exc_type: type[Exception], exc_val: Exception, exc_tb: Optional[TracebackType]) -> bool:
         if exc_val is None:
             if not self.debug:
                 with contextlib.suppress(discord.NotFound):

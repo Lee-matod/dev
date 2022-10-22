@@ -9,7 +9,7 @@ A virtual variable manager directly implemented to the dev extension.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
 from discord.ext import commands
@@ -19,11 +19,14 @@ from dev.converters import LiteralModes
 from dev.utils.functs import send
 from dev.utils.baseclass import Root, root
 
+if TYPE_CHECKING:
+    from dev import types
+
 
 class ValueSubmitter(discord.ui.Modal):
     value = discord.ui.TextInput(label="Value", style=discord.TextStyle.paragraph)
 
-    def __init__(self, name: str, new: bool, default: str) -> None:
+    def __init__(self, name: str, new: bool, default: Optional[str] = None) -> None:
         self.value.default = default
         super().__init__(title="Value Submitter")
         self.name = name
@@ -38,7 +41,7 @@ class ValueSubmitter(discord.ui.Modal):
 
 
 class ModalSubmitter(discord.ui.View):
-    def __init__(self, name: str, new: bool, author: discord.Member, default: str = None) -> None:
+    def __init__(self, name: str, new: bool, author: types.User, default: Optional[str] = None) -> None:
         super().__init__()
         self.name = name
         self.new = new
@@ -49,7 +52,7 @@ class ModalSubmitter(discord.ui.View):
         return self.author == interaction.user
 
     @discord.ui.button(label="Submit Variable Value", style=discord.ButtonStyle.gray)
-    async def submit_value(self, interaction: discord.Interaction, _):  # 'button' is not being used
+    async def submit_value(self, interaction: discord.Interaction, _) -> None:
         await interaction.response.send_modal(ValueSubmitter(self.name, self.new, self.default))
 
 
@@ -64,7 +67,7 @@ class RootVariables(Root):
             ],
             *,
             name: Optional[str] = None
-    ):
+    ) -> Optional[discord.Message]:
         """A virtual scope manager.
         This allows you to create temporary variables that can later be used as placeholder texts.
         Note that all variables created using this manager will later be destroyed once the bot restarts.
@@ -79,18 +82,24 @@ class RootVariables(Root):
         if mode is None:
             return
         if mode in ["new", "create"]:
+            if name is None:
+                raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             glob, loc = Root.scope.keys()
             if name in [*glob, *loc]:
                 return await send(ctx, f"A variable called `{name}` already exists.")
             await send(ctx, ModalSubmitter(name, True, ctx.author))
 
         elif mode in ["delete", "del"]:
+            if name is None:
+                raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             if Root.scope.get(name, False):
                 del Root.scope[name]
                 return await send(ctx, f"Successfully deleted the variable `{name}`.")
             await send(ctx, f"No variable called `{name}` found.")
 
         elif mode in ["edit", "replace"]:
+            if name is None:
+                raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             glob, loc = Root.scope.keys()
             if name not in [*glob, *loc]:
                 return await send(ctx, f"No variable called `{name}` found.")
@@ -102,12 +111,16 @@ class RootVariables(Root):
             await send(ctx, f"```diff\n{variables}\n```")
 
         elif mode == "exists":
+            if name is None:
+                raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             glob, loc = Root.scope.keys()
             if name not in [*glob, *loc]:
                 return await ctx.message.add_reaction("❌")
             await ctx.message.add_reaction("☑")
 
         elif mode in ["content", "value"]:
+            if name is None:
+                raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             glob, loc = Root.scope.keys()
             if name not in [*glob, *loc]:
                 return await send(ctx, f"No variable called `{name}` found.")

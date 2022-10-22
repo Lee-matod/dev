@@ -16,7 +16,7 @@ import datetime
 import inspect
 import shlex
 import time
-from typing import Any, Dict, List, NamedTuple, Optional, Sequence, Type, Union
+from typing import TYPE_CHECKING, Any, NamedTuple, Optional
 
 import discord
 from discord import app_commands
@@ -25,6 +25,23 @@ from discord.utils import MISSING
 
 from dev.converters import str_bool
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from discord.interactions import InteractionChannel
+
+    from dev import types
+
+else:
+    InteractionChannel = (
+        discord.VoiceChannel,
+        discord.StageChannel,
+        discord.TextChannel,
+        discord.ForumChannel,
+        discord.CategoryChannel,
+        discord.Thread,
+        discord.PartialMessageable
+    )
 
 __all__ = (
     "SyntheticInteraction",
@@ -57,7 +74,7 @@ CONVERSIONS = {
 }
 
 
-def get_app_command(content: str, app_command_list: List[app_commands.Command]) -> app_commands.Command:
+def get_app_command(content: str, app_command_list: list[app_commands.Command]) -> Optional[app_commands.Command]:
     possible_subcommands = content.split()
     app_command_name = possible_subcommands[0]
     possible_subcommands = possible_subcommands[1:]
@@ -82,7 +99,7 @@ class Parameter(NamedTuple):
 
 
 class InvalidChoice(app_commands.AppCommandError):
-    def __init__(self, parameter: Parameter, choices: List[app_commands.Choice]) -> None:
+    def __init__(self, parameter: Parameter, choices: list[app_commands.Choice]) -> None:
         super().__init__(
             f"Choice value {parameter.argument!r} "
             f"passed to {parameter.name} "
@@ -101,25 +118,25 @@ class SyntheticInteraction:
         # There are a few attributes that just cannot be obtained using the Context,
         # so I'll just leave them with a static value.
         # These attributes might be the case for some nasty errors.
-        self.id = 0
-        self.type = discord.InteractionType.application_command
-        self.data = None
-        self.token = ""
-        self.version = 1
-        self.channel_id = context.channel.id
-        self.guild_id = context.guild.id
+        self.id: int = 0
+        self.type: discord.InteractionType = discord.InteractionType.application_command
+        self.data: Optional[dict[str, Any]] = None
+        self.token: str = ""
+        self.version: int = 1
+        self.channel_id: int = context.channel.id
+        self.guild_id: Optional[int] = context.guild.id if context.guild is not None else None
         self.application_id: int = self._context.bot.application_id
-        self.locale = discord.Locale("en-US")
-        self.guild_locale = None
-        self.message = context.message
-        self.user = context.author
-        self.extras = {}
-        self.command_failed = False
+        self.locale: discord.Locale = discord.Locale("en-US")
+        self.guild_locale: Optional[discord.Locale] = None
+        self.message: discord.Message = context.message
+        self.user: types.User = context.author
+        self.extras: dict[str, Any] = {}
+        self.command_failed: bool = False
 
-        # Protected attributes aren't defined, but we still need to keep track of the original response regardless
+        # Protected attributes won't be defined, but we still need to keep track of the original response regardless
         self._original_response = None
 
-    async def get_parameters(self, arguments: List[str], ignore_params: int) -> Dict[str, Any]:
+    async def get_parameters(self, arguments: list[str], ignore_params: int) -> dict[str, Any]:
         signature = inspect.signature(self._command.callback)
         parameters = [
             Parameter(name=name, annotation=param.annotation, argument=argument, default=param.default)
@@ -128,8 +145,8 @@ class SyntheticInteraction:
         kwargs = {}
         for param in parameters:
             if base_converter := CONVERSIONS.get(param.annotation, False):
-                kwargs[param.name] = await base_converter.convert(self._context, param.argument)
-            elif choices := self._command.get_parameter(param.name).choices:
+                kwargs[param.name] = await base_converter.convert(self._context, param.argument)  # type: ignore
+            elif choices := self._command.get_parameter(param.name).choices:  # type: ignore
                 for choice in choices:
                     if choice.name == param.argument:
                         kwargs[param.name] = choice.value
@@ -156,7 +173,6 @@ class SyntheticInteraction:
         return kwargs
 
     async def invoke(self) -> None:  # Acts as commands.Command.invoke
-        # noinspection PyProtectedMember
         if not await self._command._check_can_run(self):  # type: ignore  # This works for the time being
             raise app_commands.CheckFailure(f"The check functions for command {self._command.qualified_name!r} failed.")
         arguments = self._context.message.content.removeprefix(f"/{self._command.qualified_name} ")
@@ -168,7 +184,7 @@ class SyntheticInteraction:
         required = (self,) if self._command.binding is None else (self._command.binding, self)
         parameters = await self.get_parameters(arguments, len(required))
         self._context.bot.loop.create_task(self._wait_for_response())
-        await self._command.callback(*required, **parameters)
+        await self._command.callback(*required, **parameters)  # type: ignore
 
     async def reinvoke(self) -> None:  # Acts as commands.Command.reinvoke
         arguments = self._context.message.content.removeprefix(f"/{self._command.qualified_name}")
@@ -180,11 +196,10 @@ class SyntheticInteraction:
         required = (self,) if self._command.binding is None else (self._command.binding, self)
         parameters = await self.get_parameters(arguments, len(required))
         self._context.bot.loop.create_task(self._wait_for_response())
-        await self._command.callback(*required, **parameters)
+        await self._command.callback(*required, **parameters)  # type: ignore
 
     async def _wait_for_response(self) -> None:
         await asyncio.sleep(3)  # simulate maximum of 3 seconds for a response
-        # noinspection PyProtectedMember
         if self._interaction_response._response_type is None:
             # The bot did not respond to the interaction, so we have to somehow tell the user that it took too long.
             # By this time, the interaction would become unknown, so we have to simulate that too
@@ -192,7 +207,7 @@ class SyntheticInteraction:
             await self._context.message.add_reaction("❗")
 
     @property
-    def __class__(self) -> Type[discord.Interaction]:
+    def __class__(self) -> type[discord.Interaction]:
         return discord.Interaction
 
     def __instancecheck__(self, instance: Any) -> bool:
@@ -206,27 +221,28 @@ class SyntheticInteraction:
         return self._context.bot
 
     @property
-    def guild(self) -> discord.Guild:
+    def guild(self) -> Optional[discord.Guild]:
         return self._context.guild
 
     @discord.utils.cached_slot_property("_cs_channel")
-    def channel(self) -> discord.TextChannel:
-        return self._context.channel
+    def channel(self) -> Optional[InteractionChannel]:
+        if isinstance(self._context.channel, InteractionChannel):
+            return self._context.channel  # type: ignore
 
     @property
     def permissions(self) -> discord.Permissions:
-        return self._context.author.guild_permissions
+        return self._context.author.guild_permissions  # type: ignore
 
     @property
     def app_permissions(self) -> discord.Permissions:
-        return self._context.me.guild_permissions
+        return self._context.guild.me.guild_permissions  # type: ignore
 
     @discord.utils.cached_slot_property("_cs_namespace")
     def namespace(self) -> app_commands.Namespace:
         return app_commands.Namespace(self, {}, [])  # type: ignore
 
     @discord.utils.cached_slot_property("_cs_command")
-    def command(self) -> Optional[Union[app_commands.Command[Any, ..., Any], app_commands.ContextMenu]]:
+    def command(self) -> Optional[app_commands.Command[Any, ..., Any] | app_commands.ContextMenu]:
         return self._command
 
     @discord.utils.cached_slot_property("_cs_response")
@@ -259,7 +275,7 @@ class SyntheticInteraction:
     async def delete_original_response(self) -> None:
         return await self._context.message.delete()
 
-    async def translate(self, string: Union[str, app_commands.locale_str], **kwargs) -> Optional[str]:  # noqa
+    async def translate(self, string: str | app_commands.locale_str, **kwargs) -> str | app_commands.locale_str:  # noqa
         return string
 
 
@@ -278,7 +294,7 @@ class SyntheticWebhook:
         return self
 
     async def delete(self, **kwargs: Any) -> None:
-        pass
+        return
 
     async def edit(self, **kwargs: Any) -> SyntheticWebhook:  # noqa
         return self
@@ -288,29 +304,27 @@ class SyntheticWebhook:
 
     async def fetch_message(self, _id: int, /, *, thread: discord.abc.Snowflake = MISSING) -> discord.Message:
         if thread is not MISSING:
-            thread_id = thread.id
-            return await self.ctx.guild.get_thread(thread_id).fetch_message(_id)
+            return await self.ctx.guild.get_thread(thread.id).fetch_message(_id)  # type: ignore
         return await self.ctx.channel.fetch_message(_id)
 
     async def edit_message(self, message_id: int, **kwargs: Any) -> discord.Message:
         thread: discord.abc.Snowflake = kwargs.pop("thread", MISSING)
         if thread is not MISSING:
-            thread_id = thread.id
-            message = await self.ctx.guild.get_thread(thread_id).fetch_message(message_id)
+            message = await self.ctx.guild.get_thread(thread.id).fetch_message(message_id)  # type: ignore
             return await message.edit(**kwargs)
         message = await self.ctx.channel.fetch_message(message_id)
         return await message.edit(**kwargs)
 
     async def delete_message(self, message_id: int, /, *, thread: discord.abc.Snowflake = MISSING) -> None:
         if thread is not MISSING:
-            thread_id = thread.id
-            return await self.ctx.guild.get_thread(thread_id).delete_messages([discord.Object(id=message_id)])
-        return await self.ctx.channel.delete_messages([discord.Object(id=message_id)])
+            return await self.ctx.guild.get_thread(thread.id).delete_messages([discord.Object(id=message_id)])  # type: ignore
+        if not isinstance(self.ctx.channel, (discord.GroupChannel, discord.PartialMessageable, discord.DMChannel)):
+            return await self.ctx.channel.delete_messages([discord.Object(id=message_id)])
 
 
 class InteractionResponse(discord.InteractionResponse):
     def __init__(self, parent: SyntheticInteraction) -> None:
-        self._parent = parent
+        self.__parent = parent
         self._response_type: Optional[discord.InteractionResponseType] = None
 
     def is_done(self) -> bool:
@@ -322,66 +336,58 @@ class InteractionResponse(discord.InteractionResponse):
 
     async def defer(self, *, ephemeral: bool = False, thinking: bool = False) -> None:
         if self._response_type is not None:
-            raise discord.InteractionResponded(self._parent)  # type: ignore
-        # noinspection PyProtectedMember
-        if self._parent._unknown_interaction:
+            raise discord.InteractionResponded(self.__parent)  # type: ignore
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
-                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
-            )  # type: ignore
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
+            )
         self._response_type = discord.InteractionResponseType.deferred_channel_message
 
     async def pong(self) -> None:
         if self._response_type is not None:
-            raise discord.InteractionResponded(self._parent)  # type: ignore
-        # noinspection PyProtectedMember
-        if self._parent._unknown_interaction:
+            raise discord.InteractionResponded(self.__parent)  # type: ignore
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
-                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
-            )  # type: ignore
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
+            )
         self._response_type = discord.InteractionResponseType.pong
 
     async def send_message(self, content: Optional[Any] = None, **kwargs: Any) -> None:
         if self._response_type is not None:
-            raise discord.InteractionResponded(self._parent)  # type: ignore
-        # noinspection PyProtectedMember
-        if self._parent._unknown_interaction:
+            raise discord.InteractionResponded(self.__parent)  # type: ignore
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
-                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
-            )  # type: ignore
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
+            )
         kwargs.pop("ephemeral", None)
-        # noinspection PyProtectedMember
-        message = await self._parent._context.send(content, **kwargs)
-        self._parent._original_response = message
+        message = await self.__parent._context.send(content, **kwargs)  # type: ignore
+        self.__parent._original_response = message  # type: ignore
         self._response_type = discord.InteractionResponseType.channel_message
 
     async def edit_message(self, **kwargs: Any) -> None:
         if self._response_type is not None:
-            raise discord.InteractionResponded(self._parent)  # type: ignore
-        # noinspection PyProtectedMember
-        if self._parent._unknown_interaction:
+            raise discord.InteractionResponded(self.__parent)  # type: ignore
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
-                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
-            )  # type: ignore
-        # noinspection PyProtectedMember
-        await self._parent._context.message.edit(**kwargs)
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
+            )
+        await self.__parent._context.message.edit(**kwargs)  # type: ignore
         self._response_type = discord.InteractionResponseType.message_update
 
     async def send_modal(self, modal: discord.ui.Modal, /) -> None:
         if self._response_type is not None:
-            raise discord.InteractionResponded(self._parent)  # type: ignore
-        # noinspection PyProtectedMember
-        if self._parent._unknown_interaction:
+            raise discord.InteractionResponded(self.__parent)  # type: ignore
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
-                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
-            )  # type: ignore
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
+            )
         self._response_type = discord.InteractionResponseType.modal
 
     async def autocomplete(self, choices: Sequence[app_commands.Choice]) -> None:
         if self._response_type is not None:
-            raise discord.InteractionResponded(self._parent)  # type: ignore
-        # noinspection PyProtectedMember
-        if self._parent._unknown_interaction:
+            raise discord.InteractionResponded(self.__parent)  # type: ignore
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
-                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}
-            )  # type: ignore
+                UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
+            )
         self._response_type = discord.InteractionResponseType.autocomplete_result
