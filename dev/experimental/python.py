@@ -12,6 +12,7 @@ Direct evaluation or execution of Python code.
 from __future__ import annotations
 
 import ast
+from collections.abc import Iterable
 import contextlib
 import inspect
 import io
@@ -29,16 +30,14 @@ from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from dev import types
 
 
-def sequence(seq: Sequence[Any], type_obj: type, /) -> bool:
-    for item in seq:
-        if not isinstance(item, type_obj):
-            return False
-    return True
+def check_type(item: Any) -> bool:
+    if isinstance(item, (discord.ui.View, discord.Embed, discord.File)):
+        return True
+    elif isinstance(item, Iterable) and len(item) != 0:
+        return all(i for i in item if isinstance(item, type(item[0])))
 
 
 CODE_TEMPLATE = """
@@ -155,9 +154,7 @@ class RootPython(Root):
                 async for expr in Execute(code, (self.vars or GlobalLocals()) if self.retain else GlobalLocals(), args):
                     if expr is None:
                         continue
-                    if not isinstance(
-                            expr, (discord.Embed, discord.File, discord.ui.View)
-                    ) or sequence(expr, discord.Embed) or sequence(expr, discord.File):  # type: ignore
+                    if not check_type(expr):
                         expr = repr(expr)
                     if isinstance(expr, str):
                         await send(ctx, codeblock_wrapper(expr, "py"))
