@@ -71,7 +71,7 @@ class RootCommand(Root):
         This uses the :meth:`exit` method, so beware!
         """
         await ctx.message.add_reaction("👋")
-        exit()  # pylint: disable=exit-used
+        exit()
 
     @root.command(name="visibility", parent="dev")
     async def root_visibility(self, ctx: commands.Context, toggle: Optional[bool] = None) -> Optional[discord.Message]:
