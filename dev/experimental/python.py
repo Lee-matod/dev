@@ -157,9 +157,9 @@ class RootPython(Root):
                     if not check_type(expr):
                         expr = repr(expr)
                     if isinstance(expr, str):
-                        await send(ctx, codeblock_wrapper(expr, "py"))
+                        await send(ctx, codeblock_wrapper(expr, "py"), forced=True)
                     else:
-                        await send(ctx, expr)
+                        await send(ctx, expr, forced=True)
         std = []
         if out := stdout.getvalue():
             out = out.strip("\n")

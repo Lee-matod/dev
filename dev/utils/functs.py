@@ -192,6 +192,7 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
     TypeError
         A list, tuple or set contains more than one type.
     """
+    forced: bool = options.get("forced", False)
     kwargs = {}
     for arg in args:
         if isinstance(arg, discord.Embed):
@@ -269,7 +270,7 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
                 "suppress_embeds": options.get("suppress_embeds", False)
              }
         )
-        if ctx.message.id in Root.cached_messages:
+        if ctx.message.id in Root.cached_messages and not forced:
             edit = {
                 "content": kwargs.get("content"),
                 "suppress": kwargs.get("suppress_embeds"),
