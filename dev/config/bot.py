@@ -20,7 +20,7 @@ from discord.ext import commands
 from dev.handlers import optional_raise
 
 from dev.utils.baseclass import Root, root
-from dev.utils.functs import all_commands, send
+from dev.utils.functs import send
 from dev.utils.utils import escape, plural
 
 if TYPE_CHECKING:
@@ -133,7 +133,7 @@ class RootBot(Root):
                   f"{len([user for user in self.bot.users if not user.bot])} of which are users."
         )
         commands_field = (
-            f"There is a total of {len(all_commands(self.bot.commands))} commands "
+            f"There is a total of {len(list(self.bot.walk_commands()))} commands "
             f"and {len(self.bot.extensions)} loaded "
             f"{plural(len(self.bot.extensions), 'extension', False)}."
         )

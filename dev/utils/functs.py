@@ -36,7 +36,6 @@ if TYPE_CHECKING:
 
 
 __all__ = (
-    "all_commands",
     "flag_parser",
     "generate_ctx",
     "interaction_response",
@@ -45,32 +44,6 @@ __all__ = (
 )
 
 TypeT = TypeVar("TypeT", str, discord.Embed)
-
-
-def all_commands(command_list: set[types.Command]) -> set[types.Command]:
-    """Retrieve all commands that are currently available from a given set.
-
-    Unlike :meth:`discord.ext.commands.Bot.commands`, group subcommands are also returned.
-
-    Parameters
-    ----------
-    command_list: Set[types.Command]
-        A set of commands, groups or both.
-
-    Returns
-    -------
-    List[types.Command]
-        The full list of all the commands that were found within `command_list`.
-    """
-    command_count = set()
-    for command in command_list:
-        if isinstance(command, commands.Group):
-            command_count.add(command)
-            for cmd in all_commands(command.commands):
-                command_count.add(cmd)
-        else:
-            command_count.add(command)
-    return command_count
 
 
 def flag_parser(string: str, delimiter: str) -> dict[str, Any]:

@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Optional
 import discord
 
 from dev.utils.baseclass import Root, root
-from dev.utils.functs import all_commands, send
+from dev.utils.functs import send
 
 if TYPE_CHECKING:
     from discord.ext import commands
@@ -100,7 +100,7 @@ class RootSearch(Root):
             channels = members = emojis = roles = []
         cmds = match(
             query,
-            [(cmd.qualified_name, f"`{cmd.qualified_name}`") for cmd in all_commands(self.bot.commands)]
+            [(cmd.qualified_name, f"`{cmd.qualified_name}`") for cmd in self.bot.walk_commands()]
         )
         cogs = match(query, [(cog, f"`{cog}`") for cog in self.bot.cogs])
         if not any(_ for _ in [channels, members, cmds, emojis, cogs, roles]):
