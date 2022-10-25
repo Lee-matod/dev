@@ -14,6 +14,7 @@ from __future__ import annotations
 import io
 import json
 import math
+from collections.abc import Iterable
 from copy import copy
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
@@ -211,7 +212,7 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
             ).encode("utf-8")
             kwargs["file"] = discord.File(filename=arg.filename, fp=io.BytesIO(string))
 
-        elif isinstance(arg, (list, set, tuple)):
+        elif isinstance(arg, Iterable) and not isinstance(arg, str):
             items = []
             inst_type: Optional[type] = None
             for item in arg:
