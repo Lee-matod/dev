@@ -15,7 +15,7 @@ import ast
 import inspect
 import io
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Optional
 
 import discord
 from discord.ext import commands
@@ -30,9 +30,6 @@ from dev.utils.utils import clean_code, codeblock_wrapper
 
 if TYPE_CHECKING:
     from dev import types
-
-
-T = TypeVar("T")
 
 
 CODE_TEMPLATE = """
@@ -166,15 +163,15 @@ class RootPython(Root):
             async for expr in Execute(code, self.scope, args):
                 if expr is None:
                     continue
-                await send(ctx, self._check(expr), forced=True)
+                elif isinstance(expr, (discord.ui.View, discord.Embed, discord.File)) or (
+                    isinstance(expr, Iterable) and (
+                        all(isinstance(i, discord.Embed) for i in expr) or
+                        all(isinstance(i, discord.File) for i in expr)
+                    )
+                ):
+                    await send(ctx, expr, forced=True)  # type: ignore
+                else:
+                    await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)
 
         if out := stdout.getvalue():
             await send(ctx, codeblock_wrapper(out, "py"), forced=True)
-
-    def _check(self, item: T) -> T | str:  # noqa  # PyCharm silently complains that this should be a function instead
-        if isinstance(item, (discord.ui.View, discord.Embed, discord.File)):
-            return item
-        elif isinstance(item, Iterable):
-            if all(isinstance(i, discord.Embed) for i in item) or all(isinstance(i, discord.File) for i in item):
-                return item
-        return codeblock_wrapper(repr(item), "py")
