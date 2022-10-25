@@ -66,17 +66,6 @@ These are some utility functions and classes that didn't fall under any other ca
 >>> Tuple[Tuple[Any, ...], Tuple[Any, ...]] – A tuple containing the list of global and local values from the current 
 >>> scope.
 
-> ### dev.utils.functs.all_commands(command_list)
-> Retrieve all commands that are currently available from a given set.
-> Unlike [discord.ext.commands.Bot.commands](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Bot.commands), 
-> group subcommands are also returned.
->> #### Parameters
->> - command_list(Set[types.Command]) – A set of commands, groups or both.
->
->> #### Returns
->> List[types.Command] – 
->> The full list of all the commands that were found within `command_list`.
-
 > ### dev.utils.functs.flag_parser(string, delimiter)
 > Converts a string into a dictionary. 
 > This works similarly to [discord.ext.commands.FlagConverter](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.FlagConverter), 
