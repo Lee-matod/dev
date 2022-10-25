@@ -15,7 +15,7 @@ import asyncio
 import contextlib
 import inspect
 from traceback import format_exception
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import discord
 from discord.ext import commands
@@ -51,12 +51,12 @@ class GlobalLocals:
 
     def __init__(
             self,
-            __globals: Optional[Dict[str, Any]] = None,
-            __locals: Optional[Dict[str, Any]] = None,
+            __globals: Optional[dict[str, Any]] = None,
+            __locals: Optional[dict[str, Any]] = None,
             /
     ) -> None:
-        self.globals: Dict[str, Any] = __globals or {}
-        self.locals: Dict[str, Any] = __locals or {}
+        self.globals: dict[str, Any] = __globals or {}
+        self.locals: dict[str, Any] = __locals or {}
 
     def __bool__(self) -> bool:
         return bool(self.globals or self.locals)
@@ -153,8 +153,8 @@ class GlobalLocals:
 
     def update(
             self,
-            __new_globals: Optional[Dict[str, Any]] = None,
-            __new_locals: Optional[Dict[str, Any]] = None,
+            __new_globals: Optional[dict[str, Any]] = None,
+            __new_locals: Optional[dict[str, Any]] = None,
             /
     ) -> None:
         """Update the current instance of variables with new ones.
