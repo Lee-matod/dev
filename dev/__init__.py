@@ -42,7 +42,6 @@ __all__ = (
     "Paginator",
     "Root",
     "Settings",
-    "all_commands",
     "clean_code",
     "str_bool",
     "str_ints",

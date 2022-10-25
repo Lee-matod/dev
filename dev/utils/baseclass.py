@@ -309,14 +309,12 @@ class Root(commands.Cog):
     scope: GlobalLocals = GlobalLocals()
     cached_messages: dict[int, discord.Message] = {}
 
-    def __init__(self, bot: types.Bot) -> None:
-        from dev.utils.functs import all_commands  # circular import
-
+    def __init__(self, bot: types.Bot) -> None:  # circular import
         self.bot: types.Bot = bot
         self.commands: dict[str, types.Command] = {}
         self.registrations: dict[int, CommandRegistration | SettingRegistration] = {}
         self._base_registrations: tuple[BaseCommandRegistration, ...] = tuple(
-            [BaseCommandRegistration(cmd) for cmd in all_commands(self.bot.commands)]
+            [BaseCommandRegistration(cmd) for cmd in self.bot.walk_commands()]
         )
 
         root_commands: list[Command | Group] = []
