@@ -151,7 +151,7 @@ class RootPython(Root):
             # Stdout redirect shouldn't be used with async code, but I still don't like print outputting to the console,
             # so this is probably the simplest workaround I could think of. Output can still be printed to the console
             # if 'file' is passed within the method.
-            "print": lambda *a, **kw: print(*a, **kw, file=stdout) if "file" not in kw else print(*a, **kw)
+            "print": lambda *a, **kw: print(*a, **kw, file=kw.pop("file", stdout))
         }
         code = await __previous__(
             ctx,
