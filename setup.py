@@ -54,5 +54,6 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     dependency_links=["git+ssh://git@github.com/Rapptz/discord.py.git#egg=discord"],  # tysm DJJ!
-    python_requires=">=3.8.0"
+    python_requires=">=3.8.0",
+    extras_require={"test": ["pytest", "pytest-asyncio"]}
 )
