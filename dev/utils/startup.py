@@ -78,8 +78,7 @@ def check_types(bot: types.Bot) -> None:
         [Settings.PATH_TO_FILE, str, "PATH_TO_FILE"],
         [Settings.ROOT_FOLDER, str, "ROOT_FOLDER"],
         [Settings.ALLOW_GLOBAL_USES, bool, "ALLOW_GLOBAL_USES"],
-        [Settings.VIRTUAL_VARS, str, "VIRTUAL_VARS"],
-        [Settings.RETENTION, bool, "RETENTION"]
+        [Settings.VIRTUAL_VARS, str, "VIRTUAL_VARS"]
     )
     if not any((bot.owner_id, bot.owner_ids, Settings.OWNERS)):
         raise ValueError("For security reasons, an owner ID must be set")
