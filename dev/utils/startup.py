@@ -47,9 +47,6 @@ class Settings:
     VIRTUAL_VARS: :class:`str`
         The format in which virtual variables are expected to be formatted. The actual place where the variable's name
         will be should be defined as `%s`. Defaults to `|%s|`.
-    RETENTION: :class:`bool`
-        Whether scope clearing should be disabled during REPL sessions by default. If set to `True`, current REPL scope
-        will not be cleared. Defaults to `False`.
     """
 
     ALLOW_GLOBAL_USES: bool = False
@@ -59,7 +56,6 @@ class Settings:
     PATH_TO_FILE: str = os.getcwd()
     ROOT_FOLDER: str = ""
     VIRTUAL_VARS: str = "|%s|"
-    RETENTION: bool = False
 
 
 async def set_settings(bot: types.Bot) -> None:

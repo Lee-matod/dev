@@ -77,5 +77,3 @@ tracebacks. Defaults to the current working directory. This must be a valid path
 * **ROOT_FOLDER:** The path that will replace the `|root|` text placeholder. This must be a valid path.
 * **VIRTUAL_VARS:** The format in which virtual variables are expected to be formatted. The actual place where the 
 variable's name will be should be defined as `%s`. Defaults to `|%s|`.
-* **RETENTION:** Whether scope clearing should be disabled during REPL sessions by default. If set to `True`, current 
-REPL scope will not be cleared. Defaults to `False`.

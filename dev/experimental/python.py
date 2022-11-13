@@ -88,7 +88,7 @@ class Execute:
 class RootPython(Root):
     def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
-        self.retain: bool = Settings.RETENTION
+        self.retain: bool = False
         self._vars: Optional[GlobalLocals] = None
 
     @property
