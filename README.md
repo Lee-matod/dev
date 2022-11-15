@@ -30,6 +30,8 @@ bot = commands.Bot(command_prefix=..., intents=...)
 @bot.listen()
 async def setup_hook() -> None:
     await bot.load_extension("dev")
+
+bot.run("[token]")
 ```
 If you're subclassing 
 [discord.ext.commands.Bot](https://discordpy.readthedocs.io/en/stable/ext/commands/api.html#discord.ext.commands.Bot):
@@ -37,11 +39,14 @@ If you're subclassing
 from discord.ext import commands
 
 class Bot(commands.Bot):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super().__init__(command_prefix=..., intents=...)
     
     async def setup_hook(self) -> None:
         await self.load_extension("dev")
+
+bot = Bot(...)
+bot.run("[token]")
 ```
 ****
 # settings
