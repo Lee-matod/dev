@@ -127,7 +127,7 @@ class RootBot(Root):
                 f"This bot can see {plural(len(self.bot.guilds), 'guild')}, "
                 + plural(
                     len([c for c in self.bot.get_all_channels() if not isinstance(c, discord.CategoryChannel)]),
-                    "channel"
+                    "channel "
                 )
                 + f"and {plural(len(self.bot.users), 'account')}, "
                   f"{len([user for user in self.bot.users if not user.bot])} of which are users."
