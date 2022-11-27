@@ -11,12 +11,13 @@ Command invocation or reinvocation with changeable execution attributes.
 """
 import asyncio
 import time
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import discord
 from discord.ext import commands
 
 from dev.handlers import ExceptionHandler
+from dev.types import Invokeable
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import generate_ctx, send
@@ -59,15 +60,16 @@ class RootInvoke(Root):
         Optionally add a maximum amount of time that the command can take to finish executing.
         """
         kwargs = {"content": f"{ctx.prefix}{command_string}"}
-        context: commands.Context = await generate_ctx(ctx, **kwargs)
-        if not context.command:
-            return await send(ctx, f"Command `{context.invoked_with}` not found.")
+        invokable = self.get_invokable(ctx, command_string, kwargs)
+        if invokable is None:
+            return await send(ctx, f"Command `{command_string}` not found.")
+        command, context = invokable
 
         info = TimedInfo(timeout=timeout)
         if timeout is not None:
             self.bot.loop.create_task(info.wait_for(ctx.message))
         info.start = time.perf_counter()
-        await context.command.invoke(context)
+        await command.invoke(context)
         info.end = time.perf_counter()
         await send(ctx, f"Command finished in {info.end - info.start:.3f}s.", forced=True)
 
@@ -85,13 +87,14 @@ class RootInvoke(Root):
         kwargs = {"content": f"{ctx.prefix}{command_string}"}
         assert ctx.invoked_with is not None
         for _ in range(amount):
-            context = await generate_ctx(ctx, **kwargs)
-            if not context.command:
-                return await send(ctx, f"Command `{context.invoked_with}` not found.")
+            invokable = self.get_invokable(ctx, command_string, kwargs)
+            if invokable is None:
+                return await send(ctx, f"Command `{command_string}` not found.")
+            command, context = invokable
             if ctx.invoked_with.endswith("!"):
-                await context.command.reinvoke(context)
+                await command.reinvoke(context)
             else:
-                await context.command.invoke(context)
+                await command.invoke(context)
 
     @root.command(name="debug", parent="dev", aliases=["dbg"], require_var_positional=True)
     async def root_debug(self, ctx: commands.Context, *, command_string: str) -> Optional[discord.Message]:
@@ -99,11 +102,12 @@ class RootInvoke(Root):
         This command will probably not work with commands that already have an error handler.
         """
         kwargs = {"content": f"{ctx.prefix}{command_string}"}
-        context: commands.Context = await generate_ctx(ctx, **kwargs)
-        if not context.command:
-            return await send(ctx, f"Command `{context.invoked_with}` not found.")
+        invokable = self.get_invokable(ctx, command_string, kwargs)
+        if invokable is None:
+            return await send(ctx, f"Command `{command_string}` not found.")
+        command, context = invokable
         async with ExceptionHandler(ctx.message, save_traceback=True) as handler:
-            await context.command.invoke(context)
+            await command.invoke(context)
         if handler.error:
             embeds = [
                 discord.Embed(
@@ -144,31 +148,18 @@ class RootInvoke(Root):
                 kwargs["author"]._roles.add(attr.id)
                 roles.append(attr.id)
         assert ctx.invoked_with is not None
-        if command_attr.startswith("/"):
-            app_commands = self.bot.tree.get_commands(type=discord.AppCommandType.chat_input)
-            app_command = get_app_command(command_attr.removeprefix("/"), app_commands.copy())  # type: ignore
-            if app_command is None:
-                return await send(ctx, "Couldn't find an app (slash) command with that name.")
-            kwargs["content"] = kwargs["content"].removeprefix(ctx.prefix)
-            context: commands.Context = await generate_ctx(ctx, **kwargs)
-            interaction = SyntheticInteraction(context, app_command)
+        invokable = self.get_invokable(ctx, command_attr, kwargs)
+        try:
+            if invokable is None:
+                return await send(ctx, f"Command `{command_attr}` not found.")
+            command, context = invokable
             if ctx.invoked_with.endswith("!"):
-                return await interaction.reinvoke()
-            return await interaction.invoke()
-        context: commands.Context = await generate_ctx(ctx, **kwargs)
-        if not context.command:
+                return await command.reinvoke(context)
+            return await command.invoke(context)
+        finally:
             for role in roles:
                 # noinspection PyProtectedMember
                 del kwargs["author"]._roles[role]
-            return await send(ctx, f"Command `{context.invoked_with}` not found.")
-        try:
-            if ctx.invoked_with.endswith("!"):
-                return await context.command.reinvoke(context)
-            await context.command.invoke(context)
-        finally:
-            for index, _ in enumerate(roles):
-                # noinspection PyProtectedMember
-                del kwargs["author"]._roles[-index]
 
     @root.command(name="reinvoke", parent="dev", aliases=["invoke"])
     async def root_reinvoke(
@@ -222,6 +213,24 @@ class RootInvoke(Root):
                         return await context.command.reinvoke(context)
                 c += 1
         await send(ctx, "Unable to find any messages matching the given arguments.")
+
+    def get_invokable(
+            self,
+            ctx: commands.Context,
+            content: str,
+            kwargs: dict[str, Any]
+    ) -> Optional[tuple[Invokeable, commands.Context]]:
+        if content.startswith("/"):
+            app_commands = self.bot.tree.get_commands(type=discord.AppCommandType.chat_input)
+            app_command = get_app_command(command_attr.removeprefix("/"), app_commands.copy())  # type: ignore
+            if app_command is None:
+                return
+            kwargs["content"] = kwargs["content"].removeprefix(ctx.prefix)
+            context: commands.Context = await generate_ctx(ctx, **kwargs)
+            return SyntheticInteraction(context, app_command), context
+        context: commands.Context = await generate_ctx(ctx, **kwargs)
+        if context.command is not None:
+            return context.command, context
 
 
 def flag_checks(message: discord.Message, flags: ReinvokeFlags) -> bool:
