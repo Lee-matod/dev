@@ -55,7 +55,9 @@ class RootInvoke(Root):
             *,
             command_string: str
     ) -> Optional[discord.Message]:
-        """Invoke a command and measure how long it takes to invoke finish."""
+        """Invoke a command and measure how long it takes to invoke finish.
+        Optionally add a maximum amount of time that the command can take to finish executing.
+        """
         kwargs = {"content": f"{ctx.prefix}{command_string}"}
         context: commands.Context = await generate_ctx(ctx, **kwargs)
         if not context.command:
