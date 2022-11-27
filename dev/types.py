@@ -12,7 +12,7 @@ Type shortcuts used for type hinting and type checking as well as enums.
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, Coroutine, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, Optional, Protocol, TypeVar, Union
 
 import discord
 from discord.ext import commands
@@ -27,6 +27,7 @@ __all__ = (
     "ContextT",
     "ErrorCallback",
     "InteractionResponseType",
+    "Invokeable",
     "ManagementOperation",
     "MessageContent",
     "Over",
@@ -91,6 +92,14 @@ else:
         discord.ui.View
     )
     User = (discord.ClientUser, discord.Member, discord.User)
+
+
+class Invokeable(Protocol):
+    async def invoke(self, context: Optional[commands.Context], /):
+        ...
+
+    async def reinvoke(self, context: Optional[commands.Context], /, *, call_hooks: bool = False):
+        ...
 
 
 # Enums
