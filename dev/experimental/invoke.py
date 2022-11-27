@@ -9,6 +9,8 @@ Command invocation or reinvocation with changeable execution attributes.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
+import asyncio
+import time
 from typing import Optional, Union
 
 import discord
@@ -28,7 +30,44 @@ class ReinvokeFlags(commands.FlagConverter):
     endswith: Optional[str] = commands.flag(default=None)
 
 
+class TimedInfo:
+    def __init__(self, *, timeout: Optional[float] = None) -> None:
+        self.timeout: Optional[float] = timeout
+        self.start: Optional[float] = None
+        self.end: Optional[float] = None
+
+    async def wait_for(self, message: discord.Message) -> None:
+        timeout = self.timeout
+        if timeout is None:
+            raise ValueError("Timeout cannot be None")
+        await asyncio.sleep(timeout)
+        if self.end is None:
+            await message.add_reaction("⏰")
+
+
 class RootInvoke(Root):
+
+    @root.command(name="timeit", parent="dev", require_var_positional=True)
+    async def root_timeit(
+            self,
+            ctx: commands.Context,
+            timeout: Optional[float],
+            *,
+            command_string: str
+    ) -> Optional[discord.Message]:
+        """Invoke a command and measure how long it takes to invoke finish."""
+        kwargs = {"content": f"{ctx.prefix}{command_string}"}
+        context: commands.Context = await generate_ctx(ctx, **kwargs)
+        if not context.command:
+            return await send(ctx, f"Command `{context.invoked_with}` not found.")
+
+        info = TimedInfo(timeout=timeout)
+        if timeout is not None:
+            self.bot.loop.create_task(info.wait_for(ctx.message))
+        info.start = time.perf_counter()
+        await context.command.invoke(context)
+        info.end = time.perf_counter()
+        await send(ctx, f"Command finished in {info.end - info.start:.3f}s.", forced=True)
 
     @root.command(name="repeat", parent="dev", aliases=["repeat!"], require_var_positional=True)
     async def root_repeat(
