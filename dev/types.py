@@ -41,19 +41,19 @@ CogT = TypeVar("CogT", bound=commands.Cog)
 ContextT = TypeVar("ContextT", bound=commands.Context)
 
 if TYPE_CHECKING:
-    from typing import Sequence
+    from typing import Sequence, TypeAlias
     from typing_extensions import Concatenate, ParamSpec
 
-    Bot = Union[commands.Bot, commands.AutoShardedBot]
-    Channel = Union[
+    Bot: TypeAlias = Union[commands.Bot, commands.AutoShardedBot]
+    Channel: TypeAlias = Union[
         discord.TextChannel,
         discord.VoiceChannel,
         discord.CategoryChannel,
         discord.StageChannel,
         discord.ForumChannel
     ]
-    Command = Union[commands.Command, commands.Group]
-    MessageContent = Union[
+    Command: TypeAlias = Union[commands.Command, commands.Group]
+    MessageContent: TypeAlias = Union[
         str,
         discord.Embed,
         Sequence[discord.Embed],
@@ -62,12 +62,12 @@ if TYPE_CHECKING:
         Union[discord.GuildSticker, discord.StickerItem],
         discord.ui.View
     ]
-    User = Union[discord.ClientUser, discord.Member, discord.User]
+    User: TypeAlias = Union[discord.ClientUser, discord.Member, discord.User]
 
     P = ParamSpec("P")
 
-    Callback = Callable[Concatenate[CogT, ContextT, P], Coroutine[Any, Any, T]]
-    ErrorCallback = Callable[[CogT, ContextT, commands.CommandError], Coroutine[Any, Any, T]]
+    Callback: TypeAlias = Callable[Concatenate[CogT, ContextT, P], Coroutine[Any, Any, T]]
+    ErrorCallback: TypeAlias = Callable[[CogT, ContextT, commands.CommandError], Coroutine[Any, Any, T]]
 
 else:
     from collections.abc import Sequence
@@ -95,10 +95,10 @@ else:
 
 
 class Invokeable(Protocol):
-    async def invoke(self, context: Optional[commands.Context], /):
+    async def invoke(self, context: Optional[commands.Context], /) -> None:
         ...
 
-    async def reinvoke(self, context: Optional[commands.Context], /, *, call_hooks: bool = False):
+    async def reinvoke(self, context: Optional[commands.Context], /, *, call_hooks: bool = False) -> None:
         ...
 
 
