@@ -54,7 +54,7 @@ class _SettingEditor(discord.ui.Modal):
         await interaction_response(interaction, InteractionResponseType.EDIT, SettingView(self.author))
 
 
-class _Button(discord.ui.Button):
+class _Button(discord.ui.Button["SettingView"]):
     def __init__(self, setting: str, author: types.User, *, label: str) -> None:
         super().__init__(label=label)
         self.author: types.User = author
@@ -100,7 +100,7 @@ class SettingView(discord.ui.View):
 
 
 class _CodeEditor(discord.ui.Modal):
-    code = discord.ui.TextInput(label="Code Inspection for 'command'", style=discord.TextStyle.long)
+    code = discord.ui.TextInput(label="Code inspection for 'command'", style=discord.TextStyle.long)
 
     def __init__(self, ctx: commands.Context, command: types.Command, root: Root) -> None:
         self.code.label = self.code.label.replace("command", command.qualified_name)
