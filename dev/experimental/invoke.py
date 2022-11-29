@@ -60,7 +60,7 @@ class RootInvoke(Root):
         Optionally add a maximum amount of time that the command can take to finish executing.
         """
         kwargs = {"content": f"{ctx.prefix}{command_string}"}
-        invokable = self.get_invokable(ctx, command_string, kwargs)
+        invokable = await self.get_invokable(ctx, command_string, kwargs)
         if invokable is None:
             return await send(ctx, f"Command `{command_string}` not found.")
         command, context = invokable
@@ -87,7 +87,7 @@ class RootInvoke(Root):
         kwargs = {"content": f"{ctx.prefix}{command_string}"}
         assert ctx.invoked_with is not None
         for _ in range(amount):
-            invokable = self.get_invokable(ctx, command_string, kwargs)
+            invokable = await self.get_invokable(ctx, command_string, kwargs)
             if invokable is None:
                 return await send(ctx, f"Command `{command_string}` not found.")
             command, context = invokable
@@ -102,7 +102,7 @@ class RootInvoke(Root):
         This command will probably not work with commands that already have an error handler.
         """
         kwargs = {"content": f"{ctx.prefix}{command_string}"}
-        invokable = self.get_invokable(ctx, command_string, kwargs)
+        invokable = await self.get_invokable(ctx, command_string, kwargs)
         if invokable is None:
             return await send(ctx, f"Command `{command_string}` not found.")
         command, context = invokable
@@ -136,7 +136,7 @@ class RootInvoke(Root):
         These will override the current context, thus executing the command in a different virtual environment.
         Command checks can be optionally disabled by adding an exclamation mark at the end of the `execute` command.
         """
-        kwargs = {"content": f"{ctx.prefix}{command_attr}", "author": ctx.author, "channel": ctx.channel}
+        kwargs = {"content": f"{ctx.prefix}{command_attr}"}
         roles = []
         for attr in attrs:
             if isinstance(attr, discord.Member):
@@ -148,7 +148,7 @@ class RootInvoke(Root):
                 kwargs["author"]._roles.add(attr.id)
                 roles.append(attr.id)
         assert ctx.invoked_with is not None
-        invokable = self.get_invokable(ctx, command_attr, kwargs)
+        invokable = await self.get_invokable(ctx, command_attr, kwargs)
         try:
             if invokable is None:
                 return await send(ctx, f"Command `{command_attr}` not found.")
@@ -214,7 +214,7 @@ class RootInvoke(Root):
                 c += 1
         await send(ctx, "Unable to find any messages matching the given arguments.")
 
-    def get_invokable(
+    async def get_invokable(
             self,
             ctx: commands.Context,
             content: str,
