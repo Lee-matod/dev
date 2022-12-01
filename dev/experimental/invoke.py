@@ -136,7 +136,7 @@ class RootInvoke(Root):
         These will override the current context, thus executing the command in a different virtual environment.
         Command checks can be optionally disabled by adding an exclamation mark at the end of the `execute` command.
         """
-        kwargs = {"content": f"{ctx.prefix}{command_attr}"}
+        kwargs: dict[str, Any] = {"content": f"{ctx.prefix}{command_attr}"}
         roles = []
         for attr in attrs:
             if isinstance(attr, discord.Member):

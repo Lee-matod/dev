@@ -172,7 +172,7 @@ class SyntheticInteraction:
                 kwargs[param.name] = param.argument
         return kwargs
 
-    async def invoke(self, context: commands.Context, /, *, call_hooks: bool = False) -> None:  # Match signature of commands.Command.invoke
+    async def invoke(self, context: commands.Context, /) -> None:  # Match signature of commands.Command.invoke
         if not await self._command._check_can_run(self):  # type: ignore  # This works for the time being
             raise app_commands.CheckFailure(f"The check functions for command {self._command.qualified_name!r} failed.")
         arguments = context.message.content.removeprefix(f"/{self._command.qualified_name} ")
@@ -186,7 +186,7 @@ class SyntheticInteraction:
         context.bot.loop.create_task(self._wait_for_response())
         await self._command.callback(*required, **parameters)  # type: ignore
 
-    async def reinvoke(self, context: commands.Context, /) -> None:  # Match signature of commands.Command.reinvoke
+    async def reinvoke(self, context: commands.Context, /, *, call_hooks: bool = False) -> None:  # Match signature of commands.Command.reinvoke
         arguments = context.message.content.removeprefix(f"/{self._command.qualified_name}")
         if len(self._command.parameters) == 1:
             arguments = [arguments]

@@ -95,10 +95,10 @@ else:
 
 
 class Invokeable(Protocol):
-    async def invoke(self, context: Optional[commands.Context], /) -> None:
+    async def invoke(self, context: commands.Context, /) -> None:
         ...
 
-    async def reinvoke(self, context: Optional[commands.Context], /, *, call_hooks: bool = False) -> None:
+    async def reinvoke(self, context: commands.Context, /, *, call_hooks: bool = False) -> None:
         ...
 
 
