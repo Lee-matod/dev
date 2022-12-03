@@ -71,21 +71,21 @@ async def set_settings(bot: types.Bot) -> None:
 
 
 def check_types(bot: types.Bot) -> None:
-    setting_types = (
-        [Settings.FLAG_DELIMITER, str, "FLAG_DELIMITER"],
-        [Settings.INVOKE_ON_EDIT, bool, "INVOKE_ON_EDIT"],
-        [Settings.OWNERS, set, "OWNERS"],
-        [Settings.PATH_TO_FILE, str, "PATH_TO_FILE"],
-        [Settings.ROOT_FOLDER, str, "ROOT_FOLDER"],
-        [Settings.ALLOW_GLOBAL_USES, bool, "ALLOW_GLOBAL_USES"],
-        [Settings.VIRTUAL_VARS, str, "VIRTUAL_VARS"]
+    setting_types: tuple[tuple[str | bool | set[int], type[str | bool | set[int]], str], ...] = (  # type: ignore
+        (Settings.FLAG_DELIMITER, str, "FLAG_DELIMITER"),
+        (Settings.INVOKE_ON_EDIT, bool, "INVOKE_ON_EDIT"),
+        (Settings.OWNERS, set, "OWNERS"),
+        (Settings.PATH_TO_FILE, str, "PATH_TO_FILE"),
+        (Settings.ROOT_FOLDER, str, "ROOT_FOLDER"),
+        (Settings.ALLOW_GLOBAL_USES, bool, "ALLOW_GLOBAL_USES"),
+        (Settings.VIRTUAL_VARS, str, "VIRTUAL_VARS")
     )
     if not any((bot.owner_id, bot.owner_ids, Settings.OWNERS)):
         raise ValueError("For security reasons, an owner ID must be set")
 
-    for module in setting_types:
-        received, expected, var = module
-        if not isinstance(received, expected):
+    for module in setting_types:  # type: ignore
+        received, expected, var = module  # type: ignore
+        if not isinstance(received, expected):  # pyright: ignore [reportUnnecessaryIsInstance]
             raise ValueError(
                 f"invalid type for Settings.{var}. "
                 f"Expected {expected.__name__} but received {type(received).__name__}"

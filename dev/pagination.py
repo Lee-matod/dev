@@ -11,7 +11,7 @@ Pagination interface and objects.
 """
 from __future__ import annotations
 
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 import discord
 from discord.ext import commands
@@ -28,7 +28,7 @@ TypeT = TypeVar("TypeT", str, discord.Embed)
 
 
 class _PageSetter(discord.ui.Modal):
-    page_num = discord.ui.TextInput(label="Page Number", min_length=1)
+    page_num: discord.ui.TextInput[Interface] = discord.ui.TextInput(label="Page Number", min_length=1)
 
     def __init__(self, view: Interface) -> None:
         self.page_num.max_length = len(view.paginator.pages)
@@ -162,9 +162,9 @@ class Interface(discord.ui.View):
         This is the result of the user ID or object that was passed to the constructor.
     """
 
-    def __init__(self, paginator: Paginator, author: types.User | int) -> None:
+    def __init__(self, paginator: Paginator[Any], author: types.User | int) -> None:
         super().__init__()
-        self.paginator: Paginator = paginator
+        self.paginator: Paginator[Any] = paginator
         self.author: int = author.id if isinstance(author, types.User) else author
         self._display_page: int = 1
         self._real_page: int = 0

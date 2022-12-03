@@ -11,11 +11,15 @@ Custom converters used within the dev extension.
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 from discord.ext import commands
 
 from dev.utils.utils import clean_code
+
+if TYPE_CHECKING:
+    from dev import types
+
 
 __all__ = (
     "__previous__",
@@ -26,7 +30,7 @@ __all__ = (
 )
 
 
-class LiteralModes(commands.Converter):
+class LiteralModes(commands.Converter[Union[str, None]]):
     """A custom converter that checks if a given argument falls under a typing.Literal list.
 
     Subclass of :class:`discord.ext.commands.Converter`.
@@ -55,18 +59,18 @@ class LiteralModes(commands.Converter):
     def __init__(self, modes: Literal[...], case_sensitive: bool) -> None:  # type: ignore
         self.case_sensitive: bool = case_sensitive
         if not case_sensitive:
-            self.modes: list[str] = [mode.lower() for mode in map(str, modes.__args__)]
+            self.modes: list[str] = [mode.lower() for mode in map(str, modes.__args__)]  # type: ignore
         else:
-            self.modes: list[str] = list(map(str, modes.__args__))
+            self.modes: list[str] = list(map(str, modes.__args__))  # type: ignore
 
-    async def convert(self, ctx: commands.Context, mode: str) -> Optional[str]:
+    async def convert(self, ctx: commands.Context[types.Bot], argument: str) -> str | None:
         """The method that converts the argument passed in.
 
         Parameters
         ----------
         ctx: :class:`Context`
             The invocation context in which the argument is being using on.
-        mode: :class:`str`
+        argument: :class:`str`
             The string that should get checked if it falls under any of the specified modes.
 
         Returns
@@ -74,25 +78,29 @@ class LiteralModes(commands.Converter):
         Optional[str]
             The mode that was accepted, if it falls under any of the specified modes.
         """
-        is_upper: bool = mode.isupper()
+        is_upper: bool = argument.isupper()
         if not self.case_sensitive:
-            mode = mode.lower()
-        if mode not in self.modes:
+            argument = argument.lower()
+        if argument not in self.modes:
             valid = ", ".join(f"`{mode}`" for mode in self.modes)
             await ctx.send(
-                f"`{mode}` is not a valid mode. "
+                f"`{argument}` is not a valid mode. "
                 f"Case-sensitive is {'enabled' if self.case_sensitive else 'disabled'}. Acceptable modes are: {valid}"
             )
             return
-        return mode.upper() if is_upper else mode
+        return argument.upper() if is_upper else argument
 
-    def __class_getitem__(cls, item: Any) -> LiteralModes:
+    def __class_getitem__(cls, item: Any) -> LiteralModes:  # type: ignore
         # mostly just check that arguments were passed in correctly
         if not isinstance(item, tuple):
             item = (item, False)
-        if len(item) != 2:
-            raise TypeError(f"LiteralModes[...[, bool]] expected a maximum of 2 attributes, got {len(item)}")
+        if len(item) != 2:  # type: ignore
+            raise TypeError(
+                f"LiteralModes[...[, bool]] expected a maximum of 2 attributes, got {len(item)}"  # type: ignore
+            )
         item, case_sensitive = item
+        item: Any
+        case_sensitive: bool
         if type(item) != type(Literal[...]):  # type: ignore # noqa: E721
             raise TypeError(
                 f"LiteralModes[...[, bool]] expected a typing.Literal to be passed, "
@@ -100,7 +108,7 @@ class LiteralModes(commands.Converter):
             )
         if any(i for i in item.__args__ if not isinstance(i, str)):
             raise TypeError("LiteralModes[...[, bool]] should only have strings")
-        if not isinstance(case_sensitive, bool):
+        if not isinstance(case_sensitive, bool):  # pyright: ignore [reportUnnecessaryIsInstance]
             raise TypeError(
                 f"Case sensitive argument should be a bool, "
                 f"not {item.__name__ if isinstance(item, type) else item.__class__.__name__}"
@@ -108,14 +116,14 @@ class LiteralModes(commands.Converter):
         return cls(item, case_sensitive)
 
 
-class CodeblockConverter(commands.Converter):
+class CodeblockConverter(commands.Converter[tuple[Optional[str], Optional[str]]]):
     """A custom converter that identifies and separates normal string arguments from codeblocks.
 
     Codeblock cleaning should be done later on as this does not automatically return the clean code.
 
     Subclass of :class:`discord.ext.commands.Converter`.
     """
-    async def convert(self, ctx: commands.Context, argument: str) -> tuple[Optional[str], Optional[str]]:
+    async def convert(self, ctx: commands.Context[types.Bot], argument: str) -> tuple[str | None, str | None]:
         """The method that converts the argument passed in.
 
         Parameters
@@ -131,7 +139,7 @@ class CodeblockConverter(commands.Converter):
             A tuple with the arguments and codeblocks.
         """
 
-        start: Optional[int] = False
+        start: int | None = False
 
         for i in range(len(argument)):
             try:
@@ -152,7 +160,7 @@ class CodeblockConverter(commands.Converter):
         return arguments.strip() or None, codeblock
 
 
-async def __previous__(ctx: commands.Context, command_name: str, arg: str, /) -> str:
+async def __previous__(ctx: commands.Context[types.Bot], command_name: str, arg: str, /) -> str:
     previous = "__previous__"
     if "__previous__" in arg:
         skip = 0  # if we don't do this, then ctx.message would be the first message and would probably break everything
@@ -203,9 +211,9 @@ def str_ints(content: str) -> list[int]:
 
 def str_bool(
         content: str,
-        default: Optional[bool] = None, *,
-        additional_true: Optional[list[str]] = None,
-        additional_false: Optional[list[str]] = None
+        default: bool | None = None, *,
+        additional_true: list[str] | None = None,
+        additional_false: list[str] | None = None
 ) -> bool:
     """Similar to the :class:`bool` type hint in commands, this converts a string to a boolean with the added
     functionality of optionally appending new true/false statements.

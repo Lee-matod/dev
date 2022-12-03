@@ -12,7 +12,7 @@ Flag-like commands for command analysis.
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -22,13 +22,19 @@ from dev.utils.functs import send
 from dev.utils.utils import codeblock_wrapper
 
 if TYPE_CHECKING:
-    from dev.utils.baseclass import _DiscordCommand, _DiscordGroup  # noqa
+    from dev import types
+    from dev.utils.baseclass import _DiscordCommand, _DiscordGroup  # pyright: ignore [reportPrivateUsage]
 
 
 class RootFlags(Root):
 
     @root.command(name="--help", parent="dev", global_use=True, aliases=["--man"], hidden=True)
-    async def root_help(self, ctx: commands.Context, *, command_string: str = "") -> Optional[discord.Message]:
+    async def root_help(
+            self,
+            ctx: commands.Context[types.Bot],
+            *,
+            command_string: str = ""
+    ) -> discord.Message | None:
         """Help command made exclusively made for the `dev` extensions.
         Flags are hidden, but they can still be accessed and attributes can still be viewed.
         """
@@ -74,7 +80,7 @@ class RootFlags(Root):
         hidden=True,
         require_var_positional=True
     )
-    async def root_types(self, ctx: commands.Context, *, command_string: str) -> Optional[discord.Message]:
+    async def root_types(self, ctx: commands.Context[types.Bot], *, command_string: str) -> discord.Message | None:
         """Inspect a command.
         This is not exclusive to the `dev` extension.
         Command signature, as well as some useful attributes will be returned.
@@ -82,7 +88,7 @@ class RootFlags(Root):
         command = self.bot.get_command(command_string)
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
-        params = []
+        params: list[str] = []
         for name, sign in command.clean_params.items():
             if sign.kind == inspect.Parameter.KEYWORD_ONLY:
                 params.append(
@@ -127,7 +133,12 @@ class RootFlags(Root):
         await send(ctx, embed)
 
     @root.command(name="--source", parent="dev", aliases=["-src"], hidden=True)
-    async def root_source(self, ctx: commands.Context, *, command_string: str = "") -> Optional[discord.Message]:
+    async def root_source(
+            self,
+            ctx: commands.Context[types.Bot],
+            *,
+            command_string: str = ""
+    ) -> discord.Message | None:
         """View the source code of a command.
         This is not exclusive to the `dev` extension.
         The token of the bot will be hidden as `[token]` if it is found within the source code.
@@ -142,7 +153,7 @@ class RootFlags(Root):
         return await send(ctx, codeblock_wrapper(over[-1].source, "py"))
 
     @root.command(name="--file", parent="dev", aliases=["-f"], hidden=True)
-    async def root_file(self, ctx: commands.Context, *, command_string: str = "") -> Optional[discord.Message]:
+    async def root_file(self, ctx: commands.Context[types.Bot], *, command_string: str = "") -> discord.Message | None:
         """View the file of a command.
         This is not exclusive to the `dev` extension.
         The token of the bot will be hidden as `[token]` if it is found within the file.

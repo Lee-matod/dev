@@ -1,0 +1,4 @@
+[tool.pyright]
+
+exclude = ["tests", "**/__pycache__", "venv"]
+typeCheckingMode = "strict"

@@ -15,7 +15,7 @@ import ast
 import contextlib
 import io
 import textwrap
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import discord
 from discord.ext import commands
@@ -37,8 +37,8 @@ class _SettingEditor(discord.ui.Modal):
     def __init__(self, author: types.User, setting: str) -> None:
         self.author: types.User = author
         self.setting: str = setting
-        self.setting_obj: set | str = getattr(Settings, setting)
-        self.item = discord.ui.TextInput(
+        self.setting_obj: set[int] | str = getattr(Settings, setting)
+        self.item: discord.ui.TextInput[SettingView] = discord.ui.TextInput(
             label=setting.replace("_", " ").title(),
             default=", ".join([str(i) for i in self.setting_obj])
         )
@@ -100,20 +100,23 @@ class SettingView(discord.ui.View):
 
 
 class _CodeEditor(discord.ui.Modal):
-    code = discord.ui.TextInput(label="Code inspection for 'command'", style=discord.TextStyle.long)
+    code: discord.ui.TextInput[CodeView] = discord.ui.TextInput(
+        label="Code inspection for 'command'",
+        style=discord.TextStyle.long
+    )
 
-    def __init__(self, ctx: commands.Context, command: types.Command, root: Root) -> None:
+    def __init__(self, ctx: commands.Context[types.Bot], command: types.Command, root: Root) -> None:
         self.code.label = self.code.label.replace("command", command.qualified_name)
         self.code.default = root.match_register_command(command.qualified_name)[-1].source
 
         super().__init__(title=f"{command.name}'s Script")
         self.command: types.Command = command
-        self.ctx: commands.Context = ctx
+        self.ctx: commands.Context[types.Bot] = ctx
         self.root: Root = root
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         self.ctx.bot.remove_command(self.command.qualified_name)
-        lcls = {"discord": discord, "commands": commands, "bot": self.ctx.bot}
+        lcls: dict[str, Any] = {"discord": discord, "commands": commands, "bot": self.ctx.bot}
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             async with ExceptionHandler(self.ctx.message, lambda: self.ctx.bot.add_command(self.command)):
                 # make sure everything is parsed correctly
@@ -136,7 +139,7 @@ class _CodeEditor(discord.ui.Modal):
                     f"async def func():\n\t{upper}\n\tasync def {func.name}({parameters}\n{body}\n\treturn {func.name}",
                     lcls
                 )
-                obj = await lcls["func"]()
+                obj: commands.Command[Any, ..., Any] | commands.Group[Any, ..., Any] = await lcls["func"]()
                 # check after execution
                 if not isinstance(obj, (commands.Command, commands.Group)):
                     self.ctx.bot.add_command(self.command)
@@ -157,7 +160,7 @@ class _CodeEditor(discord.ui.Modal):
                     )
                 self.root.update_register(
                     CommandRegistration(
-                        obj,
+                        obj,  # type: ignore
                         Over.OVERRIDE,
                         source=f"{upper.lstrip()}\nasync def {func.name}({parameters}\n{body}"),
                     Over.ADD
@@ -171,9 +174,9 @@ class _CodeEditor(discord.ui.Modal):
 
 
 class CodeView(discord.ui.View):
-    def __init__(self, ctx: commands.Context, command: types.Command, root: Root) -> None:
+    def __init__(self, ctx: commands.Context[types.Bot], command: types.Command, root: Root) -> None:
         super().__init__()
-        self.ctx: commands.Context = ctx
+        self.ctx: commands.Context[types.Bot] = ctx
         self.command: types.Command = command
         self.root: Root = root
 
@@ -186,7 +189,7 @@ class CodeView(discord.ui.View):
 
 
 def _format_setting(setting: str) -> str:
-    setting_name = []
+    setting_name: list[str] = []
     for word in setting.split("_"):
         if len(word) <= 2:
             setting_name.append(word.lower())

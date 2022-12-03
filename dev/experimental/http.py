@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import io
 import json
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal
 
 import aiohttp
 import discord
@@ -29,19 +29,21 @@ from dev.utils.utils import responses
 if TYPE_CHECKING:
     from discord.ext import commands
 
+    from dev import types
+
 
 class RootHTTP(Root):
 
     @root.group(name="http", parent="dev", virtual_vars=True)
     async def root_http(
             self,
-            ctx: commands.Context,
+            ctx: commands.Context[types.Bot],
             url: str,
             mode: LiteralModes[Literal["json", "read", "status", "text"]],
             allow_redirects: bool = False,
             *,
-            options: Optional[str] = None
-    ) -> Optional[discord.Message]:
+            options: str | None = None
+    ) -> discord.Message | None:
         """Send an HTTP request using GET method.
         **Modes:**
         `json` = Converts the response to JSON. This isn't always available.
@@ -62,19 +64,18 @@ class RootHTTP(Root):
                         allow_redirects=allow_redirects,
                         **kwargs
                 ) as request:
-                    if mode == "status":
+                    if mode == "status":  # pyright: ignore [reportUnnecessaryComparison]
                         await send(
                             ctx,
                             discord.Embed(
                                 title=f"Status {(status := str(request.status))}",
                                 description=f"{(f'{t}.' if (t := responses.get(status[0])) else '')}"
-                                            f"{' ‒ ' if (desc := request.reason) else ''}"
-                                            f"{f'{desc}.' if desc else ''}".strip(),
+                                            f"{f' ‒ {r}.' if (r := request.reason) else ''}".strip(),  # type: ignore
                                 color=discord.Color.blurple(),
                                 url=f"https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{status}"
                             )
                         )
-                    elif mode == "json":
+                    elif mode == "json":  # pyright: ignore [reportUnnecessaryComparison]
                         try:
                             json_dict = await request.json()
                             with io.BytesIO() as binary_file:
@@ -83,10 +84,10 @@ class RootHTTP(Root):
                                 await send(ctx, discord.File(filename="response.json", fp=binary_file))
                         except json.JSONDecodeError:
                             await send(ctx, "Unable to decode to JSON.")
-                    elif mode == "text":
+                    elif mode == "text":  # pyright: ignore [reportUnnecessaryComparison]
                         file = await request.text()
                         await send(ctx, discord.File(filename="response.txt", fp=io.BytesIO(file.encode("utf-8"))))
-                    elif mode == "read":
+                    elif mode == "read":  # pyright: ignore [reportUnnecessaryComparison]
                         file = await request.read()
                         with io.BytesIO() as binary_file:
                             binary_file.write(file)

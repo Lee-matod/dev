@@ -11,16 +11,22 @@ Custom classes used to keep track attributes and operations.
 """
 from __future__ import annotations
 
-from datetime import datetime
 import inspect
-from typing import TYPE_CHECKING, Any, Optional
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Callable, Coroutine
 
 from dev.types import ManagementOperation, Over, OverType
 
 if TYPE_CHECKING:
-    from dev import types
+    from typing_extensions import Concatenate, ParamSpec
 
-    from dev.types import Callback
+    from discord.ext import commands
+
+    from dev import types
+    from dev.utils.baseclass import Root
+
+    P = ParamSpec("P")
+
 
 __all__ = (
     "BaseCommandRegistration",
@@ -34,7 +40,9 @@ __all__ = (
 class BaseCommandRegistration:
     def __init__(self, __command: types.Command, /) -> None:
         self.command: types.Command = __command
-        self.callback: Callback = __command.callback
+        self.callback: Callable[
+            Concatenate[commands.Cog | None, commands.Context[types.Bot], P], Coroutine[Any, Any, Any]  # type: ignore
+        ] = __command.callback  # type: ignore
         self.qualified_name: str = __command.qualified_name
         try:
             lines, line_no = inspect.getsourcelines(__command.callback)
@@ -55,13 +63,13 @@ class BaseRegistration:
 
 
 class ManagementRegistration(BaseRegistration):
-    def __init__(self, directory: str, operation_type: ManagementOperation, other: Optional[str] = None) -> None:
+    def __init__(self, directory: str, operation_type: ManagementOperation, other: str | None = None) -> None:
         super().__init__()
         self.directory: str = directory
         self.operation_type: ManagementOperation = operation_type
         if operation_type is ManagementOperation.RENAME and other is None:
             raise TypeError("other is a required positional or keyword argument that is missing")
-        self.other: Optional[str] = other
+        self.other: str | None = other
 
     def __str__(self) -> str:
         if self.operation_type is ManagementOperation.RENAME:
@@ -76,10 +84,12 @@ class ManagementRegistration(BaseRegistration):
 class CommandRegistration(BaseRegistration):
     def __init__(self, __command: types.Command, register_type: Over, /, *, source: str = "") -> None:
         super().__init__()
-        self.command: types.Command = __command
+        self.command: commands.Command[Root, ..., Any] | commands.Group[Root, ..., Any] = __command
         self.register_type: Over = register_type
         self.over_type: OverType = OverType.COMMAND
-        self.callback: Callback = __command.callback
+        self.callback: Callable[
+            Concatenate[commands.Cog | None, commands.Context[types.Bot], P], Coroutine[Any, Any, Any]  # type: ignore
+        ] = __command.callback  # type: ignore
         self.qualified_name: str = __command.qualified_name
         self.source: str = source or inspect.getsource(__command.callback)
 

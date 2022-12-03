@@ -12,7 +12,7 @@ Type shortcuts used for type hinting and type checking as well as enums.
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, Coroutine, Optional, Protocol, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Protocol, Union
 
 import discord
 from discord.ext import commands
@@ -20,12 +20,8 @@ from discord.ext import commands
 
 __all__ = (
     "Bot",
-    "Callback",
     "Channel",
-    "CogT",
     "Command",
-    "ContextT",
-    "ErrorCallback",
     "InteractionResponseType",
     "Invokeable",
     "ManagementOperation",
@@ -35,14 +31,8 @@ __all__ = (
     "User"
 )
 
-T = TypeVar("T")
-
-CogT = TypeVar("CogT", bound=commands.Cog)
-ContextT = TypeVar("ContextT", bound=commands.Context)
-
 if TYPE_CHECKING:
     from typing import Sequence, TypeAlias
-    from typing_extensions import Concatenate, ParamSpec
 
     Bot: TypeAlias = Union[commands.Bot, commands.AutoShardedBot]
     Channel: TypeAlias = Union[
@@ -52,7 +42,7 @@ if TYPE_CHECKING:
         discord.StageChannel,
         discord.ForumChannel
     ]
-    Command: TypeAlias = Union[commands.Command, commands.Group]
+    Command: TypeAlias = Union[commands.Command[Any, ..., Any], commands.Group[Any, ..., Any]]
     MessageContent: TypeAlias = Union[
         str,
         discord.Embed,
@@ -63,11 +53,6 @@ if TYPE_CHECKING:
         discord.ui.View
     ]
     User: TypeAlias = Union[discord.ClientUser, discord.Member, discord.User]
-
-    P = ParamSpec("P")
-
-    Callback: TypeAlias = Callable[Concatenate[CogT, ContextT, P], Coroutine[Any, Any, T]]
-    ErrorCallback: TypeAlias = Callable[[CogT, ContextT, commands.CommandError], Coroutine[Any, Any, T]]
 
 else:
     from collections.abc import Sequence
@@ -95,10 +80,10 @@ else:
 
 
 class Invokeable(Protocol):
-    async def invoke(self, context: commands.Context, /) -> None:
+    async def invoke(self, context: commands.Context[Bot], /) -> None:
         ...
 
-    async def reinvoke(self, context: commands.Context, /, *, call_hooks: bool = False) -> None:
+    async def reinvoke(self, context: commands.Context[Bot], /, *, call_hooks: bool = False) -> None:
         ...
 
 

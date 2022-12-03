@@ -43,7 +43,7 @@ class RootCommand(Root):
         invoke_without_command=True,
         usage="[--help|--man] [--source|-src] [--file|--f] [--inspect|-i] <command>"
     )
-    async def root_(self, ctx: commands.Context):
+    async def root_(self, ctx: commands.Context[types.Bot]):
         """Root command for the `dev` extension.
         Gives a briefing of the dev extension, as well as process statistics.
         Execute `dev --help [command]` for more information on a subcommand.
@@ -68,7 +68,7 @@ class RootCommand(Root):
         await send(ctx, description)
 
     @root.command(name="exit", parent="dev", aliases=["quit", "kys"])
-    async def root_exit(self, ctx: commands.Context):
+    async def root_exit(self, ctx: commands.Context[types.Bot]):
         """Exit the whole code at once. Note that this may cause issues.
         This uses the :meth:`exit` method, so beware!
         """
@@ -76,11 +76,11 @@ class RootCommand(Root):
         exit()
 
     @root.command(name="visibility", parent="dev")
-    async def root_visibility(self, ctx: commands.Context, toggle: Optional[bool] = None) -> Optional[discord.Message]:
+    async def root_visibility(self, ctx: commands.Context[types.Bot], toggle: Optional[bool] = None) -> Optional[discord.Message]:
         """Toggle whether the dev command is hidden.
         Pass no arguments to check current status
         """
-        root_command = self.commands.get("dev")
+        root_command = self.commands.get("dev")  # type: ignore
         assert root_command is not None
         if toggle:
             if root_command.hidden:
@@ -97,7 +97,7 @@ class RootCommand(Root):
             await ctx.message.add_reaction("☑")
 
     @root_.error
-    async def root_error(self, ctx: commands.Context, exception: commands.CommandError) -> Optional[discord.Message]:
+    async def root_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError) -> Optional[discord.Message]:
         if isinstance(exception, commands.TooManyArguments):
             assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(

@@ -15,7 +15,7 @@ import asyncio
 import contextlib
 import inspect
 from traceback import format_exception
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, overload
 
 import discord
 from discord.ext import commands
@@ -51,8 +51,8 @@ class GlobalLocals:
 
     def __init__(
             self,
-            __globals: Optional[dict[str, Any]] = None,
-            __locals: Optional[dict[str, Any]] = None,
+            __globals: dict[str, Any] | None = None,
+            __locals: dict[str, Any] | None = None,
             /
     ) -> None:
         self.globals: dict[str, Any] = __globals or {}
@@ -153,8 +153,8 @@ class GlobalLocals:
 
     def update(
             self,
-            __new_globals: Optional[dict[str, Any]] = None,
-            __new_locals: Optional[dict[str, Any]] = None,
+            __new_globals: dict[str, Any] | None = None,
+            __new_locals: dict[str, Any] | None = None,
             /
     ) -> None:
         """Update the current instance of variables with new ones.
@@ -195,9 +195,17 @@ class BoolInput(discord.ui.View):
         The function that should get called if the user clicks on the "Yes" button. This function cannot have arguments.
     """
 
-    def __init__(self, author: types.User | int, func: Optional[Callable[[], Any]] = None) -> None:
+    @overload
+    def __init__(self, author: types.User | int, func: Callable[[], Coroutine[Any, Any, Any]] | None = ...) -> None:
+        ...
+
+    @overload
+    def __init__(self, author: types.User | int, func: Callable[[], Any] | None = ...) -> None:
+        ...
+
+    def __init__(self, author: Any, func: Any = None) -> None:
         super().__init__()
-        self.func: Optional[Callable[[], Any]] = func
+        self.func: Callable[[], Any] | None = func
         self.author: int = author.id if isinstance(author, types.User) else author
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -243,22 +251,36 @@ class ExceptionHandler:
     error: list[tuple[str, str]] = []
     debug: bool = False
 
+    @overload
     def __init__(
             self,
             message: discord.Message,
             /,
-            on_error: Optional[Callable[[], Any]] = None,
-            save_traceback: bool = False
+            on_error: Callable[[], Coroutine[Any, Any, Any]] | None = ...,
+            save_traceback: bool = ...
     ) -> None:
+        ...
+
+    @overload
+    def __init__(
+            self,
+            message: discord.Message,
+            /,
+            on_error: Callable[[], Any] | None = ...,
+            save_traceback: bool = ...
+    ) -> None:
+        ...
+
+    def __init__(self, message: Any, /, on_error: Any = None, save_traceback: bool = False) -> None:
         self.message: discord.Message = message
-        self.on_error: Optional[Callable[..., Any]] = on_error
+        self.on_error: Callable[..., Any] | None = on_error
         if save_traceback:
             ExceptionHandler.debug = True
 
     async def __aenter__(self) -> ExceptionHandler:
         return self
 
-    async def __aexit__(self, exc_type: type[Exception], exc_val: Exception, exc_tb: Optional[TracebackType]) -> bool:
+    async def __aexit__(self, exc_type: type[Exception], exc_val: Exception, exc_tb: TracebackType | None) -> bool:
         if exc_val is None:
             if not self.debug:
                 with contextlib.suppress(discord.NotFound):
@@ -312,7 +334,7 @@ class ExceptionHandler:
         cls.debug = False
 
 
-def optional_raise(ctx: commands.Context, error: commands.CommandError, /) -> None:
+def optional_raise(ctx: commands.Context[types.Bot], error: commands.CommandError, /) -> None:
     # We have to somehow check if the on_command_error event was overridden, the most logical way I could think of was
     # checking if the functions were the same which is the aim of this bit. Do note, however, that this might fail under
     # certain circumstances.

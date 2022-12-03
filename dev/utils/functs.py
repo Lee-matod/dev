@@ -16,7 +16,7 @@ import json
 import math
 from collections.abc import Iterable
 from copy import copy
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import discord
 from discord.ext import commands
@@ -24,7 +24,6 @@ from discord.utils import MISSING
 
 from dev.types import InteractionResponseType
 from dev.pagination import Interface, Paginator
-
 from dev.utils.baseclass import Root
 
 if TYPE_CHECKING:
@@ -71,7 +70,8 @@ def flag_parser(string: str, delimiter: str) -> dict[str, Any]:
     Dict[:class:`str`, Any]
         The parsed string dictionary.
     """
-    keys, values = [], []
+    keys: list[str] = []
+    values: list[str] = []
     temp_string = ""
     searching_for_value = False
     for char in string:
@@ -133,7 +133,11 @@ def table_creator(rows: list[list[Any]], labels: list[str]) -> str:
     return "\n".join(table_str.split("\n")[:-2])
 
 
-async def send(ctx: commands.Context, *args: types.MessageContent, **options: Any) -> Optional[discord.Message]:
+async def send(
+        ctx: commands.Context[types.Bot],
+        *args: types.MessageContent,
+        **options: Any
+) -> discord.Message | None:
     """Evaluates how to safely send a Discord message.
 
     `content`, `embed`, `embeds`, `file`, `files` and `view` are all positional arguments instead of keywords.
@@ -167,7 +171,9 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
         A list, tuple or set contains more than one type.
     """
     forced: bool = options.get("forced", False)
-    kwargs = {}
+    kwargs: dict[str, Any] = {}
+    token = ctx.bot.http.token
+    assert token is not None
     for arg in args:
         if isinstance(arg, discord.Embed):
             arg = _embed_inspector(ctx.bot.http, arg)
@@ -181,29 +187,29 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
 
         elif isinstance(arg, discord.File):
             string = _revert_virtual_var_value(
-                arg.fp.read().decode("utf-8").replace(ctx.bot.http.token, "[token]")
+                arg.fp.read().decode("utf-8").replace(token, "[token]")
             ).encode("utf-8")
             kwargs["file"] = discord.File(filename=arg.filename, fp=io.BytesIO(string))
 
         elif isinstance(arg, Iterable) and not isinstance(arg, str):
-            items = []
-            inst_type: Optional[type] = None
+            inst_type: type | None = None
+            items: list[discord.Embed | discord.File] = []
             for item in arg:
                 if isinstance(item, discord.File):
                     if inst_type:
-                        if not isinstance(item, inst_type):
+                        if not isinstance(item, inst_type):  # pyright: ignore [reportUnnecessaryIsInstance]
                             raise TypeError(
                                 f"Found multiple types inside a single {type(arg).__name__}. "
                                 f"Expected {inst_type.__name__} but received {type(item).__name__}"
                             )
                     inst_type = discord.File
                     string = _revert_virtual_var_value(
-                        item.fp.read().decode("utf-8").replace(ctx.bot.http.token, "[token]")
+                        item.fp.read().decode("utf-8").replace(token, "[token]")
                     ).encode("utf-8")
                     items.append(discord.File(filename=item.filename, fp=io.BytesIO(string)))
-                elif isinstance(item, discord.Embed):
+                elif isinstance(item, discord.Embed):  # pyright: ignore [reportUnnecessaryIsInstance]
                     if inst_type:
-                        if not isinstance(item, inst_type):
+                        if not isinstance(item, inst_type):  # pyright: ignore [reportUnnecessaryIsInstance]
                             raise TypeError(
                                 f"Found multiple types inside a single {type(arg).__name__}. "
                                 f"Expected {inst_type.__name__} but received {type(item).__name__}"
@@ -224,7 +230,7 @@ async def send(ctx: commands.Context, *args: types.MessageContent, **options: An
             kwargs["view"] = arg
 
         else:
-            content = _revert_virtual_var_value(str(arg)).replace(ctx.bot.http.token, "[token]")
+            content = _revert_virtual_var_value(str(arg)).replace(token, "[token]")
             return_type = _check_length(content)
             if isinstance(return_type, Paginator):
                 view = Interface(return_type, ctx.author.id)
@@ -368,12 +374,12 @@ async def interaction_response(
             kwargs["file"] = discord.File(filename=arg.filename, fp=io.BytesIO(string))
 
         elif isinstance(arg, (list, set, tuple)):
-            items = []
-            inst_type: Optional[type] = None
+            inst_type: type | None = None
+            items: list[discord.Embed | discord.File] = []
             for item in arg:
                 if isinstance(item, discord.File):
                     if inst_type:
-                        if not isinstance(item, inst_type):
+                        if not isinstance(item, inst_type):  # pyright: ignore [reportUnnecessaryIsInstance]
                             raise TypeError(
                                 f"Found multiple types inside a single {type(arg).__name__}. "
                                 f"Expected {inst_type.__name__} but received {type(item).__name__}"
@@ -383,9 +389,9 @@ async def interaction_response(
                         item.fp.read().decode("utf-8").replace(token, "[token]")
                     ).encode("utf-8")
                     items.append(discord.File(filename=item.filename, fp=io.BytesIO(string)))
-                elif isinstance(item, discord.Embed):
+                elif isinstance(item, discord.Embed):  # pyright: ignore [reportUnnecessaryIsInstance]
                     if inst_type:
-                        if not isinstance(item, inst_type):
+                        if not isinstance(item, inst_type):  # pyright: ignore [reportUnnecessaryIsInstance]
                             raise TypeError(
                                 f"Found multiple types inside a {type(arg).__name__}. "
                                 f"Expected {inst_type.__name__} but received {type(item).__name__}"
@@ -432,7 +438,7 @@ async def interaction_response(
             await interaction.followup.send(**pag)
 
 
-async def generate_ctx(ctx: commands.Context, **kwargs: Any) -> commands.Context:
+async def generate_ctx(ctx: commands.Context[types.Bot], **kwargs: Any) -> commands.Context[types.Bot]:
     """Create a custom context with changeable attributes.
 
     Parameters
@@ -448,8 +454,7 @@ async def generate_ctx(ctx: commands.Context, **kwargs: Any) -> commands.Context
         A newly created context with the given attributes.
     """
     alt_msg: discord.Message = copy(ctx.message)
-    # noinspection PyProtectedMember
-    alt_msg._update(kwargs)  # type: ignore
+    alt_msg._update(kwargs)  # type: ignore  # pyright: ignore [reportPrivateUsage]
     return await ctx.bot.get_context(alt_msg, cls=type(ctx))
 
 
@@ -493,7 +498,7 @@ def _check_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in _kwargs.items() if v is not MISSING}
 
 
-def _check_length(content: TypeT, max_length: int = 2000) -> Paginator | TypeT:
+def _check_length(content: TypeT, max_length: int = 2000) -> Paginator[TypeT] | TypeT:
     if len(content) > max_length:
         highlight_lang = ""
         if isinstance(content, discord.Embed):

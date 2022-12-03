@@ -11,7 +11,7 @@ A virtual variable manager directly implemented to the dev extension.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal
 
 import discord
 from discord.ext import commands
@@ -26,9 +26,9 @@ if TYPE_CHECKING:
 
 
 class ValueSubmitter(discord.ui.Modal):
-    value = discord.ui.TextInput(label="Value", style=discord.TextStyle.paragraph)
+    value: discord.ui.TextInput[ModalSubmitter] = discord.ui.TextInput(label="Value", style=discord.TextStyle.paragraph)
 
-    def __init__(self, name: str, new: bool, default: Optional[str] = None) -> None:
+    def __init__(self, name: str, new: bool, default: str | None = None) -> None:
         self.value.default = default
         super().__init__(title="Value Submitter")
         self.name = name
@@ -43,7 +43,7 @@ class ValueSubmitter(discord.ui.Modal):
 
 
 class ModalSubmitter(discord.ui.View):
-    def __init__(self, name: str, new: bool, author: types.User, default: Optional[str] = None) -> None:
+    def __init__(self, name: str, new: bool, author: types.User, default: str | None = None) -> None:
         super().__init__()
         self.name = name
         self.new = new
@@ -63,13 +63,13 @@ class RootVariables(Root):
     @root.command(name="variable", parent="dev", aliases=["variables", "vars", "var"])
     async def root_variable(
             self,
-            ctx: commands.Context,
+            ctx: commands.Context[types.Bot],
             mode: LiteralModes[
                 Literal["~", "all", "content", "create", "del", "delete", "edit", "exists", "new", "replace", "value"]
             ],
             *,
-            name: Optional[str] = None
-    ) -> Optional[discord.Message]:
+            name: str | None = None
+    ) -> discord.Message | None:
         """A virtual scope manager.
         This allows you to create temporary variables that can later be used as placeholder texts.
         Note that all variables created using this manager will later be destroyed once the bot restarts.
@@ -83,7 +83,7 @@ class RootVariables(Root):
         """
         if mode is None:
             return
-        if mode in ["new", "create"]:
+        if mode in ["new", "create"]:  # pyright: ignore [reportUnnecessaryContains]
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             glob, loc = Root.scope.keys()
@@ -91,7 +91,7 @@ class RootVariables(Root):
                 return await send(ctx, f"A variable called `{name}` already exists.")
             await send(ctx, ModalSubmitter(name, True, ctx.author))
 
-        elif mode in ["delete", "del"]:
+        elif mode in ["delete", "del"]:  # pyright: ignore [reportUnnecessaryContains]
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             if Root.scope.get(name, False):
@@ -99,7 +99,7 @@ class RootVariables(Root):
                 return await send(ctx, f"Successfully deleted the variable `{name}`.")
             await send(ctx, f"No variable called `{name}` found.")
 
-        elif mode in ["edit", "replace"]:
+        elif mode in ["edit", "replace"]:  # pyright: ignore [reportUnnecessaryContains]
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             glob, loc = Root.scope.keys()
@@ -108,11 +108,11 @@ class RootVariables(Root):
             glob, loc = Root.scope[name]
             await send(ctx, ModalSubmitter(name, False, ctx.author, glob or loc))
 
-        elif mode in ["all", "~"]:
+        elif mode in ["all", "~"]:  # pyright: ignore [reportUnnecessaryContains]
             variables = '\n'.join(f"+ {var}" for var in Root.scope.keys()) if Root.scope else "- No variables found."
             await send(ctx, f"```diff\n{variables}\n```")
 
-        elif mode == "exists":
+        elif mode == "exists":  # pyright: ignore [reportUnnecessaryContains, reportUnnecessaryComparison]
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             glob, loc = Root.scope.keys()
@@ -120,7 +120,7 @@ class RootVariables(Root):
                 return await ctx.message.add_reaction("❌")
             await ctx.message.add_reaction("☑")
 
-        elif mode in ["content", "value"]:
+        elif mode in ["content", "value"]:  # pyright: ignore [reportUnnecessaryContains]
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             glob, loc = Root.scope.keys()

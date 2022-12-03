@@ -12,7 +12,7 @@ Global search command.
 from __future__ import annotations
 
 import difflib
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 
@@ -21,6 +21,8 @@ from dev.utils.functs import send
 
 if TYPE_CHECKING:
     from discord.ext import commands
+
+    from dev import types
 
 
 class Dropdown(discord.ui.View):
@@ -36,7 +38,7 @@ class Dropdown(discord.ui.View):
 
     def __init__(
             self,
-            ctx: commands.Context,
+            ctx: commands.Context[types.Bot],
             embed: discord.Embed,
             *,
             cogs: list[str],
@@ -61,13 +63,13 @@ class Dropdown(discord.ui.View):
         super().__init__()
         self.ctx = ctx
         self.embed = embed
-        self.message: Optional[discord.Message] = None
+        self.message: discord.Message | None = None
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return self.ctx.author == interaction.user
 
     @discord.ui.select(options=options)
-    async def callback(self, interaction: discord.Interaction, select: discord.ui.Select) -> None:
+    async def callback(self, interaction: discord.Interaction, select: discord.ui.Select[Dropdown]) -> None:
         for option in select.options:
             if option.value != select.values[0]:
                 option.default = False
@@ -87,7 +89,7 @@ class Dropdown(discord.ui.View):
 
 class RootSearch(Root):
     @root.command(name="search", parent="dev", require_var_positional=True, global_use=True)
-    async def root_search(self, ctx: commands.Context, *, query: str) -> Optional[discord.Message]:
+    async def root_search(self, ctx: commands.Context[types.Bot], *, query: str) -> discord.Message | None:
         """Search for different items given a query.
         Items include cogs, command names, channels, emojis, members, and roles.
         """
@@ -125,8 +127,8 @@ class RootSearch(Root):
         view.message = message
 
 
-def join_multi_iter(iterables, delimiter: str = "\n", max_amount: Optional[int] = None) -> str:
-    joined_iter = []
+def join_multi_iter(iterables: list[list[str]], delimiter: str = "\n", max_amount: int | None = None) -> str:
+    joined_iter: list[str] = []
     for iterable in iterables:
         if iterable:
             joined_iter.append(f"{delimiter}".join(iterable))
@@ -134,7 +136,7 @@ def join_multi_iter(iterables, delimiter: str = "\n", max_amount: Optional[int] 
 
 
 def match(query: str, array: list[tuple[str, str]]) -> list[str]:
-    results = []
+    results: list[str] = []
     for m in difflib.get_close_matches(query, [item[0] for item in array], 7, 0.5):
         results.append([item[1] for item in array][[item[0] for item in array].index(str(m))])
     return results

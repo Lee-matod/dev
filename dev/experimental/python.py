@@ -15,7 +15,7 @@ import ast
 import inspect
 import io
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Optional
+from typing import TYPE_CHECKING, Any, AsyncGenerator
 
 import discord
 from discord.ext import commands
@@ -70,7 +70,7 @@ class Execute:
         function.body[-1].body[-1].body.extend(code.body)  # type: ignore
         ast.fix_missing_locations(function)
         ast.NodeTransformer().generic_visit(function.body[-1].body[-1])  # type: ignore
-        expressions = function.body[-1].body[-1].body  # type: ignore
+        expressions: list[ast.stmt] = function.body[-1].body[-1].body  # type: ignore
 
         for index, expr in enumerate(reversed(expressions), start=1):
             if not isinstance(expr, ast.Expr):
@@ -89,10 +89,10 @@ class RootPython(Root):
     def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
         self.retain: bool = False
-        self._vars: Optional[GlobalLocals] = None
+        self._vars: GlobalLocals | None = None
 
     @property
-    def scope(self) -> GlobalLocals:
+    def inst(self) -> GlobalLocals:
         if self.retain and self._vars is not None:
             return self._vars
         elif self.retain and self._vars is None:
@@ -105,7 +105,7 @@ class RootPython(Root):
             return GlobalLocals()
 
     @root.command(name="retain", parent="dev")
-    async def root_retain(self, ctx: commands.Context, toggle: Optional[bool] = None) -> Optional[discord.Message]:
+    async def root_retain(self, ctx: commands.Context[types.Bot], toggle: bool | None = None) -> discord.Message | None:
         if toggle is None:
             translate_dict = {True: "enabled", False: "disabled"}
             await send(ctx, f"Retention is currently {translate_dict[self.retain]}.")
@@ -128,7 +128,7 @@ class RootPython(Root):
         aliases=["py"],
         require_var_positional=False,
     )
-    async def root_python(self, ctx: commands.Context, *, code: Optional[str] = None) -> Optional[discord.Message]:
+    async def root_python(self, ctx: commands.Context[types.Bot], *, code: str | None = None) -> discord.Message | None:
         """
         Evaluate or execute Python code.
         You may specify `__previous__` in the code, and it'll get replaced with the previous script that was executed.
@@ -145,13 +145,13 @@ class RootPython(Root):
             raise commands.MissingRequiredArgument(ctx.command.clean_params.get("code"))  # type: ignore
         assert code is not None
         stdout = io.StringIO()
-        args = {
+        args: dict[str, Any] = {
             "bot": self.bot,
             "ctx": ctx,
             # Stdout redirect shouldn't be used with async code, but I still don't like print outputting to the console,
             # so this is probably the simplest workaround I could think of. Output can still be printed to the console
             # if 'file' is passed within the method.
-            "print": lambda *a, **kw: print(*a, **kw, file=kw.pop("file", stdout))
+            "print": lambda *a, **kw: print(*a, **kw, file=kw.pop("file", stdout))  # type: ignore
         }
         code = await __previous__(
             ctx,
@@ -160,18 +160,18 @@ class RootPython(Root):
         )
 
         async with ExceptionHandler(ctx.message):
-            async for expr in Execute(code, self.scope, args):
+            async for expr in Execute(code, self.inst, args):
                 if expr is None:
                     continue
                 elif isinstance(expr, (discord.ui.View, discord.Embed, discord.File)) or (
-                    isinstance(expr, Iterable) and (
-                        all(isinstance(i, discord.Embed) for i in expr) or
-                        all(isinstance(i, discord.File) for i in expr)
-                    )
+                        isinstance(expr, Iterable) and (
+                        all(isinstance(i, discord.Embed) for i in expr) or  # type: ignore
+                        all(isinstance(i, discord.File) for i in expr)  # type: ignore
+                )
                 ):
                     await send(ctx, expr, forced=True)  # type: ignore
                 else:
-                    await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)
+                    await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)  # type: ignore
 
         if out := stdout.getvalue():
             await send(ctx, codeblock_wrapper(out, "py"), forced=True)
