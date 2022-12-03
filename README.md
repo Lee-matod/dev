@@ -27,7 +27,7 @@ from discord.ext import commands
 
 bot = commands.Bot(command_prefix=..., intents=...)
 
-@bot.listen()
+@bot.event
 async def setup_hook() -> None:
     await bot.load_extension("dev")
 
