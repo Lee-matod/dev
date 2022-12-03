@@ -39,7 +39,7 @@ If you're subclassing
 from discord.ext import commands
 
 class Bot(commands.Bot):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(command_prefix=..., intents=...)
     
     async def setup_hook(self) -> None:
@@ -63,7 +63,7 @@ Settings.VIRTUAL_VARS = "-%s-"
 ALLOW_GLOBAL_USES: bool = False
 FLAG_DELIMITER: str = "="
 INVOKE_ON_EDIT: bool = False
-OWNERS: Set[int] = {}
+OWNERS: set[int] = {}
 PATH_TO_FILE: str = os.getcwd()
 ROOT_FOLDER: str = ""
 VIRTUAL_VARS: str = "|%s|"
