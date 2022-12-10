@@ -22,7 +22,7 @@ from dev.handlers import *
 from dev.pagination import *
 
 from dev.config import RootBot, RootManagement, RootOver, RootVariables
-from dev.experimental import RootHTTP, RootInvoke, RootPython
+from dev.experimental import RootHTTP, RootInvoke, RootPython, RootShell
 from dev.misc import RootFlags, RootSearch
 
 from dev.utils.baseclass import *
@@ -66,6 +66,7 @@ class Dev(
     RootOver,
     RootPython,
     RootSearch,
+    RootShell,
     RootVariables
 ):
     """The frontend root cog of the dev extension that implements all features."""

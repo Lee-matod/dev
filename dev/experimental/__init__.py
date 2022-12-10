@@ -12,10 +12,12 @@ Testing and debugging commands.
 from dev.experimental.http import *
 from dev.experimental.invoke import *
 from dev.experimental.python import *
+from dev.experimental.sh import *
 
 
 __all__ = (
     "RootHTTP",
     "RootInvoke",
-    "RootPython"
+    "RootPython",
+    "RootShell"
 )
