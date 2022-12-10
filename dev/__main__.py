@@ -11,6 +11,7 @@ Root command and other that do not fall under any other category.
 """
 from __future__ import annotations
 
+import importlib.metadata
 import os
 import sys
 import time
@@ -52,19 +53,22 @@ class RootCommand(Root):
         `--file`|`-f` <command> = Shows the source file of a command.
         `--inspect`|`-i` <command> = Get the signature of a command as well as some information of it.
         """
-        process = psutil.Process()
+        pid = os.getpid()
+        process = psutil.Process(pid)
         version = sys.version.replace("\n", "")
-        description = f"dev is a simple debugging, testing and editing extension for discord.py. " \
-                      f"It features a total of {plural(len(self.commands), 'command')} " \
-                      f"which were loaded <t:{self.load_time}:R>.\n" \
-                      f"\nThis process (`{process.name()} {str(__file__).rsplit('/', maxsplit=1)[-1]}`) " \
-                      f"is currently running on Python version `{version}` on a `{sys.platform}` machine, " \
-                      f"with discord version `{discord.__version__}` " \
-                      f"and dev version `{sys.modules['dev'].__version__}`.\n" \
-                      f"Running with a PID of `{os.getpid()}` " \
-                      f"and {plural(process.num_threads(), 'thread')} which are using " \
-                      f"`{round((psutil.getloadavg()[2] / os.cpu_count()) * 100, 2)}%` of CPU power " \
-                      f"and `{round(process.memory_percent(), 2)}%` of memory.\n"
+        description = (
+            "dev is a debugging, testing and editing extension for discord.py. "
+            f"It features a total of {plural(len(self.commands), 'command')} "
+            f"which were loaded <t:{self.load_time}:R>.\n"
+            f"\nThis process (`{process.name()} {str(__file__).rsplit('/', maxsplit=1)[-1]}`) "
+            f"is currently running on Python version `{version}` on a `{sys.platform}` machine, "
+            f"with discord version `{importlib.metadata.version('discord.py')}` "
+            f"and dev version `{importlib.metadata.version('dev')}`.\n"
+            f"Running with a PID of `{pid}` "
+            f"and {plural(process.num_threads(), 'thread')} which are using "
+            f"`{process.cpu_percent():.2f}%` of CPU power "
+            f"and `{process.memory_info().rss / psutil.virtual_memory().total * 100:.2f}%` of memory.\n"
+        )
         await send(ctx, description)
 
     @root.command(name="exit", parent="dev", aliases=["quit", "kys"])
