@@ -42,21 +42,17 @@ SHELL = os.getenv("SHELL") or "/bin/bash"
 
 
 class SigKill(discord.ui.View):
-    def __init__(self, session: ShellSession, /):
+    def __init__(self, process: Process, /):
         super().__init__()
-        self.session: ShellSession = session
-        self.process: Process | None = session.current_process
+        self.session: ShellSession = process._Process__session  # type: ignore
+        self.process: Process = process
 
     @discord.ui.button(label="Kill", emoji="\u26D4", style=discord.ButtonStyle.danger)
     async def signalkill(self, interaction: discord.Interaction, button: discord.ui.Button[SigKill]):
-        assert self.process is not None
         self.process.process.kill()
         self.process.process.terminate()
         self.process.force_kill = True
-        await interaction.response.edit_message(
-            content=self.session.raw.replace(Settings.PATH_TO_FILE, "~"),
-            view=SigKill(self.session)
-        )
+        await interaction.response.edit_message(content=self.session.raw.replace(Settings.PATH_TO_FILE, "~"), view=None)
 
 
 class Process:
@@ -100,9 +96,16 @@ class Process:
         for a in cmd.split(";"):
             for b in a.split("&&"):
                 if b.strip().startswith("exit"):
-                    self.__session.terminate = True
+                    self.__session.terminated = True
                     break
         self.close_code: int | None = None
+
+    def __repr__(self) -> str:
+        return (f"<Process "
+                f"cmd={self.cmd!r} "
+                f"close_code={self.close_code} "
+                f"force_kill={self.force_kill} "
+                f"session={self.__session!r}>")
 
     def __enter__(self) -> Process:
         return self
@@ -121,9 +124,15 @@ class Process:
     ) -> discord.Message | None:
         while self.is_alive and not self.force_kill:
             if not first and not self.has_set_cmd:
-                self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}")
+                await send(
+                    context,
+                    self.__session.add_line(
+                        f"{self.__session.interface} {self.cmd.strip()}"
+                    ).replace(Settings.PATH_TO_FILE, "~"),
+                    SigKill(self)
+                )
                 self.has_set_cmd = True
-            if self.__session.terminate:
+            if self.__session.terminated:
                 return
             try:
                 line = await self.in_executor(self.get_next_line)
@@ -133,19 +142,11 @@ class Process:
                     self.__session.set_exit_message("Timed out").replace(Settings.PATH_TO_FILE, "~")
                 )
             except InterruptedError:
-                return await send(
-                    context,
-                    self.__session.raw.replace(Settings.PATH_TO_FILE, "~"),
-                    SigKill(self.__session)
-                )
+                return await send(context, self.__session.raw.replace(Settings.PATH_TO_FILE, "~"))
             if line:
-                await send(
-                    context,
-                    self.__session.add_line(line).replace(Settings.PATH_TO_FILE, "~"),
-                    SigKill(self.__session)
-                )
+                await send(context, self.__session.add_line(line).replace(Settings.PATH_TO_FILE, "~"))
             else:
-                await send(context, self.__session.raw.replace(Settings.PATH_TO_FILE, "~"), SigKill(self.__session))
+                await send(context, self.__session.raw.replace(Settings.PATH_TO_FILE, "~"))
 
     def start_reading(self, stream: IO[bytes], callback: Callable[[bytes], Any]) -> asyncio.Task[str | None]:
         return self.loop.create_task(
@@ -184,31 +185,36 @@ class ShellSession:
     __slots__ = (
         "__terminate",
         "_previous_processes",
-        "current_process",
         "cwd"
     )
 
     def __init__(self) -> None:
         self.cwd: str = os.getcwd()
-        self.current_process: Process | None = None
         self._previous_processes: list[str] = []
         self.__terminate: bool = False
 
+    def __repr__(self) -> str:
+        return (f"<ShellSession "
+                f"cwd={self.cwd!r} "
+                f"prefix={self.prefix!r} "
+                f"highlight={self.highlight!r} "
+                f"interface={self.interface!r} "
+                f"terminated={self.terminated}>")
+
     @property
-    def terminate(self) -> bool:
+    def terminated(self) -> bool:
         return self.__terminate
 
-    @terminate.setter
-    def terminate(self, value: bool) -> None:
+    @terminated.setter
+    def terminated(self, value: bool) -> None:
         if self.__terminate and not value:
             raise ConnectionError("Cannot restart a shell session")
         self.__terminate = True
 
     def __call__(self, script: str) -> Process:
-        if self.terminate:
+        if self.terminated:
             raise ConnectionRefusedError("Shell has been terminated. Initiate another shell session")
-        self.current_process = Process(self, self.cwd, script)
-        return self.current_process
+        return Process(self, self.cwd, script)
 
     def format_process(self, p: Process, /) -> str:
         resp = (f"```{self.highlight}\n{self.interface} {p.cmd.strip()}".strip()
@@ -228,7 +234,7 @@ class ShellSession:
         return (f"```{self.highlight}\n" + "\n".join(self._previous_processes) + "\n").strip("\n") + "```"
 
     def set_exit_message(self, msg: str, /) -> str:
-        self.terminate = True
+        self.terminated = True
         return f"```{self.highlight}\n" + "\n".join(self._previous_processes) + f"```\n{msg}"
 
     @property
@@ -284,7 +290,7 @@ class RootShell(Root):
             self.active_shell_sessions.append(ctx.author.id)
         shell = ShellSession()
         with shell(script) as process:  # type: ignore
-            await send(ctx, shell.format_process(process).replace(Settings.PATH_TO_FILE, "~"), SigKill(shell))
+            await send(ctx, shell.format_process(process).replace(Settings.PATH_TO_FILE, "~"), SigKill(process))
             await process.run_until_complete(ctx, first=True)
 
         def check(msg: discord.Message) -> bool:
@@ -294,7 +300,7 @@ class RootShell(Root):
                     and msg.content.startswith(shell.interface.lower())
             )
 
-        while not shell.terminate and not process.is_alive:
+        while not shell.terminated and not process.is_alive:
             try:
                 message: discord.Message = await self.bot.wait_for("message", check=check, timeout=30)
             except asyncio.TimeoutError:
