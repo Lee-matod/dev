@@ -245,7 +245,7 @@ class Command(BaseCommand[CogT_co, ..., Any]):
             self,
             command_mapping: dict[str, types.Command],
             /
-    ) -> commands.Command[Root, ..., Any] | NoReturn:
+    ) -> commands.Command[CogT_co, ..., Any] | NoReturn:
         """Converts this class to an instance of its respective simulation.
 
         Parameters
@@ -267,11 +267,11 @@ class Command(BaseCommand[CogT_co, ..., Any]):
             deco = command.command
         else:
             deco = commands.command
-        cmd: commands.Command[Root, ..., Any] = deco(
+        cmd: commands.Command[CogT_co, ..., Any] = deco(
             name=self.name,
             cls=_DiscordCommand,
             **self.kwargs
-        )(self.callback)  # type: ignore
+        )(self.callback)
         if self.on_error:
             cmd.error(self.on_error)  # type: ignore
         return cmd
@@ -288,7 +288,7 @@ class Group(BaseCommand[CogT_co, ..., Any]):
             self,
             command_mapping: dict[str, types.Command],
             /
-    ) -> commands.Group[Root, ..., Any] | NoReturn:
+    ) -> commands.Group[CogT_co, ..., Any] | NoReturn:
         """Converts this class to an instance of its respective simulation.
 
         Parameters
@@ -310,7 +310,7 @@ class Group(BaseCommand[CogT_co, ..., Any]):
             deco = command.group
         else:
             deco = commands.group
-        cmd: commands.Group[Root, ..., Any] = deco(
+        cmd: commands.Group[CogT_co, ..., Any] = deco(
             name=self.name,
             cls=_DiscordGroup,
             **self.kwargs
