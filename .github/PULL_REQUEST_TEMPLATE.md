@@ -1,5 +1,4 @@
 ## Summary
-***
 This PR addresses issue <!-- Issue ID goes here --> <!-- Remove line if the PR won't address an issue -->
 
 <!-- Summary goes here. What is this PR for?-->
