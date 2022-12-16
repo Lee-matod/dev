@@ -29,7 +29,7 @@ if version.endswith(("a", "b", "rc")):
         pass
 
 with open("requirements.txt") as file:
-    requirements = file.readlines()[1:]  # exclude discord.py
+    requirements = file.readlines()
 
 with open("README.md", "r") as file:
     readme = file.read()
@@ -53,7 +53,6 @@ setup(
     long_description_content_type="text/markdown",
     include_package_data=True,
     install_requires=requirements,
-    dependency_links=["git+ssh://git@github.com/Rapptz/discord.py.git#egg=discord"],  # tysm DJJ!
     python_requires=">=3.8.0",
     extras_require={"test": ["pytest", "pytest-asyncio"]}
 )
