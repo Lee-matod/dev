@@ -21,8 +21,9 @@ from typing import TYPE_CHECKING, Any, Callable, IO, NoReturn, TypeVar
 import discord
 from discord.ext import commands
 
+from dev.types import InteractionResponseType
 from dev.utils.baseclass import Root, root
-from dev.utils.functs import send
+from dev.utils.functs import interaction_response, send
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code
 
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     from typing_extensions import ParamSpec
 
     from dev import types
+    from dev.pagination import Paginator
 
     P = ParamSpec("P")
 
@@ -52,7 +54,13 @@ class SigKill(discord.ui.View):
         self.process.process.kill()
         self.process.process.terminate()
         self.process.force_kill = True
-        await interaction.response.edit_message(content=self.session.raw.replace(Settings.PATH_TO_FILE, "~"), view=None)
+        await interaction_response(
+            interaction,
+            InteractionResponseType.EDIT,
+            self.session.raw.replace(Settings.PATH_TO_FILE, "~"),
+            view=None,
+            paginator=self.session.paginator
+        )
 
 
 class Process:
@@ -121,16 +129,20 @@ class Process:
             /,
             *,
             first: bool = False
-    ) -> discord.Message | None:
+    ) -> tuple[discord.Message, Paginator | None] | None:
         while self.is_alive and not self.force_kill:
             if not first and not self.has_set_cmd:
-                await send(
+                _, paginator = await send(
                     context,
                     self.__session.add_line(
                         f"{self.__session.interface} {self.cmd.strip()}"
                     ).replace(Settings.PATH_TO_FILE, "~"),
-                    SigKill(self)
+                    SigKill(self),
+                    paginator=self.__session.paginator,
+                    forced_pagination=False
                 )
+                if paginator is not None:
+                    self.__session.paginator = paginator
                 self.has_set_cmd = True
             if self.__session.terminated:
                 return
@@ -139,14 +151,41 @@ class Process:
             except TimeoutError:
                 return await send(
                     context,
-                    self.__session.set_exit_message("Timed out").replace(Settings.PATH_TO_FILE, "~")
+                    self.__session.set_exit_message("Timed out").replace(Settings.PATH_TO_FILE, "~"),
+                    forced_pagination=False,
+                    paginator=self.__session.paginator,
+                    view=None
                 )
             except InterruptedError:
-                return await send(context, self.__session.raw.replace(Settings.PATH_TO_FILE, "~"))
+                message, paginator = await send(
+                    context,
+                    self.__session.raw.replace(Settings.PATH_TO_FILE, "~"),
+                    forced_pagination=False,
+                    paginator=self.__session.paginator,
+                    view=None
+                )
+                if paginator is not None:
+                    self.__session.paginator = paginator
+                    return message, paginator
+                return message, paginator
             if line:
-                await send(context, self.__session.add_line(line).replace(Settings.PATH_TO_FILE, "~"))
+                message, paginator = await send(
+                    context,
+                    self.__session.add_line(line).replace(Settings.PATH_TO_FILE, "~"),
+                    forced_pagination=False,
+                    paginator=self.__session.paginator,
+                    view=None
+                )
             else:
-                await send(context, self.__session.raw.replace(Settings.PATH_TO_FILE, "~"))
+                message, paginator = await send(
+                    context,
+                    self.__session.raw.replace(Settings.PATH_TO_FILE, "~"),
+                    forced_pagination=False,
+                    paginator=self.__session.paginator,
+                    view=None
+                )
+            if paginator is not None:
+                self.__session.paginator = paginator
 
     def start_reading(self, stream: IO[bytes], callback: Callable[[bytes], Any]) -> asyncio.Task[str | None]:
         return self.loop.create_task(
@@ -185,11 +224,13 @@ class ShellSession:
     __slots__ = (
         "__terminate",
         "_previous_processes",
+        "_paginator",
         "cwd"
     )
 
     def __init__(self) -> None:
         self.cwd: str = os.getcwd()
+        self._paginator: Paginator | None = None
         self._previous_processes: list[str] = []
         self.__terminate: bool = False
 
@@ -200,6 +241,16 @@ class ShellSession:
                 f"highlight={self.highlight!r} "
                 f"interface={self.interface!r} "
                 f"terminated={self.terminated}>")
+
+    @property
+    def paginator(self) -> Paginator | None:
+        return self._paginator
+
+    @paginator.setter
+    def paginator(self, value: Paginator | None) -> None:
+        if value is not None:
+            value.force_last_page = True
+        self._paginator = value
 
     @property
     def terminated(self) -> bool:
@@ -231,14 +282,20 @@ class ShellSession:
 
     def add_line(self, line: str) -> str:
         self._previous_processes.append(line)
+        if self.paginator is not None:
+            return line.replace("`", "`\u200b")
         return (f"```{self.highlight}\n" + "\n".join(self._previous_processes) + "\n").strip("\n") + "```"
 
     def set_exit_message(self, msg: str, /) -> str:
         self.terminated = True
+        if self.paginator is not None:
+            return msg.replace("`", "`\u200b")
         return f"```{self.highlight}\n" + "\n".join(self._previous_processes) + f"```\n{msg}"
 
     @property
     def raw(self) -> str:
+        if self.paginator is not None:
+            return ""
         return f"```{self.highlight}\n" + "\n".join(self._previous_processes) + f"```"
 
     @property
@@ -278,19 +335,20 @@ class RootShell(Root):
         self.active_shell_sessions: list[int] = []
 
     @root.command(name="shell", parent="dev", aliases=["sh", "cmd", "bash", "ps"])
-    async def root_shell(
-            self,
-            ctx: commands.Context[types.Bot],
-            *,
-            script: clean_code  # type: ignore
-    ) -> discord.Message | None:
+    async def root_shell(self, ctx: commands.Context[types.Bot], *, script: clean_code):  # type: ignore
         if ctx.author.id in self.active_shell_sessions:
             return await send(ctx, "A shell session is already active, please close it before starting a new one.")
-        else:
-            self.active_shell_sessions.append(ctx.author.id)
+        self.active_shell_sessions.append(ctx.author.id)
         shell = ShellSession()
         with shell(script) as process:  # type: ignore
-            await send(ctx, shell.format_process(process).replace(Settings.PATH_TO_FILE, "~"), SigKill(process))
+            _, paginator = await send(
+                ctx,
+                shell.format_process(process).replace(Settings.PATH_TO_FILE, "~"),
+                SigKill(process),
+                forced_pagination=False,
+                paginator=None
+            )
+            shell.paginator = paginator
             await process.run_until_complete(ctx, first=True)
 
         def check(msg: discord.Message) -> bool:
@@ -307,12 +365,17 @@ class RootShell(Root):
                 self.active_shell_sessions.remove(ctx.author.id)
                 return await send(
                     ctx,
-                    shell.set_exit_message(f"Return code: `{process.close_code}`").replace(Settings.PATH_TO_FILE, "~")
+                    shell.set_exit_message(f"Return code: `{process.close_code}`").replace(Settings.PATH_TO_FILE, "~"),
+                    forced_pagination=False,
+                    paginator=shell.paginator
                 )
             with shell(message.content[len(shell.interface):].strip()) as process:
                 await process.run_until_complete(ctx)
         await send(
             ctx,
-            shell.set_exit_message(f"Return code: `{process.close_code}`").replace(Settings.PATH_TO_FILE, "~")
+            shell.set_exit_message(f"Return code: `{process.close_code}`").replace(Settings.PATH_TO_FILE, "~"),
+            forced_pagination=False,
+            paginator=shell.paginator
         )
         self.active_shell_sessions.remove(ctx.author.id)
+

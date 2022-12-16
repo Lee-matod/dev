@@ -16,7 +16,7 @@ import json
 import math
 from collections.abc import Iterable
 from copy import copy
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 import discord
 from discord.ext import commands
@@ -29,8 +29,6 @@ from dev.utils.baseclass import Root
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from discord.http import HTTPClient
-
     from dev import types
 
 
@@ -41,8 +39,6 @@ __all__ = (
     "send",
     "table_creator"
 )
-
-TypeT = TypeVar("TypeT", str, discord.Embed)
 
 
 def flag_parser(string: str, delimiter: str) -> dict[str, Any]:
@@ -133,17 +129,32 @@ def table_creator(rows: list[list[Any]], labels: list[str]) -> str:
     return "\n".join(table_str.split("\n")[:-2])
 
 
+@overload
 async def send(
         ctx: commands.Context[types.Bot],
         *args: types.MessageContent,
+        paginator: Paginator | Literal[None],
         **options: Any
-) -> discord.Message | None:
+) -> tuple[discord.Message, Paginator | None]:
+    ...
+
+
+@overload
+async def send(  # type: ignore
+        ctx: commands.Context[types.Bot],
+        *args: types.MessageContent,
+        **options: Any
+) -> discord.Message:
+    ...
+
+
+async def send(ctx: Any, *args: Any, paginator: Any = MISSING, **options: Any) -> Any:  # type: ignore
     """Evaluates how to safely send a Discord message.
 
-    `content`, `embed`, `embeds`, `file`, `files` and `view` are all positional arguments instead of keywords.
+    `content`, `embed`, `embeds`, `file`, `files`, `stickers` and `view` are all positional arguments.
     Everything else that is available in :meth:`commands.Context.send` remain as keyword arguments.
 
-    This function replaces the token of the bot with '[token]' and converts any instances of a virtual variable's
+    This replaces the token of the bot with '[token]' and converts any instances of a virtual variable's
     value back to its respective key.
 
     See Also
@@ -156,138 +167,130 @@ async def send(
         The invocation context in which the command was invoked.
     args: MessageContent
         Arguments that will be passed to :meth:`commands.Context.send`.
-        Embeds and files can be inside a list, tuple or set to send multiple of these types.
+        Embeds and files can be inside a container class to send multiple of these types.
     options:
         Keyword arguments that will be passed to :meth:`commands.Context.send`.
 
     Returns
     -------
-    Optional[:class:`discord.Message`]
-        The message that was sent. This does not include pagination messages.
+    Tuple[:class:`discord.Message`, Optional[:class:`Paginator`]]
+        The message that was sent and the paginator if `forced_pagination` was set to `False`.
 
     Raises
     ------
-    TypeError
-        A list, tuple or set contains more than one type.
+    IndexError
+        `content` exceeded the 2000-character limit, and `view` did not permit pagination to work due to the amount of
+        components it included.
     """
-    forced: bool = options.get("forced", False)
-    kwargs: dict[str, Any] = {}
+    forced: bool = options.pop("forced", False)
+    forced_pagination: bool = options.pop("forced_pagination", True)
+
+    ret_paginator: Paginator | None = None
+
     token = ctx.bot.http.token
     assert token is not None
-    for arg in args:
-        if isinstance(arg, discord.Embed):
-            arg = _embed_inspector(ctx.bot.http, arg)
-            return_type = _check_length(arg, 4096)
-            if isinstance(return_type, Paginator):
-                view = Interface(return_type, ctx.author.id)
-                arg.description = view.display_page
-                await ctx.send(embed=arg, view=view)
+
+    kwargs: dict[str, Any] = {}
+    pag_view: Interface | None = None
+    for item in args:
+        if isinstance(item, discord.File):
+            _try_add("files", _check_file(item, token), kwargs)
+        elif isinstance(item, discord.Embed):
+            _try_add("embeds", item, kwargs)
+        elif isinstance(item, (discord.GuildSticker, discord.StickerItem)):
+            _try_add("stickers", item, kwargs)
+        elif isinstance(item, discord.ui.View):
+            kwargs["view"] = item
+        elif isinstance(item, Iterable) and not isinstance(item, str):  # pyright: ignore [reportUnnecessaryIsInstance]
+            for i in item:  # type: ignore
+                if isinstance(i, discord.File):
+                    _try_add("files", _check_file(i, token), kwargs)
+                elif isinstance(i, discord.Embed):  # pyright: ignore [reportUnnecessaryIsInstance]
+                    _try_add("embeds", i, kwargs)
+                elif isinstance(i, (discord.GuildSticker, discord.StickerItem)):
+                    _try_add("stickers", i, kwargs)
+        else:
+            content = _revert_virtual_var_value(str(item)).replace(token, "[token]")
+            if paginator is not MISSING:
+                for line in content.split("\n"):
+                    paginator.add_line(line)
+                pag_view = Interface(paginator, ctx.author.id)
             else:
-                kwargs["embed"] = arg
-
-        elif isinstance(arg, discord.File):
-            string = _revert_virtual_var_value(
-                arg.fp.read().decode("utf-8").replace(token, "[token]")
-            ).encode("utf-8")
-            kwargs["file"] = discord.File(filename=arg.filename, fp=io.BytesIO(string))
-
-        elif isinstance(arg, Iterable) and not isinstance(arg, str):
-            inst_type: type | None = None
-            items: list[discord.Embed | discord.File] = []
-            for item in arg:
-                if isinstance(item, discord.File):
-                    if inst_type:
-                        if not isinstance(item, inst_type):  # pyright: ignore [reportUnnecessaryIsInstance]
-                            raise TypeError(
-                                f"Found multiple types inside a single {type(arg).__name__}. "
-                                f"Expected {inst_type.__name__} but received {type(item).__name__}"
-                            )
-                    inst_type = discord.File
-                    string = _revert_virtual_var_value(
-                        item.fp.read().decode("utf-8").replace(token, "[token]")
-                    ).encode("utf-8")
-                    items.append(discord.File(filename=item.filename, fp=io.BytesIO(string)))
-                elif isinstance(item, discord.Embed):  # pyright: ignore [reportUnnecessaryIsInstance]
-                    if inst_type:
-                        if not isinstance(item, inst_type):  # pyright: ignore [reportUnnecessaryIsInstance]
-                            raise TypeError(
-                                f"Found multiple types inside a single {type(arg).__name__}. "
-                                f"Expected {inst_type.__name__} but received {type(item).__name__}"
-                            )
-                    inst_type = discord.Embed
-                    item = _embed_inspector(ctx.bot.http, item)
-                    return_type = _check_length(item, 4096)
-                    if isinstance(return_type, Paginator):
-                        view = Interface(return_type, ctx.author.id)
-                        item.description = view.display_page
-                        await ctx.send(embed=item, view=view)
+                return_type = _check_length(content)
+                if isinstance(return_type, Paginator):
+                    pag_view = Interface(return_type, ctx.author.id)
+                    if forced_pagination:
+                        await ctx.send(pag_view.display_page, view=pag_view)
                     else:
-                        items.append(item)
-            if inst_type is not None:
-                kwargs[inst_type.__name__.lower() + "s"] = items
-
-        elif isinstance(arg, discord.ui.View):
-            kwargs["view"] = arg
-
-        else:
-            content = _revert_virtual_var_value(str(arg)).replace(token, "[token]")
-            return_type = _check_length(content)
-            if isinstance(return_type, Paginator):
-                view = Interface(return_type, ctx.author.id)
-                await ctx.send(view.display_page, view=view)
+                        ret_paginator = return_type
+                else:
+                    kwargs["content"] = content
+    kwargs.update(_check_kwargs(options))
+    view: discord.ui.View | None = kwargs.get("view")
+    if not forced_pagination and pag_view is not None:  # type: ignore
+        if view is not None:
+            if len(view.children) > 15:
+                raise IndexError(
+                    "Content exceeds character limit, but view attached does not permit pagination to work"
+                )
             else:
-                kwargs["content"] = content
-    if kwargs:
-        kwargs.update(
-            {
-                "delete_after": options.get("delete_after"),
-                "nonce": options.get("nonce"),
-                "allowed_mentions": options.get("allowed_mentions", discord.AllowedMentions.none()),
-                "reference": options.get("reference"),
-                "mention_author": options.get("mention_author"),
-                "stickers": options.get("stickers"),
-                "tts": options.get("tts", False),
-                "suppress_embeds": options.get("suppress_embeds", False)
-             }
-        )
-        if ctx.message.id in Root.cached_messages and not forced:
-            edit = {
-                "content": kwargs.get("content"),
-                "suppress": kwargs.get("suppress_embeds"),
-                "delete_after": kwargs.get("delete_after"),
-                "allowed_mentions": kwargs.get("allowed_mentions"),
-                "view": kwargs.get("view")
-            }
-            if embed := kwargs.get("embed"):
-                edit["embed"] = embed
-            elif embeds := kwargs.get("embeds"):
-                edit["embeds"] = embeds
-            else:
-                edit["embed"] = None
-            if file := kwargs.get("file"):
-                edit["attachments"] = [file]
-            elif files := kwargs.get("files"):
-                edit["attachments"] = files
-            else:
-                edit["attachments"] = []
-            try:
-                message = await Root.cached_messages[ctx.message.id].edit(**edit)
-            except discord.HTTPException:
-                message = await ctx.send(**kwargs)
-        else:
+                child: discord.ui.Item[discord.ui.View]
+                for idx, child in enumerate(view.children, start=1):
+                    child.row = idx % 5 + 1  # move after 'Quit' and pagination buttons
+                    pag_view.add_item(child)
+        kwargs["content"] = pag_view.display_page
+    if ctx.message.id in Root.cached_messages and not forced:
+        edit: dict[str, Any] = {
+            "content": kwargs.get("content", MISSING),
+            "embeds": kwargs.get("embeds", MISSING),
+            "attachments": kwargs.get("files", MISSING),
+            "suppress": kwargs.get("suppress_embeds", False),
+            "delete_after": kwargs.get("delete_after"),
+            "allowed_mentions": kwargs.get("allowed_mentions", MISSING),
+            "view": kwargs.get("view", MISSING)
+        }
+        if pag_view is not None and not forced_pagination:
+            edit["view"] = pag_view
+        try:
+            message = await Root.cached_messages[ctx.message.id].edit(**edit)
+        except discord.HTTPException:
             message = await ctx.send(**kwargs)
-        Root.cached_messages[ctx.message.id] = message
-        return message
+    else:
+        message = await ctx.send(**kwargs)
+    Root.cached_messages[ctx.message.id] = message
+    if paginator is not MISSING:
+        return message, ret_paginator
+    return message
 
 
+@overload
 async def interaction_response(
         interaction: discord.Interaction,
         response_type: InteractionResponseType,
-        *args: Sequence[
-                   discord.Embed | discord.File
-               ] | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | str,
+        *args: str | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | Sequence[Any],
+        paginator: Paginator | Literal[None],
+        **options: Any
+) -> Paginator | None:
+    ...
+
+
+@overload
+async def interaction_response(  # type: ignore
+        interaction: discord.Interaction,
+        response_type: InteractionResponseType,
+        *args: str | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | Sequence[Any],
         **options: Any
 ) -> None:
+    ...
+
+
+async def interaction_response(  # type: ignore
+        interaction: Any,
+        response_type: Any,
+        *args: Any,
+        paginator: Any = MISSING,
+        **options: Any
+) -> Any:
     """Evaluates how to safely respond to a Discord interaction.
 
     `content`, `embed`, `embeds`, `file`, `files`, `modal` and `view` can all be optionally passed as positional
@@ -298,8 +301,8 @@ async def interaction_response(
     This replaces the token of the bot with '[token]' and converts any instances of a virtual variable's value back to
     its respective key.
 
-    If a modal is passed to this function, and `response_type` is set to `InteractionResponseType.MODAL`, no other
-    arguments should be passed as this will raise a TypeError.
+    If the response type is set to :class:`InteractionResponseType.MODAL`, then the first argument passed to `args`
+    should be the modal that should be sent.
 
     See Also
     --------
@@ -309,11 +312,11 @@ async def interaction_response(
     ----------
     interaction: :class:`discord.Interaction`
         The interaction that should be responded to.
-    response_type: :class:`InteractionResponseType`
+    response_type: :enum:`InteractionResponseType`
         The type of response that will be used to respond to the interaction. :meth:`discord.InteractionResponse.defer`
         isn't included.
     args: Union[
-        Sequence[Union[:class:`discord.Embed`, :class:`discord.File`]],
+        Sequence[Any],
         :class:`discord.Embed`,
         :class:`discord.File`,
         :class:`discord.ui.View`,
@@ -327,115 +330,100 @@ async def interaction_response(
         Keyword arguments that will be passed to :meth:`discord.InteractionResponse.send_message` or
         :meth:`discord.InteractionResponse.edit_message`.
 
+    Returns
+    -------
+    Optional[:class:`Paginator`]
+        The paginator that is being used in the first message if `forced_paginator` was set to `False` and the function
+        decided to enable pagination for the response.
+
     Raises
     ------
+    ValueError
+        `response_type` was set to `MODAL`, but the first argument of `args` was not the modal.
     TypeError
-        Multiple arguments were passed when `response_type` was selected to `MODAL`.
-        A list, tuple or set contains more than one type.
+        An invalid response type was passed.
+    IndexError
+        `content` exceeded the 2000-character limit, and `view` did not permit pagination to work due to the amount of
+        components it included.
     """
-    token = interaction.client.http.token
-    assert token is not None
     if response_type is InteractionResponseType.SEND:
         method = interaction.response.send_message
     elif response_type is InteractionResponseType.EDIT:
         method = interaction.response.edit_message
     elif response_type is InteractionResponseType.MODAL:
-        if tuple(map(type, args)) != (discord.ui.Modal,):
-            raise TypeError("discord.ui.Modal should be the only argument passed to the function")
-        modal: discord.ui.Modal = args[0]  # type: ignore
-        #  just making sure
-        modal.title.replace(token, "[token]")
-        for children in modal.children:
-            children.label.replace(token, "[token]")  # type: ignore
-            if children.default is not None:  # type: ignore
-                children.default.replace(token, "[token]")  # type: ignore
-            if children.placeholder is not None:  # type: ignore
-                children.placeholder.replace(token, "[token]")  # type:ignore
-        return await interaction.response.send_modal(modal)
+        if not isinstance(args[0], discord.ui.Modal):
+            raise ValueError(f"Expected type {discord.ui.Modal} at index 0 but received {type(args[0])} instead")
+        return await interaction.response.send_modal(args[0])
     else:
         raise TypeError("Invalid response type")
-    kwargs = _check_kwargs(options)
-    paginators: list[dict[str, Any]] = []
-    for arg in args:
-        if isinstance(arg, discord.Embed):
-            arg = _embed_inspector(interaction.client.http, arg)
-            return_type = _check_length(arg, 4096)
-            if isinstance(return_type, Paginator):
-                view = Interface(return_type, interaction.user.id)
-                arg.description = view.display_page
-                paginators.append(({"embed": arg, "view": view}))
-            else:
-                kwargs["embed"] = arg
 
-        elif isinstance(arg, discord.File):
-            string = _revert_virtual_var_value(
-                arg.fp.read().decode("utf-8").replace(token, "[token]")
-            ).encode("utf-8")
-            kwargs["file"] = discord.File(filename=arg.filename, fp=io.BytesIO(string))
+    ret_paginator: Paginator | None = None
+    token = interaction.client.http.token
+    assert token is not None
 
-        elif isinstance(arg, (list, set, tuple)):
-            inst_type: type | None = None
-            items: list[discord.Embed | discord.File] = []
-            for item in arg:
-                if isinstance(item, discord.File):
-                    if inst_type:
-                        if not isinstance(item, inst_type):  # pyright: ignore [reportUnnecessaryIsInstance]
-                            raise TypeError(
-                                f"Found multiple types inside a single {type(arg).__name__}. "
-                                f"Expected {inst_type.__name__} but received {type(item).__name__}"
-                            )
-                    inst_type = discord.File
-                    string = _revert_virtual_var_value(
-                        item.fp.read().decode("utf-8").replace(token, "[token]")
-                    ).encode("utf-8")
-                    items.append(discord.File(filename=item.filename, fp=io.BytesIO(string)))
-                elif isinstance(item, discord.Embed):  # pyright: ignore [reportUnnecessaryIsInstance]
-                    if inst_type:
-                        if not isinstance(item, inst_type):  # pyright: ignore [reportUnnecessaryIsInstance]
-                            raise TypeError(
-                                f"Found multiple types inside a {type(arg).__name__}. "
-                                f"Expected {inst_type.__name__} but received {type(item).__name__}"
-                            )
-                    inst_type = discord.Embed
-                    item = _embed_inspector(interaction.client.http, item)
-                    return_type = _check_length(item, 4096)
-                    if isinstance(return_type, Paginator):
-                        view = Interface(return_type, interaction.user.id)
-                        item.description = view.display_page
-                        paginators.append(({"embed": item, "view": view}))
-                    else:
-                        items.append(item)
-            if inst_type is not None:
-                kwargs[inst_type.__name__.lower() + "s"] = items
+    forced_pagination: bool = options.pop("forced_paginator", True)
+    paginators: list[Interface] = []
 
-        elif isinstance(arg, discord.ui.View):
-            kwargs["view"] = arg
-
+    kwargs: dict[str, Any] = {}
+    pag_view: Interface | None = None
+    for item in args:
+        if isinstance(item, discord.File):
+            _try_add("files", _check_file(item, token), kwargs)
+        elif isinstance(item, discord.Embed):
+            _try_add("embeds", item, kwargs)
+        elif isinstance(item, discord.ui.View):
+            kwargs["view"] = item
+        elif isinstance(item, Iterable) and not isinstance(item, str):  # pyright: ignore [reportUnnecessaryIsInstance]
+            for i in item:  # type: ignore
+                if isinstance(i, discord.File):
+                    _try_add("files", _check_file(i, token), kwargs)
+                elif isinstance(i, discord.Embed):
+                    _try_add("embeds", i, kwargs)
         else:
-            content = _revert_virtual_var_value(str(arg)).replace(token, "[token]")
-            return_type = _check_length(content)
-            if isinstance(return_type, Paginator):
-                view = Interface(return_type, interaction.user.id)
-                paginators.append(({"content": view.display_page, "view": view}))
+            content = _revert_virtual_var_value(str(item)).replace(token, "[token]")
+            if paginator is not MISSING:
+                for line in content.splitlines():
+                    paginator.add_line(line)
+                pag_view = Interface(paginator, interaction.user.id)
             else:
-                kwargs["content"] = content
-    responded = False
-    if kwargs:
-        kwargs.update(allowed_mentions=options.get("allowed_mentions", discord.AllowedMentions.none()))
-        if response_type is InteractionResponseType.SEND:
-            kwargs.update(
-                ephemeral=options.get("ephemeral", False),
-                tts=options.get("tts", False),
-                suppress_embeds=options.get("suppress_embeds", False)
-            )
-        await method(**kwargs)
-        responded = True
-    if paginators:
-        if not responded:
-            await interaction.response.send_message(**paginators[0])
-            del paginators[0]
-        for pag in paginators:
-            await interaction.followup.send(**pag)
+                return_type = _check_length(content)
+                if isinstance(return_type, Paginator):
+                    pag_view = Interface(return_type, interaction.user.id)
+                    if forced_pagination:
+                        paginators.append(pag_view)
+                    else:
+                        ret_paginator = return_type
+                else:
+                    kwargs["content"] = content
+
+    kwargs = _check_kwargs(kwargs)
+    view: discord.ui.View | None = kwargs.get("view")
+    if (
+            view is not None
+            and len(view.children) <= 15
+            and not forced_pagination
+            and pag_view is not None
+    ):
+        child: discord.ui.Item[discord.ui.View]
+        for idx, child in enumerate(view.children, start=1):
+            child.row = idx % 5 + 1  # move after 'Quit' and pagination buttons
+            pag_view.add_item(child)
+    elif view is not None and len(view.children) < 15 and not forced_pagination and pag_view is not None:
+        raise IndexError("Content exceeds character limit, but view attached does not permit pagination to work")
+
+    kwargs.update(allowed_mentions=options.get("allowed_mentions", discord.AllowedMentions.none()))
+    if response_type is InteractionResponseType.SEND:
+        kwargs.update(
+            ephemeral=options.get("ephemeral", False),
+            tts=options.get("tts", False),
+            suppress_embeds=options.get("suppress_embeds", False),
+            delete_after=options.get("delete_after")
+        )
+    await method(**kwargs)
+    for pag in paginators:
+        await interaction.followup.send(pag.display_page, view=pag)
+    if paginator is not MISSING:
+        return ret_paginator
 
 
 async def generate_ctx(ctx: commands.Context[types.Bot], **kwargs: Any) -> commands.Context[types.Bot]:
@@ -458,71 +446,42 @@ async def generate_ctx(ctx: commands.Context[types.Bot], **kwargs: Any) -> comma
     return await ctx.bot.get_context(alt_msg, cls=type(ctx))
 
 
-def _embed_inspector(http: HTTPClient, embed: discord.Embed) -> discord.Embed:
-    assert http.token is not None
-    if embed.title:
-        embed.title = _revert_virtual_var_value(embed.title).replace(http.token, "[token]")
-    if embed.description:
-        if embed.description.startswith("```") and embed.description.endswith("```"):
-            embed.description = embed.description.split("\n")[0] + "\n" + _revert_virtual_var_value(
-                "\n".join(embed.description.split("\n")[1:-1])
-            ).replace(http.token, "[token]").replace("``", "`\u200b`") + "```"
-        else:
-            embed.description = _revert_virtual_var_value(embed.description).replace(http.token, "[token]")
-    if embed.author.name is not None:
-        embed.author.name = _revert_virtual_var_value(embed.author.name).replace(http.token, "[token]")
-    if embed.footer.text is not None:
-        embed.footer.text = _revert_virtual_var_value(embed.footer.text).replace(http.token, "[token]")
-    if embed.fields:
-        for field in embed.fields:
-            assert field.name is not None and field.value is not None
-            field.name = _revert_virtual_var_value(field.name).replace(http.token, "[token]")
-            if field.value.startswith("```") and field.value.endswith("```"):
-                field.value = field.value.split("\n")[0] + "\n" + _revert_virtual_var_value(  # type: ignore
-                    "\n".join(field.value.split("\n")[1:-1])
-                ).replace(http.token, "[token]").replace("``", "`\u200b`") + "```"
-            else:
-                field.value = _revert_virtual_var_value(field.value).replace(http.token, "[token]")
-    return embed
-
-
 def _check_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
     _kwargs = {
         "content": kwargs.pop("content", MISSING),
-        "embed": kwargs.get("embed", MISSING),
+        "stickers": kwargs.pop("stickers", MISSING),
         "embeds": kwargs.get("embeds", MISSING),
-        "file": kwargs.get("file", MISSING),
         "files": kwargs.get("files", MISSING),
         "view": kwargs.get("view", MISSING)
     }
     return {k: v for k, v in _kwargs.items() if v is not MISSING}
 
 
-def _check_length(content: TypeT, max_length: int = 2000) -> Paginator[TypeT] | TypeT:
-    if len(content) > max_length:
+def _try_add(key: str, value: Any, dictionary: dict[str, Any]) -> None:
+    try:
+        dictionary[key].append(value)
+    except KeyError:
+        dictionary[key] = value
+
+
+def _check_file(file: discord.File, token: str, /) -> discord.File:
+    string = _revert_virtual_var_value(
+        file.fp.read().decode("utf-8").replace(token, "[token]")
+    ).encode("utf-8")
+    return discord.File(io.BytesIO(string), file.filename, spoiler=file.spoiler, description=file.description)
+
+
+def _check_length(content: str) -> Paginator | str:
+    if len(content) > 2000:
         highlight_lang = ""
-        if isinstance(content, discord.Embed):
-            if content.description is None:
-                raise TypeError(
-                    "Support for pagination in fields other than the description are not supported for embeds"
-                )
-            string = content.description
-            if string.startswith("```") and string.endswith("```"):
-                highlight_lang = string.split("\n")[0].removeprefix("```")
-                string = "\n".join(content.description.split("\n")[1:-1])
-            paginator = Paginator(content, prefix=f"```{highlight_lang}", max_size=max_length)
-            for line in string.split("\n"):
-                paginator.add_line(line.replace("``", "`\u200b`"))
-            return paginator
-        else:
-            string = content
-            if content.startswith("```") and content.endswith("```"):
-                highlight_lang = content.split("\n")[0].removeprefix("```")
-                string = "\n".join(content.split("\n")[1:-1])
-            paginator = Paginator(content, prefix=f"```{highlight_lang}", max_size=max_length)
-            for line in string.split("\n"):
-                paginator.add_line(line.replace("``", "`\u200b`"))
-            return paginator
+        string = content
+        if content.startswith("```") and content.endswith("```"):
+            highlight_lang = content.split("\n")[0].removeprefix("```")
+            string = "\n".join(content.split("\n")[1:]).removesuffix("```")
+        paginator = Paginator(prefix=f"```{highlight_lang}")
+        for line in string.split("\n"):
+            paginator.add_line(line.replace("``", "`\u200b`"))
+        return paginator
     return content
 
 
@@ -533,3 +492,4 @@ def _revert_virtual_var_value(string: str) -> str:
     for name, value in Root.scope.locals.items():
         string = string.replace(value, name)
     return string
+
