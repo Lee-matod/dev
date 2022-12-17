@@ -460,7 +460,7 @@ def _check_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in _kwargs.items() if v is not MISSING}
 
 
-def _try_add(key: str, value: T, dictionary: dict[str, T]) -> None:
+def _try_add(key: str, value: T, dictionary: dict[str, list[T]]) -> None:
     try:
         dictionary[key].append(value)
     except KeyError:
