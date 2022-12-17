@@ -16,7 +16,7 @@ import json
 import math
 from collections.abc import Iterable
 from copy import copy
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import discord
 from discord.ext import commands
@@ -30,6 +30,9 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from dev import types
+
+
+T = TypeVar("T")
 
 
 __all__ = (
@@ -457,11 +460,11 @@ def _check_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in _kwargs.items() if v is not MISSING}
 
 
-def _try_add(key: str, value: Any, dictionary: dict[str, Any]) -> None:
+def _try_add(key: str, value: T, dictionary: dict[str, T]) -> None:
     try:
         dictionary[key].append(value)
     except KeyError:
-        dictionary[key] = value
+        dictionary[key] = [value]
 
 
 def _check_file(file: discord.File, token: str, /) -> discord.File:
