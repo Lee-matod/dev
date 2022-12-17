@@ -468,9 +468,12 @@ def _try_add(key: str, value: T, dictionary: dict[str, list[T]]) -> None:
 
 
 def _check_file(file: discord.File, token: str, /) -> discord.File:
-    string = _revert_virtual_var_value(
-        file.fp.read().decode("utf-8").replace(token, "[token]")
-    ).encode("utf-8")
+    try:
+        string = _revert_virtual_var_value(
+            file.fp.read().decode("utf-8").replace(token, "[token]")
+        ).encode("utf-8")
+    except UnicodeDecodeError:
+        return file
     return discord.File(io.BytesIO(string), file.filename, spoiler=file.spoiler, description=file.description)
 
 
