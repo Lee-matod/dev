@@ -214,7 +214,7 @@ async def send(ctx: Any, *args: Any, paginator: Any = MISSING, **options: Any) -
                     _try_add("stickers", i, kwargs)
         else:
             content = _revert_virtual_var_value(str(item)).replace(token, "[token]")
-            if paginator is not MISSING:
+            if paginator is not MISSING and paginator is not None:
                 for line in content.split("\n"):
                     paginator.add_line(line)
                 pag_view = Interface(paginator, ctx.author.id)
@@ -384,7 +384,7 @@ async def interaction_response(  # type: ignore
                     _try_add("embeds", i, kwargs)
         else:
             content = _revert_virtual_var_value(str(item)).replace(token, "[token]")
-            if paginator is not MISSING:
+            if paginator is not MISSING and paginator is not None:
                 for line in content.splitlines():
                     paginator.add_line(line)
                 pag_view = Interface(paginator, interaction.user.id)
