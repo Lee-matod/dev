@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import inspect
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable, Coroutine
+from typing import TYPE_CHECKING, Any, Literal, Callable, Coroutine, overload
 
 from dev.types import ManagementOperation, Over, OverType
 
@@ -63,7 +63,21 @@ class BaseRegistration:
 
 
 class ManagementRegistration(BaseRegistration):
-    def __init__(self, directory: str, operation_type: ManagementOperation, other: str | None = None) -> None:
+    @overload
+    def __init__(self, directory: str, operation_type: Literal[ManagementOperation.RENAME], other: str) -> None:
+        ...
+
+    @overload
+    def __init__(
+            self,
+            directory: str,
+            operation_type: Literal[ManagementOperation.CREATE] |
+                            Literal[ManagementOperation.EDIT] |
+                            Literal[ManagementOperation.DELETE]
+    ):
+        ...
+
+    def __init__(self, directory: Any, operation_type: Any, other: Any = None) -> None:
         super().__init__()
         self.directory: str = directory
         self.operation_type: ManagementOperation = operation_type
