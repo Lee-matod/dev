@@ -117,17 +117,17 @@ def table_creator(rows: list[list[Any]], labels: list[str]) -> str:
         table[0][id_lab].append(num)
         table[1][type_lab].append(_type)
         table[2][desc_lab].append(desc)
-    table_str += "  │  ".join(list(label.keys())[0] for label in table)
+    table_str += "  \u2502  ".join(list(label.keys())[0] for label in table)
     length = ""
     for char in table_str:
-        if char == "│":
-            length += "┼"
+        if char == "\u2502":
+            length += "\u253c"
         else:
-            length += "─"
+            length += "\u2500"
     table_str += f"\n{length}\n"
     for row in rows:
         num = f"{' ' * (3 - len(str(row[0])))}{str(row[0])}"
-        table_str += "  │  ".join([num, row[1], row[2]])
+        table_str += "  \u2502  ".join([num, row[1], row[2]])
         table_str += f"\n{length}\n"
     return "\n".join(table_str.split("\n")[:-2])
 

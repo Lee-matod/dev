@@ -84,8 +84,8 @@ class RootVariables(Root):
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             glob, loc = Root.scope.keys()
             if name not in [*glob, *loc]:
-                return await ctx.message.add_reaction("❌")
-            await ctx.message.add_reaction("☑")
+                return await ctx.message.add_reaction("\u274c")
+            await ctx.message.add_reaction("\u2611")
 
         elif mode in ["content", "value"]:  # pyright: ignore [reportUnnecessaryContains]
             if name is None:

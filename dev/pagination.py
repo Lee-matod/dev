@@ -194,12 +194,12 @@ class Interface(discord.ui.View):
             self.last_page.disabled = False
             self.next_page.disabled = False
 
-    @discord.ui.button(label="≪")
+    @discord.ui.button(label="\u226a")
     async def first_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page = 1
         await interaction.response.edit_message(**self.paginator.to_dict(self.display_page), view=self)
 
-    @discord.ui.button(label="◀", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="\u25c0", style=discord.ButtonStyle.blurple)
     async def previous_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page -= 1
         await interaction.response.edit_message(**self.paginator.to_dict(self.display_page), view=self)
@@ -208,12 +208,12 @@ class Interface(discord.ui.View):
     async def current(self, interaction: discord.Interaction, _) -> None:
         await interaction.response.send_modal(_PageSetter(self))
 
-    @discord.ui.button(label="▶", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="\u25b6", style=discord.ButtonStyle.blurple)
     async def next_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page += 1
         await interaction.response.edit_message(**self.paginator.to_dict(self.display_page), view=self)
 
-    @discord.ui.button(label="≫")
+    @discord.ui.button(label="\u226b")
     async def last_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page = len(self.paginator.pages)
         await interaction.response.edit_message(**self.paginator.to_dict(self.display_page), view=self)

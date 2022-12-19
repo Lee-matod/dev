@@ -235,7 +235,7 @@ class SyntheticInteraction:
             # The bot did not respond to the interaction, so we have to somehow tell the user that it took too long.
             # By this time, the interaction would become unknown, so we have to simulate that too
             self._unknown_interaction = True
-            await self._context.message.add_reaction("❗")
+            await self._context.message.add_reaction("\u2757")
 
     @property  # type: ignore
     def __class__(self) -> type[discord.Interaction]:

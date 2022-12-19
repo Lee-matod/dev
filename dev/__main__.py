@@ -76,7 +76,7 @@ class RootCommand(Root):
         """Exit the whole code at once. Note that this may cause issues.
         This uses the :meth:`exit` method, so beware!
         """
-        await ctx.message.add_reaction("👋")
+        await ctx.message.add_reaction("\U0001f44b")
         exit()
 
     @root.command(name="visibility", parent="dev")
@@ -90,7 +90,7 @@ class RootCommand(Root):
             if root_command.hidden:
                 return await send(ctx, "`dev` is already hidden.")
             root_command.hidden = True
-            await ctx.message.add_reaction("☑")
+            await ctx.message.add_reaction("\u2502")
         elif toggle is None:
             translate = {True: "hidden", False: "visible"}
             await send(ctx, f"`dev` is currently {translate.get(root_command.hidden)}.")
@@ -98,7 +98,7 @@ class RootCommand(Root):
             if not root_command.hidden:
                 return await send(ctx, "`dev` is already visible.")
             root_command.hidden = False
-            await ctx.message.add_reaction("☑")
+            await ctx.message.add_reaction("\u2502")
 
     @root_.error
     async def root_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError):

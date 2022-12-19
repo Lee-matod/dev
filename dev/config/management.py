@@ -234,7 +234,7 @@ class RootManagement(Root):
                 await ctx.message.add_reaction("☑")
             await send(
                 ctx,
-                f":warning: The directory that you specified is not empty. "
+                f"\u26a0 The directory that you specified is not empty. "
                 f"Deleting it will delete all files and folders inside it. Do you want to proceed?",
                 BoolInput(ctx.author, func)
             )

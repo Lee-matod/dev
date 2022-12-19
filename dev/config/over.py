@@ -70,7 +70,7 @@ class RootOver(Root):
         self.update_register(override, Over.DELETE)
         command: types.Command = self.bot.get_command(override.qualified_name)  # type: ignore
         command.callback = self.match_register_command(override.qualified_name)[-1].callback
-        await ctx.message.add_reaction("☑")
+        await ctx.message.add_reaction("\u2611")
 
     @root.command(name="changes", parent="dev override")
     async def root_override_changes(self, ctx: commands.Context[types.Bot], index1: int = 0, index2: int | None = None):
@@ -354,14 +354,14 @@ class RootOver(Root):
                     read_lines[line] = ""
             with open(directory, "w") as f:
                 f.writelines(read_lines)
-            await ctx.message.add_reaction("☑")
+            await ctx.message.add_reaction("\u2611")
 
         elif overwrite.over_type is OverType.SETTING:
             assert isinstance(overwrite, SettingRegistration)
             for module, option in overwrite.defaults.items():
                 setattr(Settings, module, option)
             self.update_register(overwrite, Over.DELETE)
-            await ctx.message.add_reaction("☑")
+            await ctx.message.add_reaction("\u2611")
 
     @root.command(
         name="command",
@@ -445,7 +445,7 @@ class RootOver(Root):
         with open(directory, "w") as f:
             f.writelines(read_lines)
         self.update_register(CommandRegistration(command, Over.OVERWRITE, source=code), Over.ADD)
-        await ctx.message.add_reaction("☑")
+        await ctx.message.add_reaction("\u2611")
 
     @root.command(name="setting", parent="dev overwrite", aliases=["settings"])
     async def root_overwrite_setting(self, ctx: commands.Context[types.Bot], *, settings: str | None = None):

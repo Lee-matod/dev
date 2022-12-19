@@ -102,7 +102,7 @@ class RootInvoke(Root):
             handler.cleanup()
             await send(ctx, embeds)
         else:
-            await ctx.message.add_reaction("☑")
+            await ctx.message.add_reaction("\u2611")
 
     @root.command(name="execute", parent="dev", aliases=["exec", "execute!", "exec!"], require_var_positional=True)
     async def root_execute(

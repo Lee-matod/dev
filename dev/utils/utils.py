@@ -57,7 +57,7 @@ def codeblock_wrapper(content: str, highlight_language: str = "", /) -> str:
 
     See Also
     --------
-    https://highlightjs.org/ a list of supported highlights that Discord uses.
+    https://highlightjs.org/
 
     Parameters
     ----------

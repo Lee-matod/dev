@@ -48,7 +48,7 @@ class TimedInfo:
             raise ValueError("Timeout cannot be None")
         await asyncio.sleep(timeout)
         if self.end is None:
-            await message.add_reaction("⏰")
+            await message.add_reaction("\u23f0")
 
 
 class GlobalLocals:
@@ -246,15 +246,15 @@ class ExceptionHandler:
         if exc_val is None:
             if not self.debug:
                 with contextlib.suppress(discord.NotFound):
-                    await self.message.add_reaction("☑")
+                    await self.message.add_reaction("\u2611")
             return False
         with contextlib.suppress(discord.NotFound):
             if isinstance(exc_val, (EOFError, IndentationError, SyntaxError)):
-                await self.message.add_reaction("💢")
+                await self.message.add_reaction("\U0001f4a2")
             elif isinstance(exc_val, (TimeoutError, asyncio.TimeoutError)):
-                await self.message.add_reaction("⏰")
+                await self.message.add_reaction("\u23f0")
             elif isinstance(exc_val, (AssertionError, ImportError, NameError, UnboundLocalError)):
-                await self.message.add_reaction("❓")
+                await self.message.add_reaction("\u2753")
             elif isinstance(
                     exc_val,
                     (
@@ -270,11 +270,11 @@ class ExceptionHandler:
                 if isinstance(exc_val, commands.CommandInvokeError):
                     exc_val = getattr(exc_val, "original", exc_val)
                     exc_tb = exc_val.__traceback__
-                await self.message.add_reaction("❗")
+                await self.message.add_reaction("\u2757")
             elif isinstance(exc_val, ArithmeticError):
-                await self.message.add_reaction("⁉")
+                await self.message.add_reaction("\u2049")
             else:  # error doesn't fall under any other category
-                await self.message.add_reaction("‼")
+                await self.message.add_reaction("\u203c")
         if self.on_error:
             if inspect.iscoroutinefunction(self.on_error):
                 await self.on_error()

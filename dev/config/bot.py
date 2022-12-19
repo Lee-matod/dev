@@ -122,8 +122,8 @@ class RootBot(Root):
                 except commands.ExtensionError as e:
                     unsuccessful.append(f"{ext} ‒ {e}")
             end = time.perf_counter()
-            reloaded_cogs = ("☑ " + "\n☑ ".join(successful) if successful else "") + \
-                            ("\n❌ " + "\n❌ ".join(unsuccessful) if unsuccessful else "")
+            reloaded_cogs = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + \
+                            ("\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else "")
             embed = discord.Embed(
                 title=f"Reloaded {plural(len(successful), 'Cog')}",
                 description=reloaded_cogs.strip("\n"),
@@ -142,8 +142,8 @@ class RootBot(Root):
             except commands.ExtensionError as e:
                 unsuccessful.append(f"{cog} ‒ {e}")
         end = time.perf_counter()
-        reloaded_cogs = ("☑ " + "\n☑ ".join(successful) if successful else "") + \
-                        ("❌ " + "\n❌ ".join(unsuccessful) if unsuccessful else '')
+        reloaded_cogs = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + \
+                        ("\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else '')
         embed = discord.Embed(
             title=f"Reloaded {plural(len(successful), 'Cog')}",
             description=reloaded_cogs,
@@ -163,7 +163,7 @@ class RootBot(Root):
         if command.enabled:
             return await send(ctx, f"Command `{command_name}` is already enabled.")
         command.enabled = True
-        await ctx.message.add_reaction("☑")
+        await ctx.message.add_reaction("\u2611")
 
     @root.command(name="disable", parent="dev bot", require_var_positional=True)
     async def root_bot_disable(self, ctx: commands.Context[types.Bot], *, command_name: str):
@@ -178,12 +178,12 @@ class RootBot(Root):
         elif not command.enabled:
             return await send(ctx, f"Command `{command_name}` is already disabled.")
         command.enabled = False
-        await ctx.message.add_reaction("☑")
+        await ctx.message.add_reaction("\u2611")
 
     @root.command(name="close", parent="dev bot")
     async def root_bot_close(self, ctx: commands.Context[types.Bot]):
         """Close the bot."""
-        await ctx.message.add_reaction("👋")
+        await ctx.message.add_reaction("\U0001f44b")
         await self.bot.close()
 
     @root_bot.error
