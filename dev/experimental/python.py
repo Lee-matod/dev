@@ -11,16 +11,16 @@ Direct evaluation or execution of Python code.
 """
 from __future__ import annotations
 
-import ast
-import inspect
 import io
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 import discord
 from discord.ext import commands
 
 from dev.handlers import ExceptionHandler, GlobalLocals, replace_vars
+from dev.interpreters import Execute
+
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
@@ -28,59 +28,6 @@ from dev.utils.utils import clean_code, codeblock_wrapper
 
 if TYPE_CHECKING:
     from dev import types
-
-
-CODE_TEMPLATE = """
-async def _executor({0}):
-    import asyncio
-
-    import discord
-    from discord.ext import commands
-
-    import dev
-
-    try:
-        pass
-    finally:
-        _self_variables.update(locals())
-    """
-
-
-class Execute:
-    def __init__(self, code: str, global_locals: GlobalLocals, args: dict[str, Any]) -> None:
-        self.args_name = ["_self_variables", *args.keys()]
-        self.args_value = [global_locals, *args.values()]
-        self.code = code
-        self.vars = global_locals
-
-    async def __aiter__(self) -> AsyncGenerator[Any, Any]:
-        exec(compile(self.wrapper(), "<func>", "exec"), self.vars.globals, self.vars.locals)
-        func = self.vars.get("_executor")
-        if inspect.isasyncgenfunction(func):
-            async for result in func(*self.args_value):
-                yield result
-        else:
-            yield await func(*self.args_value)
-
-    def wrapper(self) -> ast.Module:
-        code = ast.parse(self.code)
-        function: ast.Module = ast.parse(CODE_TEMPLATE.format(", ".join(self.args_name)))
-        function.body[-1].body[-1].body.extend(code.body)  # type: ignore
-        ast.fix_missing_locations(function)
-        ast.NodeTransformer().generic_visit(function.body[-1].body[-1])  # type: ignore
-        expressions: list[ast.stmt] = function.body[-1].body[-1].body  # type: ignore
-
-        for index, expr in enumerate(reversed(expressions), start=1):
-            if not isinstance(expr, ast.Expr):
-                return function
-
-            if not isinstance(expr.value, ast.Yield):
-                yield_stmt = ast.Yield(expr.value)
-                ast.copy_location(yield_stmt, expr)  # type: ignore
-                yield_expr = ast.Expr(yield_stmt)
-                ast.copy_location(yield_expr, expr)  # type: ignore
-                function.body[-1].body[-1].body[-index] = yield_expr  # type: ignore
-        return function
 
 
 class RootPython(Root):
