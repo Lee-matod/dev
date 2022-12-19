@@ -15,14 +15,11 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 from discord.ext import commands
 
-from dev.utils.utils import clean_code
-
 if TYPE_CHECKING:
     from dev import types
 
 
 __all__ = (
-    "__previous__",
     "CodeblockConverter",
     "str_bool",
     "str_ints",
@@ -158,27 +155,6 @@ class CodeblockConverter(commands.Converter[tuple[Optional[str], Optional[str]]]
         elif start is not False and not argument.endswith("```"):
             arguments = argument
         return arguments.strip() or None, codeblock
-
-
-async def __previous__(ctx: commands.Context[types.Bot], command_name: str, arg: str, /) -> str:
-    previous = "__previous__"
-    if "__previous__" in arg:
-        skip = 0  # if we don't do this, then ctx.message would be the first message and would probably break everything
-        async for message in ctx.message.channel.history(limit=25):
-            if skip:
-                if message.author == ctx.author:
-                    if message.content.startswith(f"{ctx.prefix}{command_name}"):
-                        previous = previous.replace(
-                            "__previous__",
-                            clean_code(message.content.lstrip(f"{ctx.prefix}{command_name}").strip())
-                        )
-                    if "__previous__" not in previous:
-                        # No need to continue iterating through messages
-                        # if '__previous__' isn't requested anymore
-                        break
-            else:
-                skip += 1
-    return arg.replace("__previous__", previous)
 
 
 def str_ints(content: str) -> list[int]:

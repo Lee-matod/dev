@@ -20,9 +20,7 @@ from typing import TYPE_CHECKING, Any, AsyncGenerator
 import discord
 from discord.ext import commands
 
-from dev.converters import __previous__
 from dev.handlers import ExceptionHandler, GlobalLocals, replace_vars
-
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
@@ -153,11 +151,7 @@ class RootPython(Root):
             # if 'file' is passed within the method.
             "print": lambda *a, **kw: print(*a, **kw, file=kw.pop("file", stdout))  # type: ignore
         }
-        code = await __previous__(
-            ctx,
-            f"{' '.join(ctx.invoked_parents)} {ctx.invoked_with}",
-            clean_code(replace_vars(code.replace("|root|", Settings.ROOT_FOLDER), Root.scope))
-        )
+        code = clean_code(replace_vars(code.replace("|root|", Settings.ROOT_FOLDER), Root.scope))
 
         async with ExceptionHandler(ctx.message):
             async for expr in Execute(code, self.inst, args):
