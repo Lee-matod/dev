@@ -70,7 +70,7 @@ class RootManagement(Root):
         aliases=["upload", "mkdir", "create"],
         usage="<folder>"
     )
-    async def root_explorer_new(self, ctx: commands.Context[types.Bot], *, folder: str = ""):
+    async def root_explorer_new(self, ctx: commands.Context[types.Bot], *, folder: str | None = None):
         """Create an empty file/directory or upload a series of files.
         If `directory` is None, then it will be set to the current working directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
@@ -144,12 +144,7 @@ class RootManagement(Root):
         await ctx.message.add_reaction("☑")
 
     @root.command(name="rename", parent="dev explorer", root_placeholder=True)
-    async def root_explorer_rename(
-            self,
-            ctx: commands.Context[types.Bot],
-            old_name: str,
-            new_name: str
-    ):
+    async def root_explorer_rename(self, ctx: commands.Context[types.Bot], old_name: str, new_name: str):
         """Rename an existing file or directory.
         By default, the new path will be relative to the old path. Use `?` at the beginning of `new_name` to ignore this
         behavior and use the current working directory instead.
