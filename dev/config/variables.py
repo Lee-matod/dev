@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-import discord
 from discord.ext import commands
 
 from dev.converters import LiteralModes
@@ -37,7 +36,7 @@ class RootVariables(Root):
             ],
             *,
             name: str | None = None
-    ) -> discord.Message | None:
+    ):
         """A virtual scope manager.
         This allows you to create temporary variables that can later be used as placeholder texts.
         Note that all variables created using this manager will later be destroyed once the bot restarts.

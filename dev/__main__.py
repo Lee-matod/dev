@@ -15,7 +15,7 @@ import importlib.metadata
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 import psutil
@@ -80,7 +80,7 @@ class RootCommand(Root):
         exit()
 
     @root.command(name="visibility", parent="dev")
-    async def root_visibility(self, ctx: commands.Context[types.Bot], toggle: Optional[bool] = None) -> Optional[discord.Message]:
+    async def root_visibility(self, ctx: commands.Context[types.Bot], toggle: bool | None = None):
         """Toggle whether the dev command is hidden.
         Pass no arguments to check current status
         """
@@ -101,7 +101,7 @@ class RootCommand(Root):
             await ctx.message.add_reaction("☑")
 
     @root_.error
-    async def root_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError) -> Optional[discord.Message]:
+    async def root_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError):
         if isinstance(exception, commands.TooManyArguments):
             assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(

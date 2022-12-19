@@ -43,7 +43,7 @@ class RootHTTP(Root):
             allow_redirects: bool = False,
             *,
             options: str | None = None
-    ) -> discord.Message | None:
+    ):
         """Send an HTTP request using GET method.
         **Modes:**
         `json` = Converts the response to JSON. This isn't always available.

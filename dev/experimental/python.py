@@ -50,7 +50,7 @@ class RootPython(Root):
             return GlobalLocals()
 
     @root.command(name="retain", parent="dev")
-    async def root_retain(self, ctx: commands.Context[types.Bot], toggle: bool | None = None) -> discord.Message | None:
+    async def root_retain(self, ctx: commands.Context[types.Bot], toggle: bool | None = None):
         if toggle is None:
             translate_dict = {True: "enabled", False: "disabled"}
             await send(ctx, f"Retention is currently {translate_dict[self.retain]}.")
@@ -73,7 +73,7 @@ class RootPython(Root):
         aliases=["py"],
         require_var_positional=False,
     )
-    async def root_python(self, ctx: commands.Context[types.Bot], *, code: str | None = None) -> discord.Message | None:
+    async def root_python(self, ctx: commands.Context[types.Bot], *, code: str | None = None):
         """
         Evaluate or execute Python code.
         You may specify `__previous__` in the code, and it'll get replaced with the previous script that was executed.

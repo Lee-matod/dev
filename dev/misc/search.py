@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 class RootSearch(Root):
     @root.command(name="search", parent="dev", require_var_positional=True, global_use=True)
-    async def root_search(self, ctx: commands.Context[types.Bot], *, query: str) -> discord.Message | None:
+    async def root_search(self, ctx: commands.Context[types.Bot], *, query: str):
         """Search for different items given a query.
         Items include cogs, command names, channels, emojis, members, and roles.
         """

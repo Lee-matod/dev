@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 class RootBot(Root):
 
     @root.group(name="bot", parent="dev", global_use=True, invoke_without_command=True)
-    async def root_bot(self, ctx: commands.Context[types.Bot]) -> discord.Message | None:
+    async def root_bot(self, ctx: commands.Context[types.Bot]):
         """Get a briefing on some bot information."""
         if self.bot.user is None:
             return await send(ctx, "This is not a bot.")
@@ -90,11 +90,7 @@ class RootBot(Root):
         await send(ctx, embed)
 
     @root.command(name="perms", parent="dev bot", aliases=["permissions"])
-    async def root_bot_here(
-            self,
-            ctx: commands.Context[types.Bot],
-            channel: discord.TextChannel | None = None
-    ) -> discord.Message | None:
+    async def root_bot_here(self, ctx: commands.Context[types.Bot], channel: discord.TextChannel | None = None):
         """Show which permissions the bot has.
         A text channel may be optionally passed to check for permissions in the given channel.
         """
@@ -111,7 +107,7 @@ class RootBot(Root):
         )
 
     @root.command(name="reload", parent="dev bot")
-    async def root_bot_reload(self, ctx: commands.Context[types.Bot], *cogs: str) -> discord.Message | None:
+    async def root_bot_reload(self, ctx: commands.Context[types.Bot], *cogs: str):
         """Reload all or a specific set of bot cog(s).
         When adding specific cogs, each extension must be separated but a blank space.
         """
@@ -157,7 +153,7 @@ class RootBot(Root):
         await send(ctx, embed)
 
     @root.command(name="enable", parent="dev bot", require_var_positional=True)
-    async def root_bot_enable(self, ctx: commands.Context[types.Bot], *, command_name: str) -> discord.Message | None:
+    async def root_bot_enable(self, ctx: commands.Context[types.Bot], *, command_name: str):
         """Enable a command.
         For obvious reasons, it is not recommended to disable this command using `dev bot disable`.
         """
@@ -170,7 +166,7 @@ class RootBot(Root):
         await ctx.message.add_reaction("☑")
 
     @root.command(name="disable", parent="dev bot", require_var_positional=True)
-    async def root_bot_disable(self, ctx: commands.Context[types.Bot], *, command_name: str) -> discord.Message | None:
+    async def root_bot_disable(self, ctx: commands.Context[types.Bot], *, command_name: str):
         """Disable a command.
         For obvious reasons, it is not recommended to disable the `dev bot enable` command.
         """
@@ -185,17 +181,13 @@ class RootBot(Root):
         await ctx.message.add_reaction("☑")
 
     @root.command(name="close", parent="dev bot")
-    async def root_bot_close(self, ctx: commands.Context[types.Bot]) -> None:
+    async def root_bot_close(self, ctx: commands.Context[types.Bot]):
         """Close the bot."""
         await ctx.message.add_reaction("👋")
         await self.bot.close()
 
     @root_bot.error
-    async def root_bot_error(
-            self,
-            ctx: commands.Context[types.Bot],
-            exception: commands.CommandError
-    ) -> discord.Message | None:
+    async def root_bot_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError):
         if isinstance(exception, commands.TooManyArguments):
             assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(

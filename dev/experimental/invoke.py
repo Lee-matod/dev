@@ -38,7 +38,7 @@ class RootInvoke(Root):
             timeout: float | None,
             *,
             command_string: str
-    ) -> discord.Message | None:
+    ):
         """Invoke a command and measure how long it takes to invoke finish.
         Optionally add a maximum amount of time that the command can take to finish executing.
         """
@@ -63,7 +63,7 @@ class RootInvoke(Root):
             amount: int,
             *,
             command_string: str
-    ) -> discord.Message | None:
+    ):
         """Call a command a given amount of times.
         Checks can be optionally bypassed by using `dev repeat!` instead of `dev repeat`.
         """
@@ -80,7 +80,7 @@ class RootInvoke(Root):
                 await command.invoke(context)
 
     @root.command(name="debug", parent="dev", aliases=["dbg"], require_var_positional=True)
-    async def root_debug(self, ctx: commands.Context[types.Bot], *, command_string: str) -> discord.Message | None:
+    async def root_debug(self, ctx: commands.Context[types.Bot], *, command_string: str):
         """Catch errors when executing a command.
         This command will probably not work with commands that already have an error handler.
         """
@@ -113,7 +113,7 @@ class RootInvoke(Root):
             ],
             *,
             command_attr: str
-    ) -> discord.Message | None:
+    ):
         """Execute a command with custom attributes.
         Attribute support types are `discord.Member`, `discord.Role`, `discord.TextChannel` and `discord.Thread`.
         These will override the current context, thus executing the command in a different virtual environment.

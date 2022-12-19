@@ -42,12 +42,7 @@ class RootManagement(Root):
         self.explorer_rgs: list[ManagementRegistration] = []
 
     @root.command(name="cwd", parent="dev", root_placeholder=True, aliases=["change_cwd"])
-    async def root_files_cwd(
-            self,
-            ctx: commands.Context[types.Bot],
-            *,
-            new_cwd: str | None = None
-    ) -> discord.Message | None:
+    async def root_files_cwd(self, ctx: commands.Context[types.Bot], *, new_cwd: str | None = None):
         """Change or view the current working directory that the bot should use."""
         if new_cwd is None:
             return await send(ctx, f"Current working directory is: `{self.cwd}`")
@@ -58,7 +53,7 @@ class RootManagement(Root):
         await ctx.message.add_reaction("☑")
 
     @root.group(name="explorer", parent="dev", invoke_without_command=True, ignore_extra=True)
-    async def root_explorer(self, ctx: commands.Context[types.Bot]) -> discord.Message | None:
+    async def root_explorer(self, ctx: commands.Context[types.Bot]):
         """View modifications made to directories."""
         if operations := self.explorer_rgs:
             rows = [
@@ -75,7 +70,7 @@ class RootManagement(Root):
         aliases=["upload", "mkdir", "create"],
         usage="<folder>"
     )
-    async def root_explorer_new(self, ctx: commands.Context[types.Bot], *, folder: str = "") -> discord.Message | None:
+    async def root_explorer_new(self, ctx: commands.Context[types.Bot], *, folder: str = ""):
         """Create an empty file/directory or upload a series of files.
         If `directory` is None, then it will be set to the current working directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
@@ -134,7 +129,7 @@ class RootManagement(Root):
             attachment: discord.Attachment,
             *,
             directory: str
-    ) -> discord.Message | None:
+    ):
         """Edit an existing file.
         This command does not change the file's name. Consider using `dev explorer rename`.
         Use `!` at the beginning of the directory to ignore the current working directory.
@@ -154,7 +149,7 @@ class RootManagement(Root):
             ctx: commands.Context[types.Bot],
             old_name: str,
             new_name: str
-    ) -> discord.Message | None:
+    ):
         """Rename an existing file or directory.
         By default, the new path will be relative to the old path. Use `?` at the beginning of `new_name` to ignore this
         behavior and use the current working directory instead.
@@ -188,12 +183,7 @@ class RootManagement(Root):
         await ctx.message.add_reaction("☑")
 
     @root.command(name="show", parent="dev explorer", root_placeholder=True, aliases=["view", "tree", "tree!"])
-    async def root_explorer_show(
-            self,
-            ctx: commands.Context[types.Bot],
-            *,
-            directory: str = ""
-    ) -> discord.Message | None:
+    async def root_explorer_show(self, ctx: commands.Context[types.Bot], *, directory: str = ""):
         """Uploads an existing file to Discord or shows the tree of a directory.
         Execute `tree!` instead of `tree` to show the full path of the files and folders.
         Files are checked before sending, so the token of this bot will be replaced with `[token]`.
@@ -230,7 +220,7 @@ class RootManagement(Root):
         aliases=["del", "remove", "rm", "rmdir"],
         require_var_positional=True
     )
-    async def root_explorer_delete(self, ctx: commands.Context[types.Bot], *, directory: str) -> discord.Message | None:
+    async def root_explorer_delete(self, ctx: commands.Context[types.Bot], *, directory: str):
         """Delete an existing file or directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
         A prompt will be shown if a directory is specified, and it is not empty.
@@ -259,11 +249,7 @@ class RootManagement(Root):
             await ctx.message.add_reaction("☑")
 
     @root_explorer.error
-    async def root_files_error(
-            self,
-            ctx: commands.Context[types.Bot],
-            exception: commands.CommandError
-    ) -> discord.Message | None:
+    async def root_files_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError):
         if isinstance(exception, commands.TooManyArguments):
             assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(

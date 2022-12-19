@@ -34,7 +34,7 @@ class RootFlags(Root):
             ctx: commands.Context[types.Bot],
             *,
             command_string: str = ""
-    ) -> discord.Message | None:
+    ):
         """Help command made exclusively made for the `dev` extensions.
         Flags are hidden, but they can still be accessed and attributes can still be viewed.
         """
@@ -80,7 +80,7 @@ class RootFlags(Root):
         hidden=True,
         require_var_positional=True
     )
-    async def root_types(self, ctx: commands.Context[types.Bot], *, command_string: str) -> discord.Message | None:
+    async def root_types(self, ctx: commands.Context[types.Bot], *, command_string: str):
         """Inspect a command.
         This is not exclusive to the `dev` extension.
         Command signature, as well as some useful attributes will be returned.
@@ -138,7 +138,7 @@ class RootFlags(Root):
             ctx: commands.Context[types.Bot],
             *,
             command_string: str = ""
-    ) -> discord.Message | None:
+    ):
         """View the source code of a command.
         This is not exclusive to the `dev` extension.
         The token of the bot will be hidden as `[token]` if it is found within the source code.
@@ -153,7 +153,7 @@ class RootFlags(Root):
         return await send(ctx, codeblock_wrapper(over[-1].source, "py"))
 
     @root.command(name="--file", parent="dev", aliases=["-f"], hidden=True)
-    async def root_file(self, ctx: commands.Context[types.Bot], *, command_string: str = "") -> discord.Message | None:
+    async def root_file(self, ctx: commands.Context[types.Bot], *, command_string: str = ""):
         """View the file of a command.
         This is not exclusive to the `dev` extension.
         The token of the bot will be hidden as `[token]` if it is found within the file.
