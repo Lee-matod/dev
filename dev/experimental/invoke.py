@@ -11,14 +11,13 @@ Command invocation or reinvocation with changeable execution attributes.
 """
 from __future__ import annotations
 
-import asyncio
 import time
 from typing import TYPE_CHECKING, Any
 
 import discord
 from discord.ext import commands
 
-from dev.handlers import ExceptionHandler
+from dev.handlers import ExceptionHandler, TimedInfo
 from dev.types import Invokeable
 
 from dev.utils.baseclass import Root, root
@@ -28,27 +27,6 @@ from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
     from dev import types
-
-
-class ReinvokeFlags(commands.FlagConverter):
-    has: str | None = commands.flag(default=None)
-    startswith: str | None = commands.flag(default=None)
-    endswith: str | None = commands.flag(default=None)
-
-
-class TimedInfo:
-    def __init__(self, *, timeout: float | None = None) -> None:
-        self.timeout: float | None = timeout
-        self.start: float | None = None
-        self.end: float | None = None
-
-    async def wait_for(self, message: discord.Message) -> None:
-        timeout = self.timeout
-        if timeout is None:
-            raise ValueError("Timeout cannot be None")
-        await asyncio.sleep(timeout)
-        if self.end is None:
-            await message.add_reaction("⏰")
 
 
 class RootInvoke(Root):
@@ -164,59 +142,6 @@ class RootInvoke(Root):
             for role in roles:
                 del kwargs["author"]._roles[role]  # pyright: ignore [reportPrivateUsage]
 
-    @root.command(name="reinvoke", parent="dev", aliases=["invoke"])
-    async def root_reinvoke(
-            self,
-            ctx: commands.Context[types.Bot],
-            skip_message: int | None = 0,
-            author: discord.Member | None = None,
-            *,
-            flags: ReinvokeFlags
-    ) -> discord.Message | None:
-        """Reinvoke the last command that was executed.
-        By default, it will try to get the last command that was executed. However, this can be altered by supplying
-        `skip_message`.
-        If `invoke` is used instead of reinvoke, command checks will not be ignored.
-        If the command references a message, then it will try to reinvoke the command found in the reference.
-        Nevertheless, this method of reinvocation ignores all other options and flags.
-        **Flag arguments:**
-        `has`: _str_ = Check if the message has a specific sequence of characters. Defaults to _None_.
-        `startswith`: _str_ = Check if the message startswith a specific characters. Defaults to _None_.
-        `endswith`: _str_ = Check if the message endswith a specific characters. Defaults to _None_.
-        """
-        if not self.bot.intents.message_content:
-            return await send(ctx, "Message content intent is not enabled on this bot.")
-        if ctx.message.reference and ctx.message.reference.resolved:
-            reference = ctx.message.reference
-            if reference.resolved is not None and reference.resolved.content.startswith(ctx.prefix):  # type: ignore
-                if isinstance(reference.resolved, discord.DeletedReferencedMessage):
-                    return await send(ctx, "Reference is a deleted message.")
-                context = await self.bot.get_context(reference.resolved)
-                if context.command is None:
-                    return await send(ctx, f"Command `{context.invoked_with} not found.")
-                if ctx.invoked_with == "invoke":
-                    return await context.command.invoke(context)
-                return await context.command.reinvoke(context)
-            return await send(ctx, "No command found in the message reference.")
-        author = author or ctx.author  # type: ignore
-        c = 0
-        async for message in ctx.channel.history():
-            if message.author == author and message.content.startswith(ctx.clean_prefix):
-                if "dev reinvoke" in message.content or "dev invoke" in message.content:
-                    skip_message += 1  # type: ignore
-                    c += 1
-                    continue
-                if c == skip_message:
-                    if flag_checks(message, flags):
-                        context = await generate_ctx(ctx, content=message.content)
-                        if context.command is None:
-                            return await send(ctx, f"Command `{context.invoked_with}` not found.")
-                        if ctx.invoked_with == "invoke":
-                            return await context.command.invoke(context)
-                        return await context.command.reinvoke(context)
-                c += 1
-        await send(ctx, "Unable to find any messages matching the given arguments.")
-
     async def get_invokable(
             self,
             ctx: commands.Context[types.Bot],
@@ -234,16 +159,3 @@ class RootInvoke(Root):
         context = await generate_ctx(ctx, **kwargs)
         if context.command is not None:
             return context.command, context
-
-
-def flag_checks(message: discord.Message, flags: ReinvokeFlags) -> bool:
-    if flags.has is not None:
-        if flags.has not in message.content:
-            return False
-    if flags.startswith is not None:
-        if not message.content.startswith(flags.startswith):
-            return False
-    if flags.endswith is not None:
-        if not message.content.endswith(flags.endswith):
-            return False
-    return True

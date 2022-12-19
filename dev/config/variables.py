@@ -17,45 +17,13 @@ import discord
 from discord.ext import commands
 
 from dev.converters import LiteralModes
+from dev.components import VariableModalSender
 
 from dev.utils.functs import send
 from dev.utils.baseclass import Root, root
 
 if TYPE_CHECKING:
     from dev import types
-
-
-class ValueSubmitter(discord.ui.Modal):
-    value: discord.ui.TextInput[ModalSubmitter] = discord.ui.TextInput(label="Value", style=discord.TextStyle.paragraph)
-
-    def __init__(self, name: str, new: bool, default: str | None = None) -> None:
-        self.value.default = default
-        super().__init__(title="Value Submitter")
-        self.name = name
-        self.new = new
-
-    async def on_submit(self, interaction: discord.Interaction) -> None:
-        Root.scope.update({self.name: self.value.value})
-        await interaction.response.edit_message(
-            content=f"Successfully {'created a new variable called' if self.new else 'edited'} `{self.name}`",
-            view=None
-        )
-
-
-class ModalSubmitter(discord.ui.View):
-    def __init__(self, name: str, new: bool, author: types.User, default: str | None = None) -> None:
-        super().__init__()
-        self.name = name
-        self.new = new
-        self.author = author
-        self.default = default
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return self.author == interaction.user
-
-    @discord.ui.button(label="Submit Variable Value", style=discord.ButtonStyle.gray)
-    async def submit_value(self, interaction: discord.Interaction, _) -> None:
-        await interaction.response.send_modal(ValueSubmitter(self.name, self.new, self.default))
 
 
 class RootVariables(Root):
@@ -89,7 +57,7 @@ class RootVariables(Root):
             glob, loc = Root.scope.keys()
             if name in [*glob, *loc]:
                 return await send(ctx, f"A variable called `{name}` already exists.")
-            await send(ctx, ModalSubmitter(name, True, ctx.author))
+            await send(ctx, VariableModalSender(name, True, ctx.author))
 
         elif mode in ["delete", "del"]:  # pyright: ignore [reportUnnecessaryContains]
             if name is None:
@@ -106,7 +74,7 @@ class RootVariables(Root):
             if name not in [*glob, *loc]:
                 return await send(ctx, f"No variable called `{name}` found.")
             glob, loc = Root.scope[name]
-            await send(ctx, ModalSubmitter(name, False, ctx.author, glob or loc))
+            await send(ctx, VariableModalSender(name, False, ctx.author, glob or loc))
 
         elif mode in ["all", "~"]:  # pyright: ignore [reportUnnecessaryContains]
             variables = '\n'.join(f"+ {var}" for var in Root.scope.keys()) if Root.scope else "- No variables found."

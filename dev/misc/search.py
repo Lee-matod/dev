@@ -16,6 +16,8 @@ from typing import TYPE_CHECKING
 
 import discord
 
+from dev.components.views import SearchResultCategory
+
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 
@@ -23,68 +25,6 @@ if TYPE_CHECKING:
     from discord.ext import commands
 
     from dev import types
-
-
-class Dropdown(discord.ui.View):
-    options = [
-        discord.SelectOption(label="All", value="all", default=True),
-        discord.SelectOption(label="Cogs", value="cogs"),
-        discord.SelectOption(label="Commands", value="commands"),
-        discord.SelectOption(label="Emojis", value="emojis"),
-        discord.SelectOption(label="Text Channels", value="text_channels"),
-        discord.SelectOption(label="Members", value="members"),
-        discord.SelectOption(label="Roles", value="roles")
-    ]
-
-    def __init__(
-            self,
-            ctx: commands.Context[types.Bot],
-            embed: discord.Embed,
-            *,
-            cogs: list[str],
-            cmds: list[str],
-            channels: list[str],
-            emojis: list[str],
-            members: list[str],
-            roles: list[str]
-    ) -> None:
-        self.mapping = {
-            "all": join_multi_iter([cogs, cmds, channels, emojis, members, roles], max_amount=7),
-            "cogs": "\n".join(cogs),
-            "commands": "\n".join(cmds),
-            "text_channels": "\n".join(channels),
-            "emojis": "\n".join(emojis),
-            "members": "\n".join(members),
-            "roles": "\n".join(roles)
-        }
-        for option in self.options.copy():
-            if not self.mapping[option.value]:
-                self.options.remove(option)
-        super().__init__()
-        self.ctx = ctx
-        self.embed = embed
-        self.message: discord.Message | None = None
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return self.ctx.author == interaction.user
-
-    @discord.ui.select(options=options)
-    async def callback(self, interaction: discord.Interaction, select: discord.ui.Select[Dropdown]) -> None:
-        for option in select.options:
-            if option.value != select.values[0]:
-                option.default = False
-            else:
-                option.default = True
-        self.embed.description = self.mapping.get(select.values[0])
-        self.embed.set_footer(text=f'Category: {select.values[0].capitalize().replace("_", " ")}')
-        await interaction.response.edit_message(embed=self.embed, view=self)
-
-    async def on_timeout(self) -> None:
-        self.callback.disabled = True
-        message = self.message
-        if message is None:
-            raise RuntimeError("Message could not be set")
-        await message.edit(view=self)
 
 
 class RootSearch(Root):
@@ -109,11 +49,14 @@ class RootSearch(Root):
             return await send(ctx, "Couldn't find anything.")
         embed = discord.Embed(
             title=f"Query {query} returned...",
-            description=join_multi_iter([cogs, cmds, channels, emojis, members, roles], max_amount=7),
+            description=SearchResultCategory.join_multi_iter(
+                [cogs, cmds, channels, emojis, members, roles],
+                max_amount=7
+            ),
             color=discord.Color.blurple()
         )
         embed.set_footer(text="Category: All")
-        view = Dropdown(
+        view = SearchResultCategory(
             ctx,
             embed,
             cogs=cogs,
@@ -125,14 +68,6 @@ class RootSearch(Root):
         )
         message = await send(ctx, embed, view)
         view.message = message
-
-
-def join_multi_iter(iterables: list[list[str]], delimiter: str = "\n", max_amount: int | None = None) -> str:
-    joined_iter: list[str] = []
-    for iterable in iterables:
-        if iterable:
-            joined_iter.append(f"{delimiter}".join(iterable))
-    return f"{delimiter}".join(joined_iter[:max_amount]).strip(f"{delimiter}")
 
 
 def match(query: str, array: list[tuple[str, str]]) -> list[str]:

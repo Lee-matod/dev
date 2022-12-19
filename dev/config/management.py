@@ -19,9 +19,10 @@ from typing import TYPE_CHECKING
 
 import discord
 
-from dev.handlers import BoolInput, optional_raise
+from dev.handlers import optional_raise
 from dev.registrations import ManagementRegistration
 from dev.types import ManagementOperation
+from dev.components import BoolInput
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send, table_creator

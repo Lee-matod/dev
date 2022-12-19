@@ -28,12 +28,27 @@ if TYPE_CHECKING:
     from types import TracebackType
 
 __all__ = (
-    "BoolInput",
     "ExceptionHandler",
     "GlobalLocals",
-    "replace_vars",
-    "optional_raise"
+    "TimedInfo",
+    "optional_raise",
+    "replace_vars"
 )
+
+
+class TimedInfo:
+    def __init__(self, *, timeout: float | None = None) -> None:
+        self.timeout: float | None = timeout
+        self.start: float | None = None
+        self.end: float | None = None
+
+    async def wait_for(self, message: discord.Message) -> None:
+        timeout = self.timeout
+        if timeout is None:
+            raise ValueError("Timeout cannot be None")
+        await asyncio.sleep(timeout)
+        if self.end is None:
+            await message.add_reaction("⏰")
 
 
 class GlobalLocals:
@@ -170,59 +185,6 @@ class GlobalLocals:
             self.globals.update(__new_globals)
         if __new_locals is not None:
             self.locals.update(__new_locals)
-
-
-class BoolInput(discord.ui.View):
-    """Allows the user to submit a true or false answer through buttons.
-
-    If the user clicks on "Yes", a function is called and the view is removed.
-
-    Subclass of :class:`discord.ui.View`.
-
-    Examples
-    --------
-    .. codeblock:: python3
-        # inside a command
-        async def check():
-            await ctx.send("We shall continue!")
-        await ctx.send("Would you like to continue?", view=BoolInput(ctx.author, check))
-
-    Parameters
-    ----------
-    author: Union[types.User, :class:`int`]
-        The author of the message. It can be either their ID or Discord object.
-    func: Optional[Callable[[], Any]]
-        The function that should get called if the user clicks on the "Yes" button. This function cannot have arguments.
-    """
-
-    @overload
-    def __init__(self, author: types.User | int, func: Callable[[], Coroutine[Any, Any, Any]] | None = ...) -> None:
-        ...
-
-    @overload
-    def __init__(self, author: types.User | int, func: Callable[[], Any] | None = ...) -> None:
-        ...
-
-    def __init__(self, author: Any, func: Any = None) -> None:
-        super().__init__()
-        self.func: Callable[[], Any] | None = func
-        self.author: int = author.id if isinstance(author, types.User) else author
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return self.author == interaction.user.id
-
-    @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
-    async def yes_button(self, interaction: discord.Interaction, _) -> None:
-        if self.func is not None:
-            if inspect.iscoroutinefunction(self.func):
-                await self.func()
-            else:
-                self.func()
-        await interaction.delete_original_response()
-
-    @discord.ui.button(label="No", style=discord.ButtonStyle.red)
-    async def no_button(self, interaction: discord.Interaction, _) -> None:
-        await interaction.delete_original_response()
 
 
 class ExceptionHandler:

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-dev.config._views
-~~~~~~~~~~~~~~~~~
+dev.components.modals
+~~~~~~~~~~~~~~~~~~~~~
 
-Views and Modals to be used in dev.config.over.
+All :class:`discord.ui.Modal` related classes.
 
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
@@ -18,88 +18,52 @@ import textwrap
 from typing import TYPE_CHECKING, Any
 
 import discord
-from discord.ext import commands
 
 from dev.converters import str_ints
 from dev.handlers import ExceptionHandler
-from dev.registrations import CommandRegistration
-from dev.types import InteractionResponseType, Over
+from dev.registrations import CommandRegistration, Over
+from dev.types import InteractionResponseType
 
-from dev.utils.baseclass import Root
 from dev.utils.functs import interaction_response
 from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
+    from discord.ext import commands
+
     from dev import types
+    from dev.components.views import CodeView, ToggleSettings, VariableModalSender
+
+    from dev.utils.baseclass import Root
 
 
-class _SettingEditor(discord.ui.Modal):
-    def __init__(self, author: types.User, setting: str) -> None:
-        self.author: types.User = author
-        self.setting: str = setting
-        self.setting_obj: set[int] | str = getattr(Settings, setting)
-        self.item: discord.ui.TextInput[SettingView] = discord.ui.TextInput(
-            label=setting.replace("_", " ").title(),
-            default=", ".join([str(i) for i in self.setting_obj])
-        )
-        super().__init__(title=f"{setting.replace('_', ' ').title()} Editor")
-        self.add_item(self.item)
+__all__ = (
+    "CodeEditor",
+    "SettingEditor",
+    "VariableValueSubmitter"
+)
+
+
+class VariableValueSubmitter(discord.ui.Modal):
+    value: discord.ui.TextInput[VariableModalSender] = discord.ui.TextInput(
+        label="Value",
+        style=discord.TextStyle.paragraph
+    )
+
+    def __init__(self, name: str, new: bool, default: str | None = None) -> None:
+        self.value.default = default
+        super().__init__(title="Value Submitter")
+        self.name = name
+        self.new = new
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
-        if isinstance(self.setting_obj, set):
-            setattr(Settings, self.setting, set(str_ints(self.item.value)))
-        #  bool instances are toggleable buttons
-        else:
-            setattr(Settings, self.setting, self.item.value)
-        await interaction_response(interaction, InteractionResponseType.EDIT, SettingView(self.author))
+        Root.scope.update({self.name: self.value.value})
+        await interaction.response.edit_message(
+            content=f"Successfully {'created a new variable called' if self.new else 'edited'} `{self.name}`",
+            view=None
+        )
 
 
-class _Button(discord.ui.Button["SettingView"]):
-    def __init__(self, setting: str, author: types.User, *, label: str) -> None:
-        super().__init__(label=label)
-        self.author: types.User = author
-        self.setting: str = setting
-        if label in ("Allow Global Uses", "Invoke on Edit"):
-            self.style = discord.ButtonStyle.green if getattr(Settings, setting) else discord.ButtonStyle.red
-        else:
-            self.style = discord.ButtonStyle.blurple
-
-    async def callback(self, interaction: discord.Interaction) -> None:
-        if self.setting not in [sett for sett, ann in Settings.__annotations__.items() if ann == "bool"]:
-            label = self.label
-            if label is not None:
-                return await interaction.response.send_modal(
-                    _SettingEditor(self.author, label.replace(" ", "_").upper())
-                )
-            return await interaction_response(
-                interaction,
-                InteractionResponseType.SEND,
-                "Something broke, this should not have happened.",
-                ephemeral=True
-            )
-        setting = self.setting.upper().replace(" ", "_")
-        if self.style == discord.ButtonStyle.green:
-            setattr(Settings, setting, False)
-            self.style = discord.ButtonStyle.red
-        else:
-            setattr(Settings, setting, True)
-            self.style = discord.ButtonStyle.green
-        await interaction_response(interaction, InteractionResponseType.EDIT, SettingView(self.author))
-
-
-class SettingView(discord.ui.View):
-    def __init__(self, author: types.User) -> None:
-        super().__init__()
-        self.author: types.User = author
-
-        for setting in [setting for setting in Settings.__dict__.keys() if not setting.startswith("__")]:
-            self.add_item(_Button(setting, self.author, label=_format_setting(setting)))
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return self.author == interaction.user
-
-
-class _CodeEditor(discord.ui.Modal):
+class CodeEditor(discord.ui.Modal):
     code: discord.ui.TextInput[CodeView] = discord.ui.TextInput(
         label="Code inspection for 'command'",
         style=discord.TextStyle.long
@@ -173,26 +137,26 @@ class _CodeEditor(discord.ui.Modal):
         )
 
 
-class CodeView(discord.ui.View):
-    def __init__(self, ctx: commands.Context[types.Bot], command: types.Command, root: Root) -> None:
-        super().__init__()
-        self.ctx: commands.Context[types.Bot] = ctx
-        self.command: types.Command = command
-        self.root: Root = root
+class SettingEditor(discord.ui.Modal):
+    def __init__(self, author: types.User, setting: str) -> None:
+        self.author: types.User = author
+        self.setting: str = setting
+        self.setting_obj: set[int] | str = getattr(Settings, setting)
+        self.item: discord.ui.TextInput[ToggleSettings] = discord.ui.TextInput(
+            label=setting.replace("_", " ").title(),
+            default=", ".join([str(i) for i in self.setting_obj])
+        )
+        super().__init__(title=f"{setting.replace('_', ' ').title()} Editor")
+        self.add_item(self.item)
 
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return self.ctx.author == interaction.user
-
-    @discord.ui.button(label="View Code", style=discord.ButtonStyle.blurple)
-    async def view_code(self, interaction: discord.Interaction, _) -> None:
-        await interaction.response.send_modal(_CodeEditor(self.ctx, self.command, self.root))
-
-
-def _format_setting(setting: str) -> str:
-    setting_name: list[str] = []
-    for word in setting.split("_"):
-        if len(word) <= 2:
-            setting_name.append(word.lower())
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if isinstance(self.setting_obj, set):
+            setattr(Settings, self.setting, set(str_ints(self.item.value)))
+        #  bool instances are toggleable buttons
         else:
-            setting_name.append(word.title())
-    return " ".join(setting_name)
+            setattr(Settings, self.setting, self.item.value)
+        await interaction_response(
+            interaction,
+            InteractionResponseType.EDIT,
+            type(self.item.view)(self.author)  # type: ignore
+        )

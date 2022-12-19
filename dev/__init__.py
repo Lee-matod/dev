@@ -10,16 +10,17 @@ A simple debugging, editing and testing extension for discord.py version 2.0.
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
 from dev.__main__ import *
+from dev.components import *
 from dev.converters import *
-from dev.interpreters import *
 from dev.handlers import *
+from dev.interpreters import *
 from dev.pagination import *
+from dev.registrations import *
+from dev.types import *
 
 from dev.config import RootBot, RootManagement, RootOver, RootVariables
 from dev.experimental import RootHTTP, RootInvoke, RootPython, RootShell
 from dev.misc import RootFlags, RootSearch
-
-from dev.components import *
 
 from dev.utils.baseclass import *
 from dev.utils.functs import *
@@ -28,37 +29,57 @@ from dev.utils.utils import *
 
 
 __all__ = (
+    "BaseCommandRegistration",
     "BoolInput",
     "CodeblockConverter",
-    "Dev",
+    "CodeEditor",
+    "CodeView",
+    "CommandRegistration",
     "ExceptionHandler",
     "Execute",
     "GlobalLocals",
+    "InteractionResponseType",
     "Interface",
+    "Invokeable",
     "LiteralModes",
+    "ManagementOperation",
+    "ManagementRegistration",
+    "Over",
+    "OverrideSettings",
+    "OverType",
     "Paginator",
+    "PermissionsViewer",
     "Process",
     "Root",
+    "SearchResultCategory",
+    "SettingEditor",
+    "SettingRegistration",
     "Settings",
+    "SettingsToggler",
     "ShellSession",
     "SigKill",
+    "TimedInfo",
+    "ToggleSettings",
+    "VariableModalSender",
+    "VariableValueSubmitter",
     "clean_code",
-    "str_bool",
-    "str_ints",
+    "codeblock_wrapper",
     "escape",
-    "flag_parser",
-    "generate_ctx",
     "interaction_response",
+    "optional_raise",
     "plural",
     "replace_vars",
     "root",
-    "send"
+    "send",
+    "str_bool",
+    "str_ints"
 )
 
 __title__ = "dev"
 __author__ = "Lee"
 __license__ = "Apache 2.0"
 __version__ = "1.0.0rc"
+
 
 class Dev(
     RootBot,

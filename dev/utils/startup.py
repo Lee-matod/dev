@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 __all__ = (
     "Settings",
-    "set_settings",
+    "set_settings"
 )
 
 

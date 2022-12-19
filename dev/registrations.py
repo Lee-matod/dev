@@ -73,7 +73,8 @@ class ManagementRegistration(BaseRegistration):
             directory: str,
             operation_type: Literal[ManagementOperation.CREATE] |
                             Literal[ManagementOperation.EDIT] |
-                            Literal[ManagementOperation.DELETE]
+                            Literal[ManagementOperation.DELETE] |
+                            Literal[ManagementOperation.UPLOAD]
     ):
         ...
 

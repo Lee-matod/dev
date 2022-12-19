@@ -12,12 +12,13 @@ Direct bot reconfiguration and attributes manager.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Generator
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
 
 from dev.handlers import optional_raise
+from dev.components import PermissionsViewer
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
@@ -25,87 +26,6 @@ from dev.utils.utils import escape, plural
 
 if TYPE_CHECKING:
     from dev import types
-
-
-class PermissionsSelector(discord.ui.View):
-    options = [
-        discord.SelectOption(
-            label="General",
-            value="general",
-            description="All 'General' permissions from the official Discord UI.",
-            default=True
-        ),
-        discord.SelectOption(
-            label="All Channel",
-            value="all_channel",
-            description="All channel-specific permissions."
-        ),
-        discord.SelectOption(
-            label="Membership",
-            value="membership",
-            description="All 'Membership' permissions from the official Discord UI."
-        ),
-        discord.SelectOption(
-            label="Text",
-            value="text",
-            description="All 'Text' permissions from the official Discord UI."
-        ),
-        discord.SelectOption(
-            label="Voice",
-            value="voice",
-            description="All 'Voice' permissions from the official Discord UI."
-        ),
-        discord.SelectOption(
-            label="Stage",
-            value="stage",
-            description="All 'Stage Channel' permissions from the official Discord UI."
-        ),
-        discord.SelectOption(
-            label="Stage Moderator",
-            value="stage_moderator",
-            description="All permissions for stage moderators."
-        ),
-        discord.SelectOption(
-            label="Elevated",
-            value="elevated",
-            description="All permissions that require 2FA (2 Factor Authentication)."
-        ),
-        discord.SelectOption(
-            label="Advanced",
-            value="advanced",
-            description="All 'Advanced' permissions from the official Discord UI."
-        )
-    ]
-
-    def __init__(self, target: discord.Member, channel: types.Channel | None = None) -> None:
-        super().__init__()
-        self.user_target: discord.Member = target
-        self.channel_target: types.Channel | None = channel
-
-    @discord.ui.select(options=options)
-    async def callback(self, interaction: discord.Interaction, select: discord.ui.Select[PermissionsSelector]) -> None:
-        for option in select.options:
-            if option.value != select.values[0]:
-                option.default = False
-            else:
-                option.default = True
-        permissions = ["```ansi", *self.sort_perms(select.values[0]), "```"]
-        await interaction.response.edit_message(
-            embed=discord.Embed(description="\n".join(permissions), color=discord.Color.blurple()),
-            view=self
-        )
-
-    def sort_perms(self, permission: str) -> Generator[str, None, None]:
-        perms = getattr(discord.Permissions, permission)()
-        for perm, value in perms:
-            if not value:
-                continue
-            if self.channel_target is not None:
-                toggled = dict(self.channel_target.permissions_for(self.user_target)).get(perm)
-                yield f"\u001b[1;37m{perm.replace('_', ' ').title():26}\u001b[0;{'32' if toggled else '31'}m{toggled}"
-            else:
-                toggled = dict(self.user_target.guild_permissions).get(perm)
-                yield f"\u001b[1;37m{perm.replace('_', ' ').title():26}\u001b[0;{'32' if toggled else '31'}m{toggled}"
 
 
 class RootBot(Root):
@@ -180,7 +100,7 @@ class RootBot(Root):
         """
         if ctx.guild is None:
             return await send(ctx, "Please execute this command in a guild.")
-        view = PermissionsSelector(ctx.guild.me, channel)
+        view = PermissionsViewer(ctx.guild.me, channel)
         await send(
             ctx,
             discord.Embed(

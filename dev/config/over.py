@@ -15,7 +15,6 @@ import ast
 import contextlib
 import inspect
 import io
-import json
 import textwrap
 from random import choice
 from string import ascii_letters
@@ -25,11 +24,11 @@ import discord
 from discord.ext import commands
 
 from dev.types import Over, OverType
-from dev.converters import CodeblockConverter, str_bool, str_ints
+from dev.converters import CodeblockConverter, OverrideSettings, str_bool, str_ints
 from dev.handlers import ExceptionHandler, replace_vars, optional_raise
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 
-from dev.config._views import CodeView, SettingView
+from dev.components import CodeView, ToggleSettings
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import flag_parser, generate_ctx, table_creator, send
@@ -38,55 +37,6 @@ from dev.utils.utils import clean_code, codeblock_wrapper, plural
 
 if TYPE_CHECKING:
     from dev import types
-
-
-class OverrideSettingConverter(commands.Converter[None]):
-    default_settings: dict[str, Any] = {}
-    script: str = ""
-    command_string: str = ""
-
-    async def convert(self, ctx: commands.Context[types.Bot], argument: str) -> None:
-        changed: list[str] = []
-        try:
-            new_settings = flag_parser(argument, "=")
-        except json.JSONDecodeError:
-            return
-        assert isinstance(new_settings, dict)
-        for key, value in new_settings.items():
-            if key.startswith("__") and key.endswith("__"):
-                continue
-            if not hasattr(Settings, key):
-                await ctx.message.add_reaction("❗")
-                return
-            setting = getattr(Settings, key.upper())
-            if isinstance(setting, bool):
-                self.default_settings[key] = str_bool(value)
-                setattr(Settings, key.upper(), str_bool(value))
-            elif isinstance(setting, set):
-                self.default_settings[key] = set(str_ints(value))
-                setattr(Settings, key.upper(), set(str_ints(value)))
-            else:
-                self.default_settings[key] = value
-                setattr(Settings, key.upper(), value)
-            changed.append(f"Settings.{key.upper()}={value}")
-        await send(
-            ctx,
-            embed=discord.Embed(
-                title="Settings Changed" if self.default_settings else "Nothing Changed",
-                description="`" + '`\n`'.join(changed) + "`",
-                colour=discord.Color.green() if self.default_settings else discord.Color.red()
-            ),
-            delete_after=5
-        )
-        argument = argument.strip()
-        if argument.startswith("```") and argument.endswith("```"):
-            self.script = argument
-        else:
-            self.command_string = argument
-
-    def back_to_default(self) -> None:
-        for module, value in self.default_settings.items():
-            setattr(Settings, module, value)
 
 
 class RootOver(Root):
@@ -314,7 +264,7 @@ class RootOver(Root):
             self,
             ctx: commands.Context[types.Bot],
             *,
-            greedy: OverrideSettingConverter
+            greedy: OverrideSettings
     ) -> discord.Message | None:
         """Temporarily override a (some) setting(s).
         All changes will be undone once the command or script have finished executing.
@@ -530,7 +480,7 @@ class RootOver(Root):
         Adding single or double quotes in between the different parameters is also a valid option.
         """
         if settings is None:
-            return await send(ctx, SettingView(ctx.author))
+            return await send(ctx, ToggleSettings(ctx.author))
         default = {k: v for k, v in Settings.__dict__.items() if not (k.startswith("__"))}
         changed: list[str] = []  # a formatted version of the settings that were changed
         raw_changed = {}
