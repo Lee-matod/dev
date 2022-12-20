@@ -22,7 +22,6 @@ from dev.components.views import SigKill
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
-from dev.utils.startup import Settings
 from dev.utils.utils import clean_code
 
 if TYPE_CHECKING:
@@ -43,7 +42,7 @@ class RootShell(Root):
         with shell(script) as process:  # type: ignore
             _, paginator = await send(
                 ctx,
-                shell.format_process(process).replace(Settings.PATH_TO_FILE, "~"),
+                shell.format_process(process),
                 SigKill(process),
                 forced_pagination=False,
                 paginator=None
@@ -65,7 +64,7 @@ class RootShell(Root):
                 self.active_shell_sessions.remove(ctx.author.id)
                 return await send(
                     ctx,
-                    shell.set_exit_message(f"Return code: `{process.close_code}`").replace(Settings.PATH_TO_FILE, "~"),
+                    shell.set_exit_message(f"Return code: `{process.close_code}`"),
                     forced_pagination=False,
                     paginator=shell.paginator
                 )
@@ -73,7 +72,7 @@ class RootShell(Root):
                 await process.run_until_complete(ctx)
         await send(
             ctx,
-            shell.set_exit_message(f"Return code: `{process.close_code}`").replace(Settings.PATH_TO_FILE, "~"),
+            shell.set_exit_message(f"Return code: `{process.close_code}`"),
             forced_pagination=False,
             paginator=shell.paginator
         )

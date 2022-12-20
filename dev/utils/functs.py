@@ -24,7 +24,9 @@ from discord.utils import MISSING
 
 from dev.types import InteractionResponseType
 from dev.pagination import Interface, Paginator
+
 from dev.utils.baseclass import Root
+from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -185,6 +187,7 @@ async def send(ctx: Any, *args: Any, paginator: Any = MISSING, **options: Any) -
         `content` exceeded the 2000-character limit, and `view` did not permit pagination to work due to the amount of
         components it included.
     """
+    replace_path_to_file: bool = options.pop("path_to_file", True)
     forced: bool = options.pop("forced", False)
     forced_pagination: bool = options.pop("forced_pagination", True)
 
@@ -197,23 +200,23 @@ async def send(ctx: Any, *args: Any, paginator: Any = MISSING, **options: Any) -
     pag_view: Interface | None = None
     for item in args:
         if isinstance(item, discord.File):
-            _try_add("files", _check_file(item, token), kwargs)
+            _try_add("files", _check_file(item, token, replace_path_to_file), kwargs)
         elif isinstance(item, discord.Embed):
-            _try_add("embeds", item, kwargs)
+            _try_add("embeds", _check_embed(item, token, replace_path_to_file), kwargs)
         elif isinstance(item, (discord.GuildSticker, discord.StickerItem)):
             _try_add("stickers", item, kwargs)
         elif isinstance(item, discord.ui.View):
             kwargs["view"] = item
-        elif isinstance(item, Iterable) and not isinstance(item, str):  # pyright: ignore [reportUnnecessaryIsInstance]
+        elif isinstance(item, Iterable) and not isinstance(item, str):
             for i in item:  # type: ignore
                 if isinstance(i, discord.File):
-                    _try_add("files", _check_file(i, token), kwargs)
-                elif isinstance(i, discord.Embed):  # pyright: ignore [reportUnnecessaryIsInstance]
-                    _try_add("embeds", i, kwargs)
+                    _try_add("files", _check_file(i, token, replace_path_to_file), kwargs)
+                elif isinstance(i, discord.Embed):
+                    _try_add("embeds", _check_embed(i, token, replace_path_to_file), kwargs)
                 elif isinstance(i, (discord.GuildSticker, discord.StickerItem)):
                     _try_add("stickers", i, kwargs)
         else:
-            content = _revert_virtual_var_value(str(item)).replace(token, "[token]")
+            content = _replace(_revert_virtual_var_value(str(item)), token, path=replace_path_to_file)
             if paginator is not MISSING and paginator is not None:
                 for line in content.split("\n"):
                     paginator.add_line(line)
@@ -364,6 +367,7 @@ async def interaction_response(  # type: ignore
     token = interaction.client.http.token
     assert token is not None
 
+    replace_path_to_file: bool = options.pop("path_to_file", True)
     forced_pagination: bool = options.pop("forced_paginator", True)
     paginators: list[Interface] = []
 
@@ -371,19 +375,19 @@ async def interaction_response(  # type: ignore
     pag_view: Interface | None = None
     for item in args:
         if isinstance(item, discord.File):
-            _try_add("files", _check_file(item, token), kwargs)
+            _try_add("files", _check_file(item, token, replace_path_to_file), kwargs)
         elif isinstance(item, discord.Embed):
-            _try_add("embeds", item, kwargs)
+            _try_add("embeds", _check_embed(item, token, replace_path_to_file), kwargs)
         elif isinstance(item, discord.ui.View):
             kwargs["view"] = item
-        elif isinstance(item, Iterable) and not isinstance(item, str):  # pyright: ignore [reportUnnecessaryIsInstance]
+        elif isinstance(item, Iterable) and not isinstance(item, str):
             for i in item:  # type: ignore
                 if isinstance(i, discord.File):
-                    _try_add("files", _check_file(i, token), kwargs)
+                    _try_add("files", _check_file(i, token, replace_path_to_file), kwargs)
                 elif isinstance(i, discord.Embed):
-                    _try_add("embeds", i, kwargs)
+                    _try_add("embeds", _check_embed(i, token, replace_path_to_file), kwargs)
         else:
-            content = _revert_virtual_var_value(str(item)).replace(token, "[token]")
+            content = _revert_virtual_var_value(str(item)).replace(token, "[token]").replace(Settings.path_to_file, "~")
             if paginator is not MISSING and paginator is not None:
                 for line in content.splitlines():
                     paginator.add_line(line)
@@ -467,14 +471,35 @@ def _try_add(key: str, value: T, dictionary: dict[str, list[T]]) -> None:
         dictionary[key] = [value]
 
 
-def _check_file(file: discord.File, token: str, /) -> discord.File:
+def _check_file(file: discord.File, token: str, /, replace_path: bool) -> discord.File:
     try:
         string = _revert_virtual_var_value(
-            file.fp.read().decode("utf-8").replace(token, "[token]")
+            _replace(file.fp.read().decode("utf-8"), token, path=replace_path)
         ).encode("utf-8")
     except UnicodeDecodeError:
         return file
     return discord.File(io.BytesIO(string), file.filename, spoiler=file.spoiler, description=file.description)
+
+
+def _check_embed(embed: discord.Embed, token: str, /, replace_path: bool) -> discord.Embed:
+    if title := embed.title:
+        embed.title = _replace(title, token, path=replace_path)
+    if description := embed.description:
+        embed.description = _replace(description, token, path=replace_path)
+    if footer := embed.footer.text:
+        embed.footer.text = _replace(footer, token, path=replace_path)
+    for field in embed.fields:
+        assert field.name is not None and field.value is not None
+        field.name = _replace(field.name, token, path=replace_path)
+        field.value = _replace(field.value, token, path=replace_path)
+    return embed
+
+
+def _replace(string: str, token: str, /, *, path: bool) -> str:
+    string = string.replace(token, "[token]")
+    if path:
+        string.replace(Settings.path_to_file, "~")
+    return string
 
 
 def _check_length(content: str) -> Paginator | str:

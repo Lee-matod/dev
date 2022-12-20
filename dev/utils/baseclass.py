@@ -128,7 +128,7 @@ class _DiscordCommand(commands.Command[Any, ..., Any]):
     def global_use(self, value: bool) -> None:
         if self.__global_use is None:
             raise TypeError("Cannot toggle global use value for a command that didn't have it enabled on startup")
-        if not isinstance(value, bool):  # pyright: ignore [reportUnnecessaryIsInstance]
+        if not isinstance(value, bool):
             raise TypeError(f"Expected type bool but received {type(value).__name__}")
         self.__global_use = value
 
@@ -165,7 +165,7 @@ class _DiscordGroup(commands.Group[Any, ..., Any]):
     def global_use(self, value: bool) -> None:
         if self.__global_use is None:
             raise TypeError("Cannot toggle global use value for a command that didn't have it enabled on startup")
-        if not isinstance(value, bool):  # pyright: ignore [reportUnnecessaryIsInstance]
+        if not isinstance(value, bool):
             raise TypeError(f"Expected type bool but received {type(value).__name__}")
         self.__global_use = value
 
@@ -193,7 +193,7 @@ class BaseCommand(Generic[CogT_co, P, T]):
         if not asyncio.iscoroutinefunction(func):
             raise TypeError("Callback must be a coroutine.")
         name: str = kwargs.pop("name", None) or func.__name__
-        if not isinstance(name, str): #  pyright: ignore [reportUnnecessaryIsInstance]
+        if not isinstance(name, str):
             raise TypeError("Name of a command must be a string.")
         self.name: str = name
         self.callback: Callable[Concatenate[CogT_co, commands.Context[types.Bot], P], Coroutine[Any, Any, T]] = func
@@ -446,10 +446,10 @@ class Root(commands.Cog):
         from dev.utils.startup import Settings  # circular import
 
         if isinstance(ctx.command, (_DiscordCommand, _DiscordGroup)):
-            if ctx.command.global_use and Settings.ALLOW_GLOBAL_USES:
+            if ctx.command.global_use and Settings.allow_global_uses:
                 return True
-        if ctx.author.id in Settings.OWNERS:
+        if ctx.author.id in Settings.owners:
             return True
-        elif await self.bot.is_owner(ctx.author) and not Settings.OWNERS:
+        elif await self.bot.is_owner(ctx.author) and not Settings.owners:
             return True
         raise commands.NotOwner("You have to own this bot to be able to use this command")

@@ -48,20 +48,20 @@ class OverrideSettings(commands.Converter[None]):
         for key, value in new_settings.items():
             if key.startswith("__") and key.endswith("__"):
                 continue
-            if not hasattr(Settings, key):
-                await ctx.message.add_reaction("❗")
-                return
-            setting = getattr(Settings, key.upper())
+            key = key.lower()
+            if not Settings.exists(key):
+                return await ctx.message.add_reaction("❗")
+            setting = getattr(Settings, key)
             if isinstance(setting, bool):
                 self.default_settings[key] = str_bool(value)
-                setattr(Settings, key.upper(), str_bool(value))
+                setattr(Settings, key, str_bool(value))
             elif isinstance(setting, set):
                 self.default_settings[key] = set(str_ints(value))
-                setattr(Settings, key.upper(), set(str_ints(value)))
+                setattr(Settings, key, set(str_ints(value)))
             else:
                 self.default_settings[key] = value
-                setattr(Settings, key.upper(), value)
-            changed.append(f"Settings.{key.upper()}={value}")
+                setattr(Settings, key, value)
+            changed.append(f"Settings.{key}={value}")
         await send(
             ctx,
             embed=discord.Embed(
@@ -160,7 +160,7 @@ class LiteralModes(commands.Converter[Union[str, None]]):
             )
         if any(i for i in item.__args__ if not isinstance(i, str)):
             raise TypeError("LiteralModes[...[, bool]] should only have strings")
-        if not isinstance(case_sensitive, bool):  # pyright: ignore [reportUnnecessaryIsInstance]
+        if not isinstance(case_sensitive, bool):
             raise TypeError(
                 f"Case sensitive argument should be a bool, "
                 f"not {item.__name__ if isinstance(item, type) else item.__class__.__name__}"

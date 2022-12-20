@@ -43,11 +43,11 @@ class SettingsToggler(discord.ui.Button["ToggleSettings"]):
             self.style = discord.ButtonStyle.blurple
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        if self.setting not in [sett for sett, ann in Settings.__annotations__.items() if ann == "bool"]:
+        if self.setting not in [sett for sett, ann in Settings.mapping.items() if ann == bool]:
             label = self.label
             if label is not None:
                 return await interaction.response.send_modal(
-                    SettingEditor(self.author, label.replace(" ", "_").upper())
+                    SettingEditor(self.author, label.replace(" ", "_").lower())
                 )
             return await interaction_response(
                 interaction,
@@ -55,7 +55,7 @@ class SettingsToggler(discord.ui.Button["ToggleSettings"]):
                 "Something broke, this should not have happened.",
                 ephemeral=True
             )
-        setting = self.setting.upper().replace(" ", "_")
+        setting = self.setting.lower().replace(" ", "_")
         if self.style == discord.ButtonStyle.green:
             setattr(Settings, setting, False)
             self.style = discord.ButtonStyle.red

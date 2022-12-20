@@ -456,7 +456,7 @@ class RootOver(Root):
         """
         if settings is None:
             return await send(ctx, ToggleSettings(ctx.author))
-        default = {k: v for k, v in Settings.__dict__.items() if not (k.startswith("__"))}
+        default = Settings.kwargs.copy()
         changed: list[str] = []  # a formatted version of the settings that were changed
         raw_changed = {}
         new_settings = flag_parser(settings, "=")
@@ -465,25 +465,31 @@ class RootOver(Root):
         assert isinstance(new_settings, dict)
         error_settings: list[str] = []
         for key in new_settings:
+            key = key.lower()
             if key.startswith("__") and key.endswith("__"):
                 continue
-            if not hasattr(Settings, key.upper()):
-                error_settings.append(key.upper())
+            if not hasattr(Settings, key):
+                error_settings.append(key)
         if error_settings:
             return await send(
                 ctx,
                 f"{plural(len(error_settings), 'Setting', False)} not found: {', '.join(error_settings)}"
             )
         for key, attr in new_settings.items():
-            str_setting = key.upper()
+            str_setting = key.lower()
             setting = getattr(Settings, str_setting)
             raw_changed[key] = setting
-            if isinstance(setting, bool):
-                setattr(Settings, str_setting, str_bool(attr))
-            elif isinstance(setting, set):
-                setattr(Settings, str_setting, set(str_ints(attr)))
-            else:
-                setattr(Settings, str_setting, attr)
+            try:
+                if isinstance(setting, bool):
+                    setattr(Settings, str_setting, str_bool(attr))
+                elif isinstance(setting, set):
+                    setattr(Settings, str_setting, set(str_ints(attr)))
+                else:
+                    setattr(Settings, str_setting, attr)
+            except (ValueError, NotADirectoryError) as exc:
+                for k, v in raw_changed.items():  # type: ignore
+                    setattr(Settings, k, v)  # type: ignore
+                return await send(ctx, f"Invalid value for Settings.{key}: `{exc}`")
             changed.append(f"Settings.{str_setting}={attr}")
         self.update_register(SettingRegistration(default, raw_changed), Over.ADD)
         await send(

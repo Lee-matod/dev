@@ -54,7 +54,7 @@ class RootHTTP(Root):
         if mode is None:
             return
         try:
-            kwargs = flag_parser(replace_vars(options or '', Root.scope), Settings.FLAG_DELIMITER.strip())
+            kwargs = flag_parser(replace_vars(options or '', Root.scope), Settings.flag_delimiter.strip())
         except json.JSONDecodeError as exc:
             return await send(ctx, f"{exc}")
         async with aiohttp.ClientSession() as session:

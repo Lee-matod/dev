@@ -103,7 +103,7 @@ class ToggleSettings(discord.ui.View):
         self.add_buttons()
 
     def add_buttons(self):
-        for setting in [setting for setting in Settings.__dict__.keys() if not setting.startswith("__")]:
+        for setting in [setting for setting in Settings.kwargs.keys()]:
             fmt = " ".join(word.lower() if len(word) <= 2 else word.title() for word in setting.split("_"))
             self.add_item(SettingsToggler(setting, self.author, label=fmt))
 
@@ -226,7 +226,7 @@ class SigKill(discord.ui.View):
         await interaction_response(
             interaction,
             InteractionResponseType.EDIT,
-            self.session.raw.replace(Settings.PATH_TO_FILE, "~"),  # type: ignore
+            self.session.raw,  # type: ignore
             view=None,
             paginator=self.session.paginator  # type: ignore
         )

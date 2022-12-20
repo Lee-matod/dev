@@ -25,7 +25,6 @@ from dev.pagination import Paginator
 from dev.components.views import SigKill
 
 from dev.utils.functs import send
-from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
     from typing_extensions import ParamSpec
@@ -141,9 +140,7 @@ class Process:
             if not first and not self.has_set_cmd:
                 _, paginator = await send(
                     context,
-                    self.__session.add_line(
-                        f"{self.__session.interface} {self.cmd.strip()}"
-                    ).replace(Settings.PATH_TO_FILE, "~"),
+                    self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
                     SigKill(self),
                     paginator=self.__session.paginator,
                     forced_pagination=False
@@ -158,7 +155,7 @@ class Process:
             except TimeoutError:
                 return await send(
                     context,
-                    self.__session.set_exit_message("Timed out").replace(Settings.PATH_TO_FILE, "~"),
+                    self.__session.set_exit_message("Timed out"),
                     forced_pagination=False,
                     paginator=self.__session.paginator,
                     view=None
@@ -166,7 +163,7 @@ class Process:
             except InterruptedError:
                 message, paginator = await send(
                     context,
-                    self.__session.raw.replace(Settings.PATH_TO_FILE, "~"),
+                    self.__session.raw,
                     forced_pagination=False,
                     paginator=self.__session.paginator,
                     view=None
@@ -178,7 +175,7 @@ class Process:
             if line:
                 message, paginator = await send(
                     context,
-                    self.__session.add_line(line).replace(Settings.PATH_TO_FILE, "~"),
+                    self.__session.add_line(line),
                     forced_pagination=False,
                     paginator=self.__session.paginator,
                     view=None
@@ -186,7 +183,7 @@ class Process:
             else:
                 message, paginator = await send(
                     context,
-                    self.__session.raw.replace(Settings.PATH_TO_FILE, "~"),
+                    self.__session.raw,
                     forced_pagination=False,
                     paginator=self.__session.paginator,
                     view=None

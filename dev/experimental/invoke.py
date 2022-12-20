@@ -23,7 +23,6 @@ from dev.types import Invokeable
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import generate_ctx, send
 from dev.utils.interaction import SyntheticInteraction, get_app_command
-from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
     from dev import types
@@ -95,7 +94,7 @@ class RootInvoke(Root):
             embeds = [
                 discord.Embed(
                     title=exc[0],
-                    description=f"```py\n{exc[1].replace(Settings.PATH_TO_FILE, '')}\n```",
+                    description=f"```py\n{exc[1]}\n```",
                     color=discord.Color.red()
                 )
                 for exc in handler.error]
@@ -126,7 +125,7 @@ class RootInvoke(Root):
                 kwargs["author"] = attr
             elif isinstance(attr, (discord.TextChannel, discord.Thread)):
                 kwargs["channel"] = attr
-            elif isinstance(attr, discord.Role):  # pyright: ignore [reportUnnecessaryIsInstance]
+            elif isinstance(attr, discord.Role):
                 kwargs["author"]._roles.add(attr.id)  # pyright: ignore [reportPrivateUsage]
                 roles.append(attr.id)
         assert ctx.invoked_with is not None

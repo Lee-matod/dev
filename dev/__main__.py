@@ -113,7 +113,7 @@ class RootCommand(Root):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
-        if Settings.INVOKE_ON_EDIT:
+        if Settings.invoke_on_edit:
             prefix = await self.bot.get_prefix(after)
             if isinstance(prefix, list):
                 prefix = tuple(prefix)

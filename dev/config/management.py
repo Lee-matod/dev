@@ -46,9 +46,9 @@ class RootManagement(Root):
         """Change or view the current working directory that the bot should use."""
         if new_cwd is None:
             return await send(ctx, f"Current working directory is: `{self.cwd}`")
-        new_cwd = new_cwd.replace("|root|", Settings.ROOT_FOLDER)
+        new_cwd = new_cwd.replace("|root|", Settings.root_folder)
         if not pathlib.Path(new_cwd).exists():
-            return await send(ctx, f"Directory `{new_cwd.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
+            return await send(ctx, f"Directory `{new_cwd}` does not exist.")
         self.cwd = new_cwd + "/" if not new_cwd.endswith("/") else new_cwd
         await ctx.message.add_reaction("☑")
 
@@ -70,7 +70,7 @@ class RootManagement(Root):
         aliases=["upload", "mkdir", "create"],
         usage="<folder>"
     )
-    async def root_explorer_new(self, ctx: commands.Context[types.Bot], *, folder: str | None = None):
+    async def root_explorer_new(self, ctx: commands.Context[types.Bot], *, folder: str = ""):
         """Create an empty file/directory or upload a series of files.
         If `directory` is None, then it will be set to the current working directory.
         Use `!` at the beginning of the directory to ignore the current working directory.
@@ -109,12 +109,12 @@ class RootManagement(Root):
             except FileExistsError:
                 return await send(
                     ctx,
-                    f"File {str(path.absolute()).replace(Settings.PATH_TO_FILE, '')} already exists."
+                    f"File {str(path.absolute())} already exists."
                 )
             self.explorer_rgs.append(ManagementRegistration(f"{path.absolute()}", ManagementOperation.CREATE))
             await ctx.message.add_reaction("☑")
         elif path.exists():
-            await send(ctx, f"Path {str(path.absolute()).replace(Settings.PATH_TO_FILE, '')} already exists.")
+            await send(ctx, f"Path {str(path.absolute())} already exists.")
 
     @root.command(
         name="edit",
@@ -137,7 +137,7 @@ class RootManagement(Root):
         directory = self.format_path(directory, tailing=False)
         path = pathlib.Path(directory)
         if not path.is_file():
-            return await send(ctx, f"File `{directory.replace(Settings.PATH_TO_FILE, '')}` does not exist.")
+            return await send(ctx, f"File `{directory}` does not exist.")
         with path.open("wb") as file:
             file.write(await attachment.read())
         self.explorer_rgs.append(ManagementRegistration(f"{path.absolute()}", ManagementOperation.EDIT))
@@ -163,12 +163,12 @@ class RootManagement(Root):
         if not old_path.exists():
             return await send(
                 ctx,
-                f"Path `{str(old_path.absolute()).replace(Settings.PATH_TO_FILE, '')}` does not exist."
+                f"Path `{str(old_path.absolute())}` does not exist."
             )
         if new_path.exists():
             return await send(
                 ctx,
-                f"Path `{str(old_path.absolute()).replace(Settings.PATH_TO_FILE, '')}` already exists."
+                f"Path `{str(old_path.absolute())}` already exists."
             )
         try:
             old_path.rename(new_path)
@@ -189,13 +189,12 @@ class RootManagement(Root):
         path = pathlib.Path(directory)
         assert ctx.invoked_with is not None
         if not path.exists():
-            return await send(ctx, f"Path `{str(path.absolute()).replace(Settings.PATH_TO_FILE, '')}` does not exist.")
+            return await send(ctx, f"Path `{str(path.absolute())}` does not exist.")
         elif ctx.invoked_with.startswith("tree"):
             if not path.is_dir():
                 return await send(ctx, "Path is not a directory.")
-            replace = not ctx.invoked_with.endswith("!")
             tree = [
-                f"📂 {escape(directory.replace(Settings.PATH_TO_FILE, '') if replace else directory) or '/'}",
+                f"📂 {escape(directory) or '/'}",
                 *[f"\t ├─ {'📄' if sub.is_file() else '📁'} "
                   + escape(f"{sub.name}")
                   for sub in path.iterdir()]
@@ -203,7 +202,11 @@ class RootManagement(Root):
             if len(tree) == 1:
                 return await send(ctx, "Directory is empty.")
             tree[-1] = tree[-1].replace("├", "└", 1)
-            return await send(ctx, discord.Embed(description="\n".join(tree), color=discord.Color.blurple()))
+            return await send(
+                ctx,
+                discord.Embed(description="\n".join(tree), color=discord.Color.blurple()),
+                path_to_file=not ctx.invoked_with.endswith("!")
+            )
         elif not path.is_file():
             return await send(ctx, "Path is not a file.")
         await send(ctx, discord.File(fp=io.BytesIO(path.read_bytes()), filename=path.name))
@@ -223,7 +226,7 @@ class RootManagement(Root):
         directory = self.format_path(directory)
         path = pathlib.Path(directory)
         if not path.exists():
-            return await send(ctx, f"Path `{str(path.absolute()).replace(Settings.PATH_TO_FILE, '')}` does not exist.")
+            return await send(ctx, f"Path `{str(path.absolute())}` does not exist.")
         elif path.is_file():
             path.unlink()
             return await ctx.message.add_reaction("☑")
@@ -255,7 +258,7 @@ class RootManagement(Root):
         optional_raise(ctx, exception)
 
     def format_path(self, directory: str, *, tailing: bool = True) -> str:
-        directory = directory.replace("\\", "/").replace("|root|", Settings.ROOT_FOLDER)
+        directory = directory.replace("\\", "/").replace("|root|", Settings.root_folder)
         if not directory.startswith("!"):
             directory = self.cwd + directory.lstrip("/")
         if tailing and not directory.endswith("/"):

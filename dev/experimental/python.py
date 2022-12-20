@@ -98,7 +98,7 @@ class RootPython(Root):
             # if 'file' is passed within the method.
             "print": lambda *a, **kw: print(*a, **kw, file=kw.pop("file", stdout))  # type: ignore
         }
-        code = clean_code(replace_vars(code.replace("|root|", Settings.ROOT_FOLDER), Root.scope))
+        code = clean_code(replace_vars(code.replace("|root|", Settings.root_folder), Root.scope))
 
         async with ExceptionHandler(ctx.message):
             async for expr in Execute(code, self.inst, args):

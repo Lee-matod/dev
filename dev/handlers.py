@@ -324,5 +324,5 @@ def replace_vars(string: str, scope: GlobalLocals) -> str:
         The converted string with the values of the virtual variables.
     """
     for key, value in scope.globals.items():
-        string = string.replace(Settings.VIRTUAL_VARS % key, value)
+        string = string.replace(Settings.virtual_vars % key, value)
     return string
