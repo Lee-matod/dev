@@ -28,26 +28,16 @@ from dev.converters import str_bool
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from discord import (
-        VoiceChannel,
-        StageChannel,
-        TextChannel,
-        ForumChannel,
-        CategoryChannel,
-        Thread,
-        PartialMessageable
-    )
-
     from dev import types
 
     InteractionChannel = Union[
-        VoiceChannel,
-        StageChannel,
-        TextChannel,
-        ForumChannel,
-        CategoryChannel,
-        Thread,
-        PartialMessageable
+        discord.VoiceChannel,
+        discord.StageChannel,
+        discord.TextChannel,
+        discord.ForumChannel,
+        discord.CategoryChannel,
+        discord.Thread,
+        discord.PartialMessageable
     ]
 
 else:
@@ -257,7 +247,7 @@ class SyntheticInteraction:
 
     @discord.utils.cached_slot_property("_cs_channel")
     def channel(self) -> InteractionChannel | None:
-        if isinstance(self._context.channel, InteractionChannel):
+        if isinstance(self._context.channel, InteractionChannel):  # type: ignore
             return self._context.channel  # type: ignore
 
     @property

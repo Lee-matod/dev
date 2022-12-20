@@ -8,7 +8,7 @@ This cog is still under development, thus, certain aspects may be a bit unstable
 ****
 # installation
 
-Python 3.8 or higher is required. To install the extension, simply execute the following command depending on what 
+Python 3.9 or higher is required. To install the extension, simply execute the following command depending on what 
 operating system you use.
 
 **Windows**

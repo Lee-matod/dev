@@ -32,18 +32,18 @@ __all__ = (
 )
 
 if TYPE_CHECKING:
-    from typing import Sequence, TypeAlias
+    from typing import Sequence
 
-    Bot: TypeAlias = Union[commands.Bot, commands.AutoShardedBot]
-    Channel: TypeAlias = Union[
+    Bot = Union[commands.Bot, commands.AutoShardedBot]
+    Channel = Union[
         discord.TextChannel,
         discord.VoiceChannel,
         discord.CategoryChannel,
         discord.StageChannel,
         discord.ForumChannel
     ]
-    Command: TypeAlias = Union[commands.Command[Any, ..., Any], commands.Group[Any, ..., Any]]
-    MessageContent: TypeAlias = Union[
+    Command = Union[commands.Command[Any, ..., Any], commands.Group[Any, ..., Any]]
+    MessageContent = Union[
         str,
         discord.Embed,
         Sequence[discord.Embed],
@@ -52,7 +52,7 @@ if TYPE_CHECKING:
         Union[discord.GuildSticker, discord.StickerItem],
         discord.ui.View
     ]
-    User: TypeAlias = Union[discord.ClientUser, discord.Member, discord.User]
+    User = Union[discord.ClientUser, discord.Member, discord.User]
 
 else:
     from collections.abc import Sequence

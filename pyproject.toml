@@ -3,3 +3,4 @@
 exclude = ["tests", "**/__pycache__", "venv"]
 typeCheckingMode = "strict"
 reportUnnecessaryIsInstance = false
+pythonVersion = "3.9"

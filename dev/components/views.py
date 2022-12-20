@@ -77,7 +77,7 @@ class BoolInput(discord.ui.View):
     def __init__(self, author: Any, func: Any = None) -> None:
         super().__init__()
         self.func: Callable[[], Any] | None = func
-        self.author: int = author.id if isinstance(author, types.User) else author
+        self.author: int = author.id if isinstance(author, types.User) else author  # type: ignore
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return self.author == interaction.user.id

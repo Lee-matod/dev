@@ -144,7 +144,7 @@ class Interface(discord.ui.View):
     def __init__(self, paginator: Paginator, author: types.User | int) -> None:
         super().__init__()
         self.paginator: Paginator = paginator
-        self.author: int = author.id if isinstance(author, types.User) else author
+        self.author: int = author.id if isinstance(author, types.User) else author  # type: ignore
         if paginator.force_last_page:
             self.last_page.disabled = True
             self.next_page.disabled = True
