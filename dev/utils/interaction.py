@@ -25,6 +25,8 @@ from discord.utils import MISSING
 
 from dev.converters import str_bool
 
+from dev.utils.startup import Settings
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -137,7 +139,7 @@ class SyntheticInteraction:
         self.channel_id: int = context.channel.id
         self.guild_id: int | None = context.guild.id if context.guild is not None else None
         self.application_id: int | None = self._context.bot.application_id
-        self.locale: discord.Locale = discord.Locale("en-US")
+        self.locale: discord.Locale = discord.Locale(Settings.locale)
         self.guild_locale: discord.Locale | None = None
         self.message: discord.Message = context.message
         self.user: types.User = context.author

@@ -15,6 +15,8 @@ import os
 import pathlib
 from typing import TYPE_CHECKING, Any
 
+import discord
+
 if TYPE_CHECKING:
     from dev import types
 
@@ -30,6 +32,7 @@ class _SettingsSentinel:
         "__allow_global_uses",
         "__flag_delimiter",
         "__invoke_on_edit",
+        "__locale",
         "__owners",
         "__path_to_file",
         "__root_folder",
@@ -41,6 +44,7 @@ class _SettingsSentinel:
         self.__allow_global_uses: bool = kwargs.setdefault("allow_global_uses", False)
         self.__flag_delimiter: str = kwargs.setdefault("flag_delimiter", "=")
         self.__invoke_on_edit: bool = kwargs.setdefault("invoke_on_edit", False)
+        self.__locale: str = kwargs.setdefault("locale", "en-US")
         self.__owners: set[int] = kwargs.setdefault("owners", set())
         self.__path_to_file: str = kwargs.setdefault("path_to_file", os.getcwd())
         self.__root_folder: str = kwargs.setdefault("root_folder", "")
@@ -98,6 +102,21 @@ class _SettingsSentinel:
     def invoke_on_edit(self, value: bool) -> None:
         self.__invoke_on_edit = bool(value)
         self.kwargs["invoke_on_edit"] = bool(value)
+
+    @property
+    def locale(self) -> str:
+        return self.__locale
+
+    @locale.setter
+    def locale(self, value: str | discord.Locale) -> None:
+        if isinstance(value, str):
+            try:
+                locale = discord.Locale(value)
+            except KeyError as exc:
+                raise ValueError("Invalid locale") from exc
+            self.__locale = locale.value
+        else:
+            self.__locale = value.value  # noqa
 
     @property
     def owners(self) -> set[int]:
