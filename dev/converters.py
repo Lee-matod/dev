@@ -12,7 +12,8 @@ Custom converters used within the dev extension.
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+import re
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union
 
 import discord
 from discord.ext import commands
@@ -26,11 +27,30 @@ if TYPE_CHECKING:
 
 __all__ = (
     "CodeblockConverter",
+    "GlobalTextChannelConverter",
     "LiteralModes",
     "OverrideSettings",
     "str_bool",
     "str_ints"
 )
+
+T = TypeVar("T")
+
+class GlobalTextChannelConverter(commands.TextChannelConverter):
+    async def convert(self, ctx: commands.Context[types.Bot], argument: str) -> discord.TextChannel:
+        try:
+            channel = await super().convert(ctx, argument)
+        except commands.ChannelNotFound as exc:
+            match = re.match(r'<#([0-9]{15,20})>$', argument)
+            if argument.isnumeric():
+                channel = ctx.bot.get_channel(int(argument))
+            elif match is not None:
+                channel = ctx.bot.get_channel(int(match.group(1)))
+            else:
+                raise exc
+        if channel is None:
+            raise commands.ChannelNotFound(argument)
+        return channel
 
 
 class OverrideSettings(commands.Converter[None]):

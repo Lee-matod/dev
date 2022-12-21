@@ -38,6 +38,7 @@ __all__ = (
     "ExceptionHandler",
     "Execute",
     "GlobalLocals",
+    "GlobalTextChannelConverter",
     "InteractionResponseType",
     "Interface",
     "Invokeable",

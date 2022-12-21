@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 import discord
 from discord.ext import commands
 
+from dev.converters import GlobalTextChannelConverter
 from dev.handlers import ExceptionHandler, TimedInfo
 from dev.types import Invokeable
 
@@ -108,38 +109,40 @@ class RootInvoke(Root):
             self,
             ctx: commands.Context[types.Bot],
             attrs: commands.Greedy[
-                discord.Member | discord.TextChannel | discord.Thread | discord.Role
+                discord.Guild | discord.User | GlobalTextChannelConverter | discord.Thread | discord.Role
             ],
             *,
             command_attr: str
     ):
         """Execute a command with custom attributes.
-        Attribute support types are `discord.Member`, `discord.Role`, `discord.TextChannel` and `discord.Thread`.
+        Attribute support types are `discord.User`, `discord.Guild`, `discord.TextChannel` and `discord.Thread`.
         These will override the current context, thus executing the command in a different virtual environment.
         Command checks can be optionally disabled by adding an exclamation mark at the end of the `execute` command.
         """
         kwargs: dict[str, Any] = {"content": f"{ctx.prefix}{command_attr}"}
-        roles: list[int] = []
         for attr in attrs:
-            if isinstance(attr, discord.Member):
+            if isinstance(attr, discord.User):
                 kwargs["author"] = attr
+            elif isinstance(attr, discord.Guild):
+                kwargs["guild"] = attr
             elif isinstance(attr, (discord.TextChannel, discord.Thread)):
                 kwargs["channel"] = attr
-            elif isinstance(attr, discord.Role):
-                kwargs["author"]._roles.add(attr.id)  # pyright: ignore [reportPrivateUsage]
-                roles.append(attr.id)
+        #  Try to upgrade to a Member using the given guild
+        guild: discord.Guild | None = kwargs.get("guild")
+        author: discord.User | None = kwargs.get("author")
+        if guild is not None and author is not None:
+            kwargs["author"] = guild.get_member(author.id) or author
+        elif guild is None and author is not None:
+            kwargs["author"] = ctx.guild.get_member(author.id) or author
+
         assert ctx.invoked_with is not None
         invokable = await self.get_invokable(ctx, command_attr, kwargs)
-        try:
-            if invokable is None:
-                return await send(ctx, f"Command `{command_attr}` not found.")
-            command, context = invokable
-            if ctx.invoked_with.endswith("!"):
-                return await command.reinvoke(context)
-            return await command.invoke(context)
-        finally:
-            for role in roles:
-                del kwargs["author"]._roles[role]  # pyright: ignore [reportPrivateUsage]
+        if invokable is None:
+            return await send(ctx, f"Command `{command_attr}` not found.")
+        command, context = invokable
+        if ctx.invoked_with.endswith("!"):
+            return await command.reinvoke(context)
+        return await command.invoke(context)
 
     async def get_invokable(
             self,
