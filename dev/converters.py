@@ -50,7 +50,7 @@ class GlobalTextChannelConverter(commands.TextChannelConverter):
                 raise exc
         if channel is None:
             raise commands.ChannelNotFound(argument)
-        return channel
+        return channel  # type: ignore
 
 
 class OverrideSettings(commands.Converter[None]):
