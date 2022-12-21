@@ -105,6 +105,10 @@ class _SettingsSentinel:
 
     @property
     def locale(self) -> str:
+        """:class:`str`
+        Locale that will be used whenever emulating a Discord object.
+        Defaults to `en-US`.
+        """
         return self.__locale
 
     @locale.setter

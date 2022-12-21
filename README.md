@@ -67,6 +67,7 @@ owners: set[int] = {}
 path_to_file: str = os.getcwd()
 root_folder: str = ""
 virtual_vars: str = "|%s|"
+locale: str = "en-US"
 ```
 * **allow_global_uses:** Commands that have their `global_use` property set True are allowed to be invoked by any user. 
 Defaults to `False`.
@@ -81,3 +82,4 @@ tracebacks. Defaults to the current working directory. This must be a valid path
 * **root_folder:** The path that will replace the `|root|` text placeholder. This must be a valid path.
 * **virtual_vars:** The format in which virtual variables are expected to be formatted. The actual place where the 
 variable's name will be should be defined as `%s`. Defaults to `|%s|`.
+* **locale:** Locale that will be used whenever emulating a Discord object. Defaults to `en-US`.
