@@ -204,7 +204,8 @@ Settings = _SettingsSentinel()
 
 
 async def set_settings(bot: types.Bot) -> None:
-    if not Settings.owners:
+    if not owner_exists(bot):
+        #  Try to set the owner as the application's owner or its team members
         try:
             if bot.application.owner:  # type: ignore
                 Settings.owners = {bot.application.owner.id}  # type: ignore
@@ -212,5 +213,10 @@ async def set_settings(bot: types.Bot) -> None:
                 Settings.owners = {owner.id for owner in bot.application.team.members}  # type: ignore
         except AttributeError:
             pass
-    if not any((bot.owner_id, bot.owner_ids, Settings.owners)):
+    if not owner_exists(bot):
+        #  The application was not logged in when we tried to get the info, and no other owner IDs were set
         raise RuntimeError("For security reasons, an owner ID must be set")
+
+
+def owner_exists(bot: types.Bot, /) -> bool:
+    return any((Settings.owners, bot.owner_ids, bot.owner_id))
