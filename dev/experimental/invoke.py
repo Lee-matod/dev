@@ -12,7 +12,7 @@ Command invocation or reinvocation with changeable execution attributes.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 import discord
 from discord.ext import commands
@@ -27,6 +27,10 @@ from dev.utils.interaction import SyntheticInteraction, get_app_command
 
 if TYPE_CHECKING:
     from dev import types
+
+
+_DiscordObjects = Union[GlobalTextChannelConverter, discord.Guild, discord.Member, discord.Thread, discord.User]
+
 
 
 class RootInvoke(Root):
@@ -108,20 +112,18 @@ class RootInvoke(Root):
     async def root_execute(
             self,
             ctx: commands.Context[types.Bot],
-            attrs: commands.Greedy[
-                discord.Guild | discord.User | GlobalTextChannelConverter | discord.Thread | discord.Role
-            ],
+            attrs: commands.Greedy[_DiscordObjects],
             *,
             command_attr: str
     ):
         """Execute a command with custom attributes.
-        Attribute support types are `discord.User`, `discord.Guild`, `discord.TextChannel` and `discord.Thread`.
+        Attribute support types are `discord.Member`, `discord.Guild`, `discord.TextChannel` and `discord.Thread`.
         These will override the current context, thus executing the command in a different virtual environment.
         Command checks can be optionally disabled by adding an exclamation mark at the end of the `execute` command.
         """
         kwargs: dict[str, Any] = {"content": f"{ctx.prefix}{command_attr}"}
         for attr in attrs:
-            if isinstance(attr, discord.User):
+            if isinstance(attr, (discord.User, discord.Member)):
                 kwargs["author"] = attr
             elif isinstance(attr, discord.Guild):
                 kwargs["guild"] = attr
@@ -132,7 +134,7 @@ class RootInvoke(Root):
         author: discord.User | None = kwargs.get("author")
         if guild is not None and author is not None:
             kwargs["author"] = guild.get_member(author.id) or author
-        elif guild is None and author is not None:
+        elif guild is None and author is not None and ctx.guild is not None:
             kwargs["author"] = ctx.guild.get_member(author.id) or author
 
         assert ctx.invoked_with is not None

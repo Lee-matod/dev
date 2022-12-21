@@ -33,9 +33,7 @@ if TYPE_CHECKING:
 
     from dev import types
 
-
 T = TypeVar("T")
-
 
 __all__ = (
     "flag_parser",
@@ -443,14 +441,27 @@ async def generate_ctx(ctx: commands.Context[types.Bot], **kwargs: Any) -> comma
     kwargs:
         Any attributes that the generated context should have.
 
+    Notes
+    -----
+    When specifying a new guild, it may not always get updated. This is mainly controlled by the message's text channel.
+    There might be a few other really specific cases in which it may not get updated.
+
     Returns
     -------
     :class:`commands.Context`
         A newly created context with the given attributes.
     """
-    alt_msg: discord.Message = copy(ctx.message)
-    alt_msg._update(kwargs)  # type: ignore  # pyright: ignore [reportPrivateUsage]
-    return await ctx.bot.get_context(alt_msg, cls=type(ctx))
+    author = kwargs.pop("author", ctx.author)
+    channel = kwargs.pop("channel", ctx.channel)
+    guild = kwargs.pop("guild", ctx.guild)
+
+    message: discord.Message = copy(ctx.message)
+    message._update(kwargs)  # type: ignore
+    message.author = author or message.author
+    message.channel = channel or message.channel
+    message.guild = guild or message.guild
+
+    return await ctx.bot.get_context(message, cls=type(ctx))
 
 
 def _check_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
@@ -523,4 +534,3 @@ def _revert_virtual_var_value(string: str) -> str:
     for name, value in Root.scope.locals.items():
         string = string.replace(value, name)
     return string
-
