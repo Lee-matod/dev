@@ -149,8 +149,15 @@ class RootFlags(Root):
 
         over = self.get_last_implementation(command.qualified_name)
         if over is None or not over.source:
-            return await send(ctx, f"Couldn't get source lines for the command `{command_string}`.")
-        return await send(ctx, codeblock_wrapper(over.source, "py"))
+            try:
+                source, _ = inspect.getsource(command.callback)
+            except OSError:
+                return await send(ctx, f"Couldn't get source lines for the command `{command_string}`.")
+            else:
+                self._refresh_base_registrations()
+        else:
+            source = over.source
+        return await send(ctx, codeblock_wrapper(source, "py"))
 
     @root.command(name="--file", parent="dev", aliases=["-f"], hidden=True, require_var_positional=True)
     async def root_file(self, ctx: commands.Context[types.Bot], *, command_string: str):

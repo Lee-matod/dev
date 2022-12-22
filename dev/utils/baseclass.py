@@ -382,9 +382,18 @@ class Root(commands.Cog):
             raise RuntimeError("Could not get root command")
         bot.add_command(root_command)
 
-        self._base_registrations: tuple[BaseCommandRegistration, ...] = tuple(
-            [BaseCommandRegistration(cmd) for cmd in self.bot.walk_commands()]
-        )
+        self._base_registrations: tuple[BaseCommandRegistration, ...] = ()
+        self._refresh_base_registrations()
+
+    def _refresh_base_registrations(self) -> list[BaseCommandRegistration]:
+        base_list: list[BaseCommandRegistration] = []
+        for cmd in self.bot.walk_commands():
+            base = BaseCommandRegistration(cmd)
+            if hasattr(base, "line_no"):
+                # Source could be found, probably an actual "hard coded" command
+                base_list.append(base)
+        self._base_registrations = tuple(base_list)
+        return base_list
 
     def get_base_command(self, command_name: str, /) -> BaseCommandRegistration | None:
         return discord.utils.find(lambda c: c.qualified_name == command_name, self._base_registrations)
