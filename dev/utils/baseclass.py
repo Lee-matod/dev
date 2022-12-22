@@ -363,9 +363,6 @@ class Root(commands.Cog):
         self.bot: types.Bot = bot
         self.commands: dict[str, types.Command] = {}
         self.registrations: dict[int, CommandRegistration | SettingRegistration] = {}
-        self._base_registrations: tuple[BaseCommandRegistration, ...] = tuple(
-            [BaseCommandRegistration(cmd) for cmd in self.bot.walk_commands()]
-        )
 
         root_commands: list[Command[Root] | Group[Root]] = []
         for kls in type(self).__mro__:
@@ -384,6 +381,10 @@ class Root(commands.Cog):
         if root_command is None:
             raise RuntimeError("Could not get root command")
         bot.add_command(root_command)
+
+        self._base_registrations: tuple[BaseCommandRegistration, ...] = tuple(
+            [BaseCommandRegistration(cmd) for cmd in self.bot.walk_commands()]
+        )
 
     def get_base_command(self, command_name: str, /) -> BaseCommandRegistration | None:
         return discord.utils.find(lambda c: c.qualified_name == command_name, self._base_registrations)

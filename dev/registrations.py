@@ -41,7 +41,7 @@ class BaseCommandRegistration:
     def __init__(self, __command: types.Command, /) -> None:
         self.command: types.Command = __command
         self.callback: Callable[
-            Concatenate[commands.Cog | None, commands.Context[types.Bot], P], Coroutine[Any, Any, Any]  # type: ignore
+            Concatenate[commands.Cog | None, commands.Context[types.Bot], P], Coroutine[Any, Any, Any]
         ] = __command.callback  # type: ignore
         self.qualified_name: str = __command.qualified_name
         try:
