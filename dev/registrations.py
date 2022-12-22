@@ -47,10 +47,17 @@ class BaseCommandRegistration:
         try:
             lines, line_no = inspect.getsourcelines(__command.callback)
         except OSError:
-            pass
+            self.source: str = ""
         else:
             self.source: str = "".join(lines)
             self.line_no: int = line_no - 1
+
+    def to_command(self) -> CommandRegistration:
+        return CommandRegistration(
+            self.command,
+            Over.OVERWRITE,  # Technically an overwrite because it's implemented in the source code
+            source=self.source
+        )
 
 
 class BaseRegistration:

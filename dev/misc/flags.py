@@ -132,12 +132,12 @@ class RootFlags(Root):
         embed.add_field(name="Signature", value="\n".join(params) or '`None`')
         await send(ctx, embed)
 
-    @root.command(name="--source", parent="dev", aliases=["-src"], hidden=True)
+    @root.command(name="--source", parent="dev", aliases=["-src"], hidden=True, require_var_positional=True)
     async def root_source(
             self,
             ctx: commands.Context[types.Bot],
             *,
-            command_string: str = ""
+            command_string: str
     ):
         """View the source code of a command.
         This is not exclusive to the `dev` extension.
@@ -147,13 +147,13 @@ class RootFlags(Root):
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
 
-        over = self.match_register_command(command.qualified_name)
-        if not hasattr(over[-1], "source"):
+        over = self.get_last_implementation(command.qualified_name)
+        if over is None or not over.source:
             return await send(ctx, f"Couldn't get source lines for the command `{command_string}`.")
-        return await send(ctx, codeblock_wrapper(over[-1].source, "py"))
+        return await send(ctx, codeblock_wrapper(over.source, "py"))
 
-    @root.command(name="--file", parent="dev", aliases=["-f"], hidden=True)
-    async def root_file(self, ctx: commands.Context[types.Bot], *, command_string: str = ""):
+    @root.command(name="--file", parent="dev", aliases=["-f"], hidden=True, require_var_positional=True)
+    async def root_file(self, ctx: commands.Context[types.Bot], *, command_string: str):
         """View the file of a command.
         This is not exclusive to the `dev` extension.
         The token of the bot will be hidden as `[token]` if it is found within the file.

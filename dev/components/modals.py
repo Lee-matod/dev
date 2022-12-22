@@ -70,8 +70,10 @@ class CodeEditor(discord.ui.Modal):
     )
 
     def __init__(self, ctx: commands.Context[types.Bot], command: types.Command, root: Root) -> None:
+        impl = root.get_last_implementation(command.qualified_name)
+        assert impl is not None, "Managed to get to modal __init__ even though no registrations were found"
         self.code.label = self.code.label.replace("command", command.qualified_name)
-        self.code.default = root.match_register_command(command.qualified_name)[-1].source
+        self.code.default = impl.source
 
         super().__init__(title=f"{command.name}'s Script")
         self.command: types.Command = command

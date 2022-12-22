@@ -12,7 +12,19 @@ Basic classes used within the dev extension.
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Coroutine, Generic, Literal, NoReturn, TypeVar, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Coroutine,
+    Generator,
+    Generic,
+    Literal,
+    NoReturn,
+    TypeVar,
+    overload
+)
 
 import discord
 from discord.ext import commands
@@ -374,9 +386,37 @@ class Root(commands.Cog):
         bot.add_command(root_command)
 
     def get_base_command(self, command_name: str, /) -> BaseCommandRegistration | None:
-        for base in self._base_registrations:
-            if command_name == base.qualified_name:
-                return base
+        return discord.utils.find(lambda c: c.qualified_name == command_name, self._base_registrations)
+
+    def get_all_implementations(self, qualified_name: str) -> Generator[CommandRegistration, None, None]:
+        base = self.get_base_command(qualified_name)
+        if base is not None:
+            yield base.to_command()
+        for cmd in self.registrations.values():
+            if isinstance(cmd, CommandRegistration) and cmd.qualified_name == qualified_name:
+                yield cmd
+
+    def get_last_implementation(self, qualified_name: str, /) -> CommandRegistration | None:
+        cmd = discord.utils.find(
+            lambda c: isinstance(c, CommandRegistration) and c.qualified_name == qualified_name,
+            reversed(self.registrations.values())
+        )
+        if cmd is not None:
+            return cmd  # type: ignore
+        base = self.get_base_command(qualified_name)
+        if base is not None:
+            return base.to_command()
+
+    def get_first_implementation(self, qualified_name: str, /) -> CommandRegistration | None:
+        cmd = discord.utils.find(
+            lambda c: isinstance(c, CommandRegistration) and c.qualified_name == qualified_name,
+            self.registrations.values()
+        )
+        if cmd is not None:
+            return cmd  # type: ignore
+        base = self.get_base_command(qualified_name)
+        if base is not None:
+            return base.to_command()
 
     @overload
     def registers_from_type(self, rgs_type: Literal[Over.OVERRIDE]) -> list[CommandRegistration]:
@@ -388,19 +428,6 @@ class Root(commands.Cog):
 
     def registers_from_type(self, rgs_type: Any) -> Any:
         return [rgs for rgs in self.registrations.values() if rgs.register_type is rgs_type]  #  type: ignore
-
-    def match_register_command(self, qualified_name: str) -> list[CommandRegistration]:
-        command_list: list[CommandRegistration] = []
-        for rgs in self.registrations.values():
-            if isinstance(rgs, CommandRegistration):
-                if rgs.command.qualified_name == qualified_name:
-                    command_list.append(rgs)
-        other = self.get_base_command(qualified_name)
-        if other is None:
-            other = []
-        else:
-            other = [other]
-        return command_list or other  # type: ignore
 
     def update_register(
             self,

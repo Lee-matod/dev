@@ -69,7 +69,9 @@ class RootOver(Root):
             return await send(ctx, f"Override with ID of `{index}` not found.")
         self.update_register(override, Over.DELETE)
         command: types.Command = self.bot.get_command(override.qualified_name)  # type: ignore
-        command.callback = self.match_register_command(override.qualified_name)[-1].callback
+        impl = self.get_last_implementation(override.qualified_name)
+        assert impl is not None, "Managed to try to undo an override that was never an override"
+        command.callback = impl.callback
         await ctx.message.add_reaction("\u2611")
 
     @root.command(name="changes", parent="dev override")
@@ -99,7 +101,7 @@ class RootOver(Root):
             except IndexError:
                 previous = self.get_base_command(override.qualified_name)
             # source could raise an OSError when trying to be fetched inside BaseCommandRegistration
-            if previous is None or not hasattr(previous, "source"):
+            if previous is None or not previous.source:
                 return await send(ctx, "Could not compare source codes.")
             if override.source == previous.source:
                 return await send(ctx, "No changes were made.")
@@ -159,8 +161,10 @@ class RootOver(Root):
         command: types.Command = self.bot.get_command(command_string)  # type: ignore
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
+        impl = self.get_last_implementation(command_string)
+        assert impl is not None, "Should not have reached this code"
         # modals have a maximum of 4000 characters
-        if not script and len(self.match_register_command(command_string)[-1].source) > 4000:
+        if not script and len(impl.source) > 4000:
             return await send(ctx, "The command's source code exceeds the 4000 maximum character limit.")
         if not script:
             return await send(ctx, CodeView(ctx, command, self))
@@ -330,8 +334,8 @@ class RootOver(Root):
                 read_lines = f.readlines()
             start, end = line_no, line_no + (len(lines) - 1)
             self.update_register(overwrite, Over.DELETE)
-            old_command = self.match_register_command(overwrite.qualified_name)[-1]
-            if not hasattr(old_command, "source"):
+            old_command = self.get_last_implementation(overwrite.qualified_name)
+            if old_command is None or not old_command.source:
                 return await send(ctx, f"Could not get source lines for the command `{overwrite.qualified_name}`.")
             old_lines = old_command.source
             old_lines_split = old_lines.split("\n")
