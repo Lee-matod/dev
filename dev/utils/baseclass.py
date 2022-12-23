@@ -379,13 +379,16 @@ class Root(commands.Cog):
             if fronted_cog is not None:
                 for cmd in self._get_commands(type(self).__mro__):
                     actual = cmd.to_instance(fronted_cog.commands)
-                    try:
-                        bot.add_command(actual)
-                    except commands.CommandRegistrationError:
-                        #  Maybe we should let this propagate instead of dealing with it.
-                        #  But I believe that it's more user-friendly if we keep it this way.
-                        bot.remove_command(actual.qualified_name)
-                        bot.add_command(actual)
+                    if actual.qualified_name == actual.name:
+                        #  Top level coomand
+                        try:
+                            bot.add_command(actual)
+                        except commands.CommandRegistrationError:
+                            #  Maybe we should let this propagate instead of dealing with it.
+                            #  But I believe that it's more user-friendly if we keep it this way.
+                            bot.remove_command(actual.qualified_name)
+                            bot.add_command(actual)
+                    actual.cog = fronted_cog
                     fronted_cog.commands[actual.qualified_name] = actual
             return
         self.bot: types.Bot = bot
