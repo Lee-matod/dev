@@ -230,6 +230,12 @@ class BaseCommand(Generic[CogT_co, P, T]):
             raise RuntimeError(f"Command {self.name!r} missing cog.")
         return await self.callback(self.cog, context, *args, **kwargs)
 
+    @property
+    def qualified_name(self) -> str:
+        if self.parent is not None:
+            return f"{self.parent} {self.name}"
+        return self.name
+
     def to_instance(
             self,
             command_mapping: dict[str, types.Command],
@@ -273,7 +279,7 @@ class Command(BaseCommand[CogT_co, ..., Any]):
         if self.parent:
             command = command_mapping.get(self.parent)
             if not command:
-                raise RuntimeError("Couldn't find command command's parent")
+                raise RuntimeError(f"Couldn't find {self.qualified_name} command's parent")
             if not isinstance(command, commands.Group):
                 raise RuntimeError("Command's parent command is not commands.Group instance")
             deco = command.command
@@ -316,7 +322,7 @@ class Group(BaseCommand[CogT_co, ..., Any]):
         if self.parent:
             command = command_mapping.get(self.parent)
             if not command:
-                raise RuntimeError("Couldn't find group command's parent")
+                raise RuntimeError(f"Couldn't find {self.qualified_name} command's parent")
             if not isinstance(command, commands.Group):
                 raise RuntimeError("Group's parent command is not commands.Group instance")
             deco = command.group
@@ -358,19 +364,35 @@ class Root(commands.Cog):
 
     scope: ClassVar[GlobalLocals] = GlobalLocals()
     cached_messages: ClassVar[dict[int, discord.Message]] = {}
+    _subclasses: set[type[Root]] = set()
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        #  Only allow direct subclasses of Root to be added, otherwise cog conflict may occur.
+        if cls.__base__ == Root:
+            Root._subclasses.add(cls)
+        super().__init_subclass__()
 
     def __init__(self, bot: types.Bot) -> None:
+        if type(self).__base__ == Root:
+            #  Shouldn't instantiate nested Roots, but check if cog has already been loaded and add commands.
+            fronted_cog: Root | None = bot.get_cog("Dev")  # type: ignore
+            if fronted_cog is not None:
+                for cmd in self._get_commands(type(self).__mro__):
+                    actual = cmd.to_instance(fronted_cog.commands)
+                    try:
+                        bot.add_command(actual)
+                    except commands.CommandRegistrationError:
+                        #  Maybe we should let this propagate instead of dealing with it.
+                        #  But I believe that it's more user-friendly if we keep it this way.
+                        bot.remove_command(actual.qualified_name)
+                        bot.add_command(actual)
+                    fronted_cog.commands[actual.qualified_name] = actual
+            return
         self.bot: types.Bot = bot
         self.commands: dict[str, types.Command] = {}
         self.registrations: dict[int, CommandRegistration | SettingRegistration] = {}
 
-        root_commands: list[Command[Root] | Group[Root]] = []
-        for kls in type(self).__mro__:
-            for val in kls.__dict__.values():
-                if isinstance(val, (Command, Group)):
-                    cmd: Command[Root] | Group[Root] = val
-                    root_commands.append(cmd)
-
+        root_commands: list[Command[Root] | Group[Root]] = list(self._get_commands(tuple(Root._subclasses)))
         root_commands.sort(key=lambda c: c.level)
         for command in root_commands:
             command.cog = self
@@ -380,10 +402,28 @@ class Root(commands.Cog):
         root_command = self.commands.get("dev")
         if root_command is None:
             raise RuntimeError("Could not get root command")
-        bot.add_command(root_command)
+        for r in self.commands.values():
+            if r.qualified_name == r.name:
+                # Top level command
+                bot.add_command(r)
 
         self._base_registrations: tuple[BaseCommandRegistration, ...] = ()
         self._refresh_base_registrations()
+
+    def _get_commands(self, cls: tuple[type, ...]) -> set[Command[Root] | Group[Root]]:
+        cmds: set[Command[Root] | Group[Root]] = set()
+        for kls in cls:
+            for val in kls.__dict__.values():
+                if isinstance(val, (Command, Group)):
+                    cmd: Command[Root] | Group[Root] = val
+                    cmds.add(cmd)
+        return cmds
+
+    @classmethod
+    def add_cog(cls, cog: type[Root]) -> None:
+        if not issubclass(cog, Root):
+            raise TypeError(f"{cog.__name__!r} must subclass Root")
+        cls._subclasses.add(cog)
 
     def _refresh_base_registrations(self) -> list[BaseCommandRegistration]:
         base_list: list[BaseCommandRegistration] = []
