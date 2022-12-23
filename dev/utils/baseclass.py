@@ -43,7 +43,6 @@ if TYPE_CHECKING:
 else:
     P = TypeVar("P")
 
-
 T = TypeVar("T")
 CogT_co = TypeVar("CogT_co", bound="Root", covariant=True)
 
@@ -66,6 +65,7 @@ class root(Generic[CogT_co]):  # noqa E302
     Even though this class was made for internal uses, it cannot be instantiated nor subclassed.
     It should be used as-is.
     """
+
     def __init__(self) -> NoReturn:
         raise OperationNotAllowedError("Cannot instantiate root.")
 
@@ -89,12 +89,14 @@ class root(Generic[CogT_co]):  # noqa E302
         kwargs:
             Key-word arguments that'll be forwarded to the :class:`Command` class.
         """
+
         def decorator(
                 func: Callable[Concatenate[CogT_co, commands.Context[types.Bot], P], Coroutine[Any, Any, Any]]
         ) -> Command[CogT_co]:
             if isinstance(func, Command):
                 raise TypeError("Callback is already a command.")
             return Command(func, name=name, **kwargs)
+
         return decorator
 
     @staticmethod
@@ -111,10 +113,12 @@ class root(Generic[CogT_co]):  # noqa E302
         kwargs:
             Key-word arguments that'll be forwarded to the :class:`Group` class.
         """
+
         def decorator(func: Callable[Concatenate[CogT_co, commands.Context[types.Bot], P], Any]) -> Group[CogT_co]:
             if isinstance(func, Group):
                 raise TypeError("Callback is already a group.")
             return Group(func, name=name, **kwargs)
+
         return decorator
 
 
@@ -246,7 +250,7 @@ class BaseCommand(Generic[CogT_co, P, T]):
     def error(
             self,
             func: Callable[[CogT_co, commands.Context[types.Bot], commands.CommandError], Coroutine[Any, Any, Any]]
-    ) -> Callable[[CogT_co, commands.Context[types.Bot], commands.CommandError], Coroutine[Any, Any , Any]]:
+    ) -> Callable[[CogT_co, commands.Context[types.Bot], commands.CommandError], Coroutine[Any, Any, Any]]:
         """Set a local error handler"""
         self.on_error = func
         return func
@@ -373,6 +377,7 @@ class Root(commands.Cog):
         super().__init_subclass__()
 
     def __init__(self, bot: types.Bot) -> None:
+        self.bot: types.Bot = bot
         if type(self).__base__ == Root:
             #  Shouldn't instantiate nested Roots, but check if cog has already been loaded and add commands.
             fronted_cog: Root | None = bot.get_cog("Dev")  # type: ignore
@@ -391,7 +396,6 @@ class Root(commands.Cog):
                     actual.cog = fronted_cog
                     fronted_cog.commands[actual.qualified_name] = actual
             return
-        self.bot: types.Bot = bot
         self.commands: dict[str, types.Command] = {}
         self.registrations: dict[int, CommandRegistration | SettingRegistration] = {}
 
@@ -480,7 +484,7 @@ class Root(commands.Cog):
         ...
 
     def registers_from_type(self, rgs_type: Any) -> Any:
-        return [rgs for rgs in self.registrations.values() if rgs.register_type is rgs_type]  #  type: ignore
+        return [rgs for rgs in self.registrations.values() if rgs.register_type is rgs_type]  # type: ignore
 
     def update_register(
             self,
@@ -524,7 +528,10 @@ class Root(commands.Cog):
             All checks failed. The user who invoked the command is not the owner of the bot.
         """
         from dev.utils.startup import Settings  # circular import
+        assert ctx.command is not None
 
+        if not isinstance(ctx.command.cog, type(self.bot.get_cog("Dev"))):
+            return True
         if isinstance(ctx.command, (_DiscordCommand, _DiscordGroup)):
             if ctx.command.global_use and Settings.allow_global_uses:
                 return True
