@@ -34,6 +34,8 @@ from dev.handlers import GlobalLocals
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 from dev.types import Over
 
+from dev.utils.startup import Settings
+
 if TYPE_CHECKING:
     from typing_extensions import Concatenate, ParamSpec
 
@@ -527,7 +529,6 @@ class Root(commands.Cog):
         discord.ext.commands.NotOwner
             All checks failed. The user who invoked the command is not the owner of the bot.
         """
-        from dev.utils.startup import Settings  # circular import
         assert ctx.command is not None
 
         if not isinstance(ctx.command.cog, type(self.bot.get_cog("Dev"))):
