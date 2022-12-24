@@ -4,7 +4,8 @@ dev is a debugging, testing and editing extension for discord.py.
 discord.py github: https://github.com/Rapptz/discord.py  
 discord.py docs: https://discordpy.readthedocs.io/en/latest/index.html
 
-This cog is still under development, thus, certain aspects may be a bit unstable.
+This cog is still under development, thus, certain aspects may be a bit unstable.  
+You can find the official documentation for this extension [here](https://github.com/Lee-matod/dev/wiki).
 ****
 # installation
 
@@ -12,11 +13,11 @@ Python 3.9 or higher is required. To install the extension, simply execute the f
 operating system you use.
 
 **Windows**
-```
+```shell
 py -3 -m pip install -U git+https://github.com/Lee-matod/dev
 ```
 **MacOS/Linux**
-```
+```shell
 python3 -m pip install -U git+https://github.com/Lee-matod/dev
 ```
 
