@@ -19,7 +19,7 @@ import pathlib
 import subprocess
 import sys
 import time
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Callable, IO, NoReturn, TypeVar
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Callable, IO, NoReturn, TypeVar, overload
 
 from dev.pagination import Paginator
 from dev.components.views import SigKill
@@ -70,6 +70,39 @@ SHELL = os.getenv("SHELL") or "/bin/bash"
 
 
 class Process:
+    """A class that wraps a :class:`subprocess.Popen` process
+
+    It is not recommended to instantiate this class. You should instead get an instance through
+    :meth:`__call__`.
+    It is also recommended to use this class as a context manager to ensure proper process killing handling.
+
+    Parameters
+    ----------
+    session: :class:`ShellSession`
+        The current session that this process will be bound to.
+    cwd: :class:`str`
+        The current working directory that this process will be in.
+    cmd: :class:`str`
+        The command that should get executed in a subprocess.
+
+    Attributes
+    ----------
+    close_code: Optional[:class:`int`]
+        The exit code that the process obtains upon it being finished.
+    cmd: :class:`str`
+        The command string that was passed to the constructor of this class.
+    errput: List[:class:`str`]
+        A list of exceptions that occurred during the lifetime of this process.
+        This list is dynamically populated and exhausted, so it shouldn't be directly accessed.
+    force_kill: :class:`bool`
+        Whether the process should be forcefully terminated.
+    output: List[:class:`str`]
+        A list of lines that have been outputted by the subprocess.
+        This list is dynamically populated and exhausted, so it shouldn't be directly accessed.
+    process: :class:`subprocess.Popen`
+        The actual subprocess.
+    """
+
     __slots__ = (
         "__session",
         "close_code",
@@ -129,6 +162,11 @@ class Process:
         self.process.terminate()
         self.close_code = self.process.wait(timeout=0.5)
 
+    @overload
+    async def run_until_complete(self, *, first: bool = False) -> str | None:
+        ...
+
+    @overload
     async def run_until_complete(
             self,
             context: commands.Context[types.Bot],
@@ -136,23 +174,53 @@ class Process:
             *,
             first: bool = False
     ) -> tuple[discord.Message, Paginator | None] | None:
+        ...
+
+    async def run_until_complete(
+            self,
+            context: commands.Context[types.Bot] | None = None,
+            /,
+            *,
+            first: bool = False
+    ) -> Any:
+        """Continues executing the current subprocess until it has finished or is forcefully terminated.
+
+        Parameters
+        ----------
+        context: Optional[:class:`discord.ext.commands.Context`]
+            The invocation context in which the function should send the output to. If not given, it will return the
+            output as a string when the subprocess is completed.
+        first: :class:`bool`
+            Whether this is the first command of the session. Defaults to `False`.
+
+        Returns
+        -------
+        Optional[Tuple[:class:`discord.Message`, Optional[:class:`Paginator`]]]
+            The message and optional paginator that were sent, if any. Usually you shouldn't need these objects.
+        """
+        str_msg = ""
         while self.is_alive and not self.force_kill:
             if not first and not self.has_set_cmd:
-                _, paginator = await send(
-                    context,
-                    self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
-                    SigKill(self),
-                    paginator=self.__session.paginator,
-                    forced_pagination=False
-                )
-                if paginator is not None:
-                    self.__session.paginator = paginator
-                self.has_set_cmd = True
+                if context is None:
+                    str_msg = self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}")
+                else:
+                    _, paginator = await send(
+                        context,
+                        self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
+                        SigKill(self),
+                        paginator=self.__session.paginator,
+                        forced_pagination=False
+                    )
+                    if paginator is not None:
+                        self.__session.paginator = paginator
+                    self.has_set_cmd = True
             if self.__session.terminated:
                 return
             try:
                 line = await self.in_executor(self.get_next_line)
             except TimeoutError:
+                if context is None:
+                    return self.__session.set_exit_message("Timed out")
                 return await send(
                     context,
                     self.__session.set_exit_message("Timed out"),
@@ -161,6 +229,8 @@ class Process:
                     view=None
                 )
             except InterruptedError:
+                if context is None:
+                    return self.__session.raw
                 message, paginator = await send(
                     context,
                     self.__session.raw,
@@ -173,7 +243,10 @@ class Process:
                     return message, paginator
                 return message, paginator
             if line:
-                message, paginator = await send(
+                if context is None:
+                    str_msg = self.__session.add_line(line)
+                    continue
+                _, paginator = await send(
                     context,
                     self.__session.add_line(line),
                     forced_pagination=False,
@@ -181,7 +254,10 @@ class Process:
                     view=None
                 )
             else:
-                message, paginator = await send(
+                if context is None:
+                    str_msg = self.__session.raw
+                    continue
+                _, paginator = await send(
                     context,
                     self.__session.raw,
                     forced_pagination=False,
@@ -190,13 +266,16 @@ class Process:
                 )
             if paginator is not None:
                 self.__session.paginator = paginator
+        else:
+            if context is None:
+                return str_msg
 
     def start_reading(self, stream: IO[bytes], callback: Callable[[bytes], Any]) -> asyncio.Task[str | None]:
         return self.loop.create_task(
             self.in_executor(self.reader, stream, callback)
         )
 
-    async def in_executor(self, func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    async def in_executor(self, func: Callable[P, T], *args: P.args) -> T:
         return await self.loop.run_in_executor(None, func, *args)
 
     def reader(self, stream: IO[bytes], callback: Callable[[bytes], Any]) -> None:
@@ -204,12 +283,28 @@ class Process:
             self.loop.call_soon_threadsafe(callback, line)
 
     def get_next_line(self) -> str | NoReturn:
+        """Tries to get the output of the subprocess within a 60-second time frame.
+
+        You should let this function get called automatically by :meth:`run_until_complete`.
+
+        Returns
+        -------
+        :class:`str`
+            The current lines that were outputted by the subprocess.
+
+        Raises
+        ------
+        InterruptedError
+            The subprocess was forcefully killed.
+        TimeoutError
+            The subprocess did not output anything in the last 60 seconds.
+        """
         start = time.perf_counter()
         while not self.output and not self.errput:
             if self.force_kill:
-                raise InterruptedError
+                raise InterruptedError("Subprocess has been killed")
             if time.perf_counter() - start > 60:
-                raise TimeoutError
+                raise TimeoutError("No output in the last 60 seconds")
         if self.process.poll() is None:
             out = ("\n".join(self.output) + "\n" + "\n".join(self.errput)).strip("\n")
         else:
@@ -221,10 +316,51 @@ class Process:
 
     @property
     def is_alive(self) -> bool:
-        return self.process.poll() is None or bool(self.output) or bool(self.errput)
+        """:class:`bool`
+        Whether the current process is active or has pending output to get formatted.
+        """
+        return self.process.poll() is None or self.output or self.errput
 
 
 class ShellSession:
+    """A system shell session.
+
+    To create a process, you must call an instance of this class with the command that you want to execute.
+    This will return a :class:`Process` object which you can use inside a context manager to handle the subprocess.
+    It is recommended that you always use the process class inside a context manager so that it can be properly handled.
+
+    Attributes
+    ----------
+    cwd: :class:`str`
+        The current working directory of this session. Defaults to the current working directory of the program.
+
+    Notes
+    -----
+    If the current session has been terminated, and a new process is requested, ConnectionRefusedError will be raised.
+    Terminated sessions should not and cannot be reinitialized. If you try to reinitialize it, ConnectionError will be
+    raised.
+
+    Examples
+    --------
+    .. codeblock:: python3
+        shell = ShellSession()
+        with shell("echo 'Hello World!'") as process:
+            result = await process.run_until_complete()
+        print(result)  # Hello World!
+
+        with shell("pwd") as process:
+            result = await process.run_until_complete()
+        print(result)  # If on a unix system, it will print your current working directory.
+
+        process = shell("cd Desktop")
+        with process:
+            result = await process.run_until_complete()
+        print(result)  # Changes your current working directory to Desktop.
+
+        process = shell("pwd")
+        result = await process.run_until_complete()  # I do not recommend doing this!
+        print(result)  # If on a unix system, it will print Desktop as your current working directory.
+    """
     __slots__ = (
         "__terminate",
         "_previous_processes",
@@ -248,6 +384,9 @@ class ShellSession:
 
     @property
     def paginator(self) -> Paginator | None:
+        """Optional[:class:`Paginator`]
+        The current paginator instance that is being used for this session, if any.
+        """
         return self._paginator
 
     @paginator.setter
@@ -258,6 +397,9 @@ class ShellSession:
 
     @property
     def terminated(self) -> bool:
+        """:class:`bool`
+        Whether this session has been terminated.
+        """
         return self.__terminate
 
     @terminated.setter
@@ -269,9 +411,24 @@ class ShellSession:
     def __call__(self, script: str) -> Process:
         if self.terminated:
             raise ConnectionRefusedError("Shell has been terminated. Initiate another shell session")
-        return Process(self, self.cwd, script)
+        return Process(self, self.cwd, script.removesuffix(";"))
 
     def format_process(self, p: Process, /) -> str:
+        """Similar to :meth:`add_line`, only that this should be called once.
+
+        This method starts the session's interface, therefore it should only be called once the first command is
+        executed.
+
+        Parameters
+        ----------
+        p: :class:`Process`
+            The first process of the session.
+
+        Returns
+        -------
+        :class:`str`
+            The full formatted message.
+        """
         resp = (f"```{self.highlight}\n{self.interface} {p.cmd.strip()}".strip()
                 + "\n".join(self._previous_processes)
                 + "\n").strip("\n")
@@ -285,12 +442,37 @@ class ShellSession:
         return resp
 
     def add_line(self, line: str) -> str:
+        """Appends a new line to the current session's interface.
+
+        Parameters
+        ----------
+        line: :class:`str`
+            The line that should get added to the interface.
+
+        Returns
+        -------
+        :class:`str`
+            The full formatted message.
+        """
         self._previous_processes.append(line)
         if self.paginator is not None:
             return line.replace("`", "`\u200b")
         return (f"```{self.highlight}\n" + "\n".join(self._previous_processes) + "\n").strip("\n") + "```"
 
     def set_exit_message(self, msg: str, /) -> str:
+        """This is a shorthand to :meth:`add_line` followed by setting :attr:`terminated` to
+        `True`.
+
+        Parameters
+        ----------
+        msg: :class:`str`
+            The last message that should get added to the interface of the current session.
+
+        Returns
+        -------
+        :class:`str`
+            The full formatted message.
+        """
         self.terminated = True
         if self.paginator is not None:
             return msg.replace("`", "`\u200b")
@@ -298,18 +480,27 @@ class ShellSession:
 
     @property
     def raw(self) -> str:
+        """:class:`str`
+        The full formatted interface message of the current session.
+        """
         if self.paginator is not None:
             return ""
         return f"```{self.highlight}\n" + "\n".join(self._previous_processes) + f"```"
 
     @property
     def suffix(self) -> str:
+        """:class:`str`
+        Gets the current working directory command depending on the OS.
+        """
         if WINDOWS:
             return "; cwd"
         return "; pwd"
 
     @property
     def prefix(self) -> tuple[str, ...]:
+        """Tuple[:class:`str`, ...]
+        Gets the executable that will be used to process commands.
+        """
         if POWERSHELL:
             return "powershell",
         elif WINDOWS:
@@ -318,6 +509,9 @@ class ShellSession:
 
     @property
     def interface(self) -> str:
+        """:class:`str`
+        The prefix in which each new command should start with in this session's interface.
+        """
         if POWERSHELL:
             return "PS >"
         elif WINDOWS:
@@ -326,6 +520,9 @@ class ShellSession:
 
     @property
     def highlight(self) -> str:
+        """:class:`str`
+        The highlight language that should be used in the codeblock.
+        """
         if POWERSHELL:
             return "ps"
         elif WINDOWS:
@@ -334,12 +531,41 @@ class ShellSession:
 
 
 class Execute:
+    """Evaluate and execute Python code.
+
+    If the last couple of lines are expressions, yields are automatically appended.
+
+    Parameters
+    ----------
+    code: :class:`str`
+        The code that should be evaluated and executed.
+    global_locals: :class:`GlobalLocals`
+        The scope that will get updated once the given code has finished executing.
+    args: Dict[:class:`str`, Any]
+        An additional mapping of values that will be forwarded to the scope of the evaluation.
+
+    Examples
+    --------
+    .. codeblock:: python3
+        code = "for _ in range(3): print(i)"
+        #  Prints 'Hello World' 3 times
+        async for expr in Execute(code, GlobalLocals(), {"i": "Hello World"})
+            print(expr)
+
+        code = "1 + 1" \
+               "2 + 2" \
+               "3 + 3"
+        #  Yields the result of each statement
+        async for expr in Execute(code, GlobalLocals(), {})
+            print(expr)
+    """
     __slots__ = (
         "args_name",
         "args_value",
         "code",
         "vars"
     )
+
     def __init__(self, code: str, global_locals: GlobalLocals, args: dict[str, Any]) -> None:
         self.args_name = ["_self_variables", *args.keys()]
         self.args_value = [global_locals, *args.values()]
