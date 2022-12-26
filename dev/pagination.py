@@ -37,7 +37,7 @@ class _PageSetter(discord.ui.Modal):
         if int(self.page_num.value) not in range(1, len(self.view.paginator.pages) + 1):
             return await interaction.response.send_message("Page number does not exist.", ephemeral=True)
         self.view.current_page = int(self.page_num.value)
-        await interaction.response.edit_message(**self.view.paginator.to_dict(self.view.display_page), view=self.view)
+        await interaction.response.edit_message(content=self.view.display_page, view=self.view)
 
 
 class Paginator(commands.Paginator):
@@ -68,21 +68,6 @@ class Paginator(commands.Paginator):
     def pages(self) -> list[str]:
         assert self.suffix is not None
         return [page.strip("\n") + self.suffix for page in self.__pages]
-
-    def to_dict(self, content: str) -> dict[str, str]:
-        """A useful helper function that can be sent to a :meth:`discord.abc.Messageable.send` as key-word arguments.
-
-        Parameters
-        ----------
-        content: :class:`str`
-            The new content that the dictionary's value should have.
-
-        Returns
-        -------
-        Dict[:class:`str`, Union[discord.Embed, :class:`str`]]
-            A single item dictionary with the content type as its key, and the pagination type as its value.
-        """
-        return {"content": content}
 
     def add_line(self, line: str = "", *, empty: bool = False) -> None:
         """A wrapper to the default :meth:`discord.ext.commands.Paginator.add_line`.
@@ -141,11 +126,11 @@ class Interface(discord.ui.View):
         This is the result of the user ID or object that was passed to the constructor.
     """
 
-    def __init__(self, paginator: Paginator, author: types.User | int) -> None:
+    def __init__(self, paginator: commands.Paginator, author: types.User | int) -> None:
         super().__init__()
-        self.paginator: Paginator = paginator
+        self.paginator: commands.Paginator = paginator
         self.author: int = author.id if isinstance(author, types.User) else author  # type: ignore
-        if paginator.force_last_page:
+        if hasattr(paginator, "force_last_page") and paginator.force_last_page:  # type: ignore
             self.last_page.disabled = True
             self.next_page.disabled = True
             if len(paginator.pages) <= 1:
@@ -197,12 +182,12 @@ class Interface(discord.ui.View):
     @discord.ui.button(label="\u226a")
     async def first_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page = 1
-        await interaction.response.edit_message(**self.paginator.to_dict(self.display_page), view=self)
+        await interaction.response.edit_message(content=self.display_page, view=self)
 
     @discord.ui.button(label="\u25c0", style=discord.ButtonStyle.blurple)
     async def previous_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page -= 1
-        await interaction.response.edit_message(**self.paginator.to_dict(self.display_page), view=self)
+        await interaction.response.edit_message(content=self.display_page, view=self)
 
     @discord.ui.button(label="0", style=discord.ButtonStyle.green)
     async def current(self, interaction: discord.Interaction, _) -> None:
@@ -211,12 +196,12 @@ class Interface(discord.ui.View):
     @discord.ui.button(label="\u25b6", style=discord.ButtonStyle.blurple)
     async def next_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page += 1
-        await interaction.response.edit_message(**self.paginator.to_dict(self.display_page), view=self)
+        await interaction.response.edit_message(content=self.display_page, view=self)
 
     @discord.ui.button(label="\u226b")
     async def last_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page = len(self.paginator.pages)
-        await interaction.response.edit_message(**self.paginator.to_dict(self.display_page), view=self)
+        await interaction.response.edit_message(content=self.display_page, view=self)
 
     @discord.ui.button(label="Quit", style=discord.ButtonStyle.danger)
     async def remove(self, interaction: discord.Interaction, _) -> None:
