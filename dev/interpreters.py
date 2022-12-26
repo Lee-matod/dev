@@ -19,7 +19,7 @@ import pathlib
 import subprocess
 import sys
 import time
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Callable, IO, NoReturn, TypeVar, overload
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Callable, IO, Literal, NoReturn, TypeVar, overload
 
 from dev.pagination import Paginator
 from dev.components.views import SigKill
@@ -163,7 +163,7 @@ class Process:
         self.close_code = self.process.wait(timeout=0.5)
 
     @overload
-    async def run_until_complete(self, *, first: bool = False) -> str | None:
+    async def run_until_complete(self, context: Literal[None], /, *, first: bool = False) -> str | None:
         ...
 
     @overload
@@ -195,8 +195,10 @@ class Process:
 
         Returns
         -------
-        Optional[Tuple[:class:`discord.Message`, Optional[:class:`Paginator`]]]
-            The message and optional paginator that were sent, if any. Usually you shouldn't need these objects.
+        Union[Optional[Tuple[:class:`discord.Message`, Optional[:class:`Paginator`]]], Optional[:class:`str`]]
+            If *context* was not `None`, then this returns the message and optional paginator that were sent, if any.
+            Usually you shouldn't need these objects.
+            If instead *context* was `None`, then this returns the output of the subprocess when its lifetime is over.
         """
         str_msg = ""
         while self.is_alive and not self.force_kill:
@@ -275,7 +277,7 @@ class Process:
             self.in_executor(self.reader, stream, callback)
         )
 
-    async def in_executor(self, func: Callable[P, T], *args: P.args) -> T:
+    async def in_executor(self, func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
         return await self.loop.run_in_executor(None, func, *args)
 
     def reader(self, stream: IO[bytes], callback: Callable[[bytes], Any]) -> None:
@@ -319,7 +321,7 @@ class Process:
         """:class:`bool`
         Whether the current process is active or has pending output to get formatted.
         """
-        return self.process.poll() is None or self.output or self.errput
+        return self.process.poll() is None or bool(self.output) or bool(self.errput)
 
 
 class ShellSession:
