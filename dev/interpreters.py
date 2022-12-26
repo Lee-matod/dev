@@ -535,7 +535,7 @@ class ShellSession:
 class Execute:
     """Evaluate and execute Python code.
 
-    If the last couple of lines are expressions, yields are automatically appended.
+    If the last couple of lines are expressions, yields are automatically prepended.
 
     Parameters
     ----------
