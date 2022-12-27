@@ -411,6 +411,25 @@ class ShellSession:
         self.__terminate = True
 
     def __call__(self, script: str) -> Process:
+        """Creates a new subprocess and returns it.
+
+        This is the equivalent of executing a command in the system's shell.
+
+        Parameters
+        ----------
+        script: :class:`str`
+            The command that should be executed in the subprocess.
+
+        Returns
+        -------
+        :class:`Process`
+            The process that wraps the executed command.
+
+        Raises
+        ------
+        ConnectionRefusedError
+            The current session has already been terminated.
+        """
         if self.terminated:
             raise ConnectionRefusedError("Shell has been terminated. Initiate another shell session")
         return Process(self, self.cwd, script.removesuffix(";"))
