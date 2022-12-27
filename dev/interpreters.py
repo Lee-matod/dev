@@ -73,7 +73,7 @@ class Process:
     """A class that wraps a :class:`subprocess.Popen` process
 
     It is not recommended to instantiate this class. You should instead get an instance through
-    :meth:`__call__`.
+    :meth:`ShellSession.__call__`.
     It is also recommended to use this class as a context manager to ensure proper process killing handling.
 
     Parameters
