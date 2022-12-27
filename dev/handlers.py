@@ -109,22 +109,22 @@ class GlobalLocals:
         """
         return tuple(itertools.chain(self.globals.items(), self.locals.items()))
 
-    def keys(self) -> tuple[tuple[Any, Any], ...]:
+    def keys(self) -> tuple[Any, ...]:
         """Returns a tuple of keys of all global and local scopes.
 
         Returns
         -------
-        Tuple[Tuple[Any, Any], ...]
+        Tuple[Any, ...]
             A tuple containing the list of global and local keys from the current scope.
         """
         return tuple(itertools.chain(self.globals.keys(), self.locals.keys()))
 
-    def values(self) -> tuple[tuple[Any, Any], ...]:
+    def values(self) -> tuple[Any, ...]:
         """Returns a tuple of values of all global and local scopes.
 
         Returns
         -------
-        Tuple[Tuple[Any, Any], ...]
+        Tuple[Any, ...]
             A tuple containing the list of global and local values from the current scope.
         """
         return tuple(itertools.chain(self.globals.values(), self.locals.values()))
