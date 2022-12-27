@@ -551,14 +551,14 @@ class Execute:
     .. codeblock:: python3
         code = "for _ in range(3): print(i)"
         #  Prints 'Hello World' 3 times
-        async for expr in Execute(code, GlobalLocals(), {"i": "Hello World"})
+        async for expr in Execute(code, GlobalLocals(), {"i": "Hello World"}):
             print(expr)
 
         code = "1 + 1" \
                "2 + 2" \
                "3 + 3"
         #  Yields the result of each statement
-        async for expr in Execute(code, GlobalLocals(), {})
+        async for expr in Execute(code, GlobalLocals(), {}):
             print(expr)
     """
     __slots__ = (
