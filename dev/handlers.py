@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import inspect
+import itertools
 from traceback import format_exception
 from typing import TYPE_CHECKING, Any, Callable, Coroutine, overload
 
@@ -77,7 +78,7 @@ class GlobalLocals:
         return bool(self.globals or self.locals)
 
     def __delitem__(self, key: Any) -> None:
-        glob_exc, loc_exc = False, False
+        glob_exc, loc_ext = False, False
         try:
             del self.globals[key]
         except KeyError:
@@ -85,59 +86,48 @@ class GlobalLocals:
         try:
             del self.locals[key]
         except KeyError:
-            loc_exc = True
-
-        if glob_exc and loc_exc:
+            loc_ext = True
+        if glob_exc and loc_ext:
             raise KeyError(key)
 
-    def __getitem__(self, item: Any) -> tuple[Any, Any]:
-        glob, loc = None, None
-        glob_exc, loc_exc = False, False
+    def __getitem__(self, item: Any) -> Any:
         try:
-            glob = self.globals[item]
+            return self.globals[item]
         except KeyError:
-            glob_exc = True
-        try:
-            loc = self.locals[item]
-        except KeyError:
-            loc_exc = True
-
-        if glob_exc and loc_exc:
-            raise KeyError(item)
-        return glob, loc
+            return self.locals[item]
 
     def __len__(self) -> int:
         return len(self.globals) + len(self.locals)
 
-    def items(self) -> tuple[tuple[tuple[str, Any], ...], tuple[tuple[str, Any], ...]]:
+    def items(self) -> tuple[tuple[Any, Any], ...]:
         """Returns a tuple of all global and local scopes with their respective key-value pairs.
 
         Returns
         -------
-        Tuple[Tuple[:class:`str`, ...], Tuple[Any, ...]]
+        Tuple[Tuple[Any, Any], ...]
             A joined tuple of global and local variables from the current scope.
         """
-        return tuple(self.globals.items()), tuple(self.locals.items())
+        return tuple(itertools.chain(self.globals.items(), self.locals.items()))
 
-    def keys(self) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    def keys(self) -> tuple[tuple[Any, Any], ...]:
         """Returns a tuple of keys of all global and local scopes.
 
         Returns
         -------
-        Tuple[Tuple[:class:`str`, ...], Tuple[:class:`str`, ...]]
+        Tuple[Tuple[Any, Any], ...]
             A tuple containing the list of global and local keys from the current scope.
         """
-        return tuple(self.globals.keys()), tuple(self.locals.keys())
+        return tuple(itertools.chain(self.globals.keys(), self.locals.keys()))
 
-    def values(self) -> tuple[tuple[Any, ...], tuple[Any, ...]]:
+    def values(self) -> tuple[tuple[Any, Any], ...]:
         """Returns a tuple of values of all global and local scopes.
 
         Returns
         -------
-        Tuple[Tuple[Any, ...], Tuple[Any, ...]]
+        Tuple[Tuple[Any, Any], ...]
             A tuple containing the list of global and local values from the current scope.
         """
-        return tuple(self.globals.values()), tuple(self.locals.values())
+        return tuple(itertools.chain(self.globals.values(), self.locals.values()))
 
     def get(self, item: str, default: Any = None) -> Any:
         """Get an item from either the global scope or the locals scope.
@@ -164,7 +154,8 @@ class GlobalLocals:
                 res = self.locals[item]
             except KeyError:
                 return default
-        return res
+        else:
+            return res
 
     def update(
             self,

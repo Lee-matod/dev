@@ -259,7 +259,7 @@ class BaseCommand(Generic[CogT_co, P, T]):
 
 
 class Command(BaseCommand[CogT_co, ..., Any]):
-    """A class that simulates :class:`commands.Command`
+    """A class that simulates :class:`commands.Command`.
 
     This class is used to keep track of which functions should be commands, and it shouldn't get called manually.
     Instead, consider using :meth:`root.command` to instantiate this class.
