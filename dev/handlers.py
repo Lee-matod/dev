@@ -314,6 +314,6 @@ def replace_vars(string: str, scope: GlobalLocals) -> str:
     :class:`str`
         The converted string with the values of the virtual variables.
     """
-    for key, value in scope.globals.items():
+    for (key, value) in scope.items():
         string = string.replace(Settings.virtual_vars % key, value)
     return string

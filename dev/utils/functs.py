@@ -529,8 +529,6 @@ def _check_length(content: str) -> Paginator | str:
 
 def _revert_virtual_var_value(string: str) -> str:
     # For security reasons, when using await send(), this gets automatically called
-    for name, value in Root.scope.globals.items():
-        string = string.replace(value, name)
-    for name, value in Root.scope.locals.items():
+    for (name, value) in Root.scope.items():
         string = string.replace(value, name)
     return string

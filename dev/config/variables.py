@@ -53,8 +53,7 @@ class RootVariables(Root):
         if mode in ["new", "create"]:  # pyright: ignore [reportUnnecessaryContains]
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
-            glob, loc = Root.scope.keys()
-            if name in [*glob, *loc]:
+            if name in Root.scope.keys():
                 return await send(ctx, f"A variable called `{name}` already exists.")
             await send(ctx, VariableModalSender(name, True, ctx.author))
 
@@ -69,11 +68,9 @@ class RootVariables(Root):
         elif mode in ["edit", "replace"]:  # pyright: ignore [reportUnnecessaryContains]
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
-            glob, loc = Root.scope.keys()
-            if name not in [*glob, *loc]:
+            if name not in Root.scope.keys():
                 return await send(ctx, f"No variable called `{name}` found.")
-            glob, loc = Root.scope[name]
-            await send(ctx, VariableModalSender(name, False, ctx.author, glob or loc))
+            await send(ctx, VariableModalSender(name, False, ctx.author, Root.scope[name]))
 
         elif mode in ["all", "~"]:  # pyright: ignore [reportUnnecessaryContains]
             variables = '\n'.join(f"+ {var}" for var in Root.scope.keys()) if Root.scope else "- No variables found."
@@ -82,16 +79,13 @@ class RootVariables(Root):
         elif mode == "exists":  # pyright: ignore [reportUnnecessaryContains, reportUnnecessaryComparison]
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
-            glob, loc = Root.scope.keys()
-            if name not in [*glob, *loc]:
+            if name not in Root.scope.keys():
                 return await ctx.message.add_reaction("\u274c")
             await ctx.message.add_reaction("\u2611")
 
         elif mode in ["content", "value"]:  # pyright: ignore [reportUnnecessaryContains]
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
-            glob, loc = Root.scope.keys()
-            if name not in [*glob, *loc]:
+            if name not in Root.scope.keys():
                 return await send(ctx, f"No variable called `{name}` found.")
-            glob, loc = Root.scope[name]
-            await ctx.author.send(f"**{name}:** {glob or loc}")
+            await ctx.author.send(f"**{name}:** {Root.scope[name]}")
