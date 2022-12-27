@@ -338,9 +338,8 @@ class ShellSession:
 
     Notes
     -----
-    If the current session has been terminated, and a new process is requested, ConnectionRefusedError will be raised.
-    Terminated sessions should not and cannot be reinitialized. If you try to reinitialize it, ConnectionError will be
-    raised.
+    Terminated sessions should not and cannot be reinitialized. If you try to reinitialize it, :class:`ConnectionError`
+    will be raised.
 
     Examples
     --------
