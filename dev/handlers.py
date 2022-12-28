@@ -63,6 +63,10 @@ class GlobalLocals:
     __locals: Optional[Dict[:class:`str`, Any]]
         Local scope variables. Acts the same way as :meth:`locals()`.
         Defaults to ``None``.
+
+    Notes
+    -----
+    When getting items, the global scope is prioritized over the local scope.
     """
 
     def __init__(
@@ -129,7 +133,7 @@ class GlobalLocals:
         """
         return tuple(itertools.chain(self.globals.values(), self.locals.values()))
 
-    def get(self, item: str, default: Any = None) -> Any:
+    def get(self, item: Any, default: Any = None) -> Any:
         """Get an item from either the global scope or the locals scope.
 
         Global scope will be searched first, then local scope and if no item is found, the default will be returned.
@@ -137,7 +141,7 @@ class GlobalLocals:
 
         Parameters
         ----------
-        item: :class:`str`
+        item: Any
             The item that should be searched for in the scopes.
         default: Any
             An argument that should be returned if no value was found. Defaults to ``None``.
