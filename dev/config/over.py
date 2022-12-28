@@ -77,68 +77,7 @@ class RootOver(Root):
     @root.command(name="changes", parent="dev override")
     async def root_override_changes(self, ctx: commands.Context[types.Bot], index1: int = 0, index2: int | None = None):
         """Compare changes made between overrides. Optionally compare unique overrides."""
-        if not (overrides := self.registers_from_type(Over.OVERRIDE)):
-            return await send(ctx, "No overrides have been made.")
-        try:
-            if index1 < 0:
-                raise IndexError
-            override = overrides[index1 - 1]
-        except IndexError:
-            return await send(ctx, f"Override with ID of `{index1}` not found.")
-        override2 = None
-        if index2 is not None:
-            try:
-                if index2 < 0:
-                    raise IndexError
-                override2 = overrides[index2 - 1]
-            except IndexError:
-                return await send(ctx, f"Override with ID of `{index2}` not found.")
-        if override2 is None:
-            try:
-                if index1 - 2 < 0:
-                    raise IndexError
-                previous = overrides[index1 - 2]
-            except IndexError:
-                previous = self.get_base_command(override.qualified_name)
-            # source could raise an OSError when trying to be fetched inside BaseCommandRegistration
-            if previous is None or not previous.source:
-                return await send(ctx, "Could not compare source codes.")
-            if override.source == previous.source:
-                return await send(ctx, "No changes were made.")
-            return await send(
-                ctx,
-                [
-                    discord.Embed(
-                        title=f"Previous Source",
-                        description=codeblock_wrapper(override.source, "py"),
-                        color=discord.Color.red()
-                    ),
-                    discord.Embed(
-                        title="Current Source",
-                        description=codeblock_wrapper(previous.source, "py"),
-                        color=discord.Color.green()
-                    )
-                ]
-            )
-        if override.source == override2.source:
-            return await send(ctx, "No changes were made.")
-        index2 = index2 if index2 is not None else index1 - 1  # 0 evaluates to False
-        first_embed, second_embed = (index1, index2) if index1 < index2 else (index2, index1)
-        return await send(
-            ctx,
-            [
-                discord.Embed(
-                    title=f"Override #{first_embed}",
-                    description=codeblock_wrapper(override.source, "py"),
-                    color=discord.Color.red()
-                ),
-                discord.Embed(
-                    title=f"Override #{second_embed}",
-                    description=codeblock_wrapper(override2.source, "py"),
-                    color=discord.Color.green()
-                )
-            ]
-        )
+        return await send(ctx, "Pending...")
 
     @root.command(
         name="command",
@@ -234,10 +173,8 @@ class RootOver(Root):
                     self.bot.remove_command(obj.qualified_name)
                     self.bot.add_command(command)
                     return await send(ctx, "The command's name cannot be changed.")
-                if command.parent is not None:
-                    command.parent.add_command(command)
-                else:
-                    self.bot.add_command(command)
+                if obj.parent is None and obj not in self.bot.commands:
+                    self.bot.add_command(obj)  # type: ignore
                 self.update_register(
                     CommandRegistration(
                         obj,  # type: ignore

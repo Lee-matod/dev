@@ -173,7 +173,7 @@ class Process:
             /,
             *,
             first: bool = False
-    ) -> tuple[discord.Message, Paginator | None] | None:
+    ) -> tuple[discord.Message, Paginator | None]:
         ...
 
     async def run_until_complete(
@@ -195,7 +195,7 @@ class Process:
 
         Returns
         -------
-        Union[Optional[Tuple[:class:`discord.Message`, Optional[:class:`Paginator`]]], Optional[:class:`str`]]
+        Union[Tuple[:class:`discord.Message`, Optional[:class:`Paginator`]], Optional[:class:`str`]]
             If *context* was not `None`, then this returns the message and optional paginator that were sent, if any.
             Usually you shouldn't need these objects.
             If instead *context* was `None`, then this returns the output of the subprocess when its lifetime is over.
@@ -217,7 +217,15 @@ class Process:
                         self.__session.paginator = paginator
                     self.has_set_cmd = True
             if self.__session.terminated:
-                return
+                if context is None:
+                    return
+                return await send(
+                    context,
+                    self.__session.raw,
+                    view=None,
+                    paginator=self.__session.paginator,
+                    forced_pagination=False
+                )
             try:
                 line = await self.in_executor(self.get_next_line)
             except TimeoutError:
@@ -593,7 +601,7 @@ class Execute:
         self.vars = global_locals
 
     async def __aiter__(self) -> AsyncGenerator[Any, Any]:
-        exec(compile(self.wrapper(), "<func>", "exec"), self.vars.globals, self.vars.locals)
+        exec(compile(self.wrapper(), "<repl>", "exec"), self.vars.globals, self.vars.locals)
         func = self.vars.get("_executor")
         if inspect.isasyncgenfunction(func):
             async for result in func(*self.args_value):

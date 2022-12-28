@@ -78,6 +78,9 @@ class GlobalLocals:
         self.globals: dict[str, Any] = __globals or {}
         self.locals: dict[str, Any] = __locals or {}
 
+    def __repr__(self) -> str:
+        return f"<GlobalLocals globals={self.globals} locals={self.locals}"
+
     def __bool__(self) -> bool:
         return bool(self.globals or self.locals)
 
@@ -158,8 +161,7 @@ class GlobalLocals:
                 res = self.locals[item]
             except KeyError:
                 return default
-        else:
-            return res
+        return res
 
     def update(
             self,

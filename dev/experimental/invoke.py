@@ -154,7 +154,7 @@ class RootInvoke(Root):
     ) -> tuple[Invokeable, commands.Context[types.Bot]] | None:
         if content.startswith("/"):
             app_commands = self.bot.tree.get_commands(type=discord.AppCommandType.chat_input)
-            app_command = get_app_command(command_attr.removeprefix("/"), app_commands.copy())  # type: ignore
+            app_command = get_app_command(content.removeprefix("/"), app_commands.copy())  # type: ignore
             if app_command is None:
                 return
             kwargs["content"] = kwargs["content"].removeprefix(ctx.prefix)
