@@ -24,6 +24,7 @@ from dev.handlers import ExceptionHandler
 from dev.registrations import CommandRegistration, Over
 from dev.types import InteractionResponseType
 
+from dev.utils.baseclass import Root
 from dev.utils.functs import interaction_response
 from dev.utils.startup import Settings
 
@@ -32,8 +33,6 @@ if TYPE_CHECKING:
 
     from dev import types
     from dev.components.views import CodeView, ToggleSettings, VariableModalSender
-
-    from dev.utils.baseclass import Root
 
 
 __all__ = (
