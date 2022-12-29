@@ -253,16 +253,16 @@ class ExceptionHandler:
             elif isinstance(exc_val, (AssertionError, ImportError, NameError, UnboundLocalError)):
                 await self.message.add_reaction("\u2753")
             elif isinstance(
-                    exc_val,
-                    (
-                            AttributeError,
-                            IndexError,
-                            KeyError,
-                            TypeError,
-                            UnicodeError,
-                            ValueError,
-                            commands.CommandInvokeError
-                    )
+                exc_val,
+                (
+                        AttributeError,
+                        IndexError,
+                        KeyError,
+                        TypeError,
+                        UnicodeError,
+                        ValueError,
+                        commands.CommandInvokeError
+                )
             ):
                 if isinstance(exc_val, commands.CommandInvokeError):
                     exc_val = getattr(exc_val, "original", exc_val)

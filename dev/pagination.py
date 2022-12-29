@@ -16,7 +16,6 @@ from discord.ext import commands
 
 from dev import types
 
-
 __all__ = (
     "Interface",
     "Paginator"

@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 
     from dev.components.views import ToggleSettings
 
-
 __all__ = (
     "SettingsToggler",
 )

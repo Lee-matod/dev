@@ -14,7 +14,6 @@ from dev.config.management import *
 from dev.config.over import *
 from dev.config.variables import *
 
-
 __all__ = (
     "RootBot",
     "RootManagement",

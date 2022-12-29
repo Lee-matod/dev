@@ -37,16 +37,13 @@ if TYPE_CHECKING:
 
     P = ParamSpec("P")
 
-
 T = TypeVar("T")
-
 
 __all__ = (
     "Execute",
     "Process",
     "ShellSession"
 )
-
 
 CODE_TEMPLATE = """
 async def _executor({0}):
@@ -62,7 +59,6 @@ async def _executor({0}):
     finally:
         _self_variables.update(locals())
     """
-
 
 WINDOWS = sys.platform == "win32"
 POWERSHELL = pathlib.Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe").exists() if WINDOWS else False

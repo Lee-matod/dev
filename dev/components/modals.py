@@ -34,7 +34,6 @@ if TYPE_CHECKING:
     from dev import types
     from dev.components.views import CodeView, ToggleSettings, VariableModalSender
 
-
 __all__ = (
     "CodeEditor",
     "SettingEditor",

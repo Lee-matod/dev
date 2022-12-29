@@ -60,9 +60,9 @@ class RootHTTP(Root):
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(
-                        replace_vars(url, Root.scope),
-                        allow_redirects=allow_redirects,
-                        **kwargs
+                    replace_vars(url, Root.scope),
+                    allow_redirects=allow_redirects,
+                    **kwargs
                 ) as request:
                     if mode == "status":  # pyright: ignore [reportUnnecessaryComparison]
                         await send(

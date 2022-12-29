@@ -31,7 +31,6 @@ if TYPE_CHECKING:
 
     from dev.utils.baseclass import Root
 
-
 __all__ = (
     "BoolInput",
     "CodeView",

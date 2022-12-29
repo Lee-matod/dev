@@ -28,9 +28,7 @@ from dev.utils.interaction import SyntheticInteraction, get_app_command
 if TYPE_CHECKING:
     from dev import types
 
-
 _DiscordObjects = Union[GlobalTextChannelConverter, discord.Guild, discord.Member, discord.Thread, discord.User]
-
 
 
 class RootInvoke(Root):

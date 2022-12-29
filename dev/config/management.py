@@ -235,6 +235,7 @@ class RootManagement(Root):
                 shutil.rmtree(path.name)  # thank you aperture!
                 self.explorer_rgs.append(ManagementRegistration(f"{path.absolute()}", ManagementOperation.DELETE))
                 await ctx.message.add_reaction("☑")
+
             await send(
                 ctx,
                 f"\u26a0 The directory that you specified is not empty. "

@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, Any, Protocol, Union
 import discord
 from discord.ext import commands
 
-
 __all__ = (
     "Bot",
     "Channel",

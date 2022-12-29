@@ -27,7 +27,6 @@ if TYPE_CHECKING:
 
     P = ParamSpec("P")
 
-
 __all__ = (
     "BaseCommandRegistration",
     "BaseRegistration",

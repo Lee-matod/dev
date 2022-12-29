@@ -24,7 +24,6 @@ from dev.utils.startup import Settings
 if TYPE_CHECKING:
     from dev import types
 
-
 __all__ = (
     "CodeblockConverter",
     "GlobalTextChannelConverter",
@@ -35,6 +34,7 @@ __all__ = (
 )
 
 T = TypeVar("T")
+
 
 class GlobalTextChannelConverter(commands.TextChannelConverter):
     async def convert(self, ctx: commands.Context[types.Bot], argument: str) -> discord.TextChannel:
@@ -195,6 +195,7 @@ class CodeblockConverter(commands.Converter[tuple[Optional[str], Optional[str]]]
 
     Subclass of :class:`discord.ext.commands.Converter`.
     """
+
     async def convert(self, ctx: commands.Context[types.Bot], argument: str) -> tuple[str | None, str | None]:
         """The method that converts the argument passed in.
 
