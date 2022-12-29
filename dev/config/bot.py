@@ -22,7 +22,7 @@ from dev.components import PermissionsViewer
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
-from dev.utils.utils import escape, plural
+from dev.utils.utils import escape, parse_invoked_subcommand, plural
 
 if TYPE_CHECKING:
     from dev import types
@@ -193,6 +193,6 @@ class RootBot(Root):
             return await send(
                 ctx,
                 f"`{ctx.invoked_with}` has no subcommand "
-                f"`{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()}`."
+                f"`{parse_invoked_subcommand()}`."
             )
         optional_raise(ctx, exception)

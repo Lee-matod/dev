@@ -33,7 +33,7 @@ from dev.components import CodeView, ToggleSettings
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import flag_parser, generate_ctx, table_creator, send
 from dev.utils.startup import Settings
-from dev.utils.utils import clean_code, codeblock_wrapper, plural
+from dev.utils.utils import clean_code, codeblock_wrapper, parse_invoked_subcommand, plural
 
 if TYPE_CHECKING:
     from dev import types
@@ -450,7 +450,7 @@ class RootOver(Root):
             return await send(
                 ctx,
                 f"`{ctx.invoked_with}` has no subcommand "
-                f"`{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()}`."
+                f"`{parse_invoked_subcommand(ctx)}`."
             )
         optional_raise(ctx, exception)
 
@@ -461,6 +461,6 @@ class RootOver(Root):
             return await send(
                 ctx,
                 f"`{ctx.invoked_with}` has no subcommand "
-                f"`{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()}`."
+                f"`{parse_invoked_subcommand(ctx)}`."
             )
         optional_raise(ctx, exception)

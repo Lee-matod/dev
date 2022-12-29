@@ -27,7 +27,7 @@ from dev.components import BoolInput
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send, table_creator
 from dev.utils.startup import Settings
-from dev.utils.utils import escape, plural
+from dev.utils.utils import escape, parse_invoked_subcommand, plural
 
 if TYPE_CHECKING:
     from discord.ext import commands
@@ -253,7 +253,7 @@ class RootManagement(Root):
             return await send(
                 ctx,
                 f"`{ctx.invoked_with}` has no subcommand "
-                f"`{ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()}`."
+                f"`{parse_invoked_subcommand(ctx)}`."
             )
         optional_raise(ctx, exception)
 
