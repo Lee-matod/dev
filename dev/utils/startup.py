@@ -48,7 +48,7 @@ class _ColoredFormatter(logging.Formatter):
     FORMATTERS: ClassVar[dict[int, logging.Formatter]] = {
         level: logging.Formatter(
             f"\x1b[30m%(asctime)s\x1b[0m {color}[%(levelname)s]\x1b[0m BLANK"
-            f"\x1b[35m%(name)s\x1b[0m: \x1b[97;1m%(message)s\x1b[0m",
+            f"\x1b[35m%(name)s:\x1b[0m \x1b[97;1m%(message)s\x1b[0m",
             "%Y/%m/%d %H:%M:%S"
         ) for level, color in LEVELS
     }

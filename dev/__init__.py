@@ -98,6 +98,5 @@ class Dev(
 
 async def setup(bot: commands.Bot) -> None:
     _log = await enforce_owner(bot)
-    _log.debug("Owners have been verified")
     await bot.add_cog(Dev(bot))
-    _log.info("Dev cog has been successfully added")
+    _log.info("Dev cog has been successfully loaded")
