@@ -11,20 +11,57 @@ Extension loading function and settings checker.
 """
 from __future__ import annotations
 
+import logging
 import os
 import pathlib
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import discord
+from discord.utils import MISSING, stream_supports_colour
 
 if TYPE_CHECKING:
     from dev import types
 
-
 __all__ = (
     "Settings",
-    "set_settings"
+    "enforce_owner",
+    "setup_logging"
 )
+
+
+class _DefaultFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        fmt = logging.Formatter("[%(asctime)s] [%(levelname)s] BLANK%(name)s: %(message)s", "%Y/%m/%d %H:%M:%S")
+        output = fmt.format(record)
+        return output.replace("BLANK", " " * (8 - len(record.levelname)), 1)
+
+
+class _ColoredFormatter(logging.Formatter):
+    LEVELS: ClassVar[list[tuple[int, str]]] = [
+        (logging.DEBUG, "\x1b[32m"),
+        (logging.INFO, "\x1b[36;1m"),
+        (logging.WARNING, "\x1b[33m"),
+        (logging.ERROR, "\x1b[31;1m"),
+        (logging.CRITICAL, "\x1b[41;1m"),
+    ]
+
+    FORMATTERS: ClassVar[dict[int, logging.Formatter]] = {
+        level: logging.Formatter(
+            f"\x1b[30m%(asctime)s\x1b[0m {color}[%(levelname)s]\x1b[0m BLANK"
+            f"\x1b[35m%(name)s\x1b[0m: \x1b[97;1m%(message)s\x1b[0m",
+            "%Y/%m/%d %H:%M:%S"
+        ) for level, color in LEVELS
+    }
+
+    def format(self, record: logging.LogRecord) -> str:
+        fmt = self.FORMATTERS.get(record.levelno)
+        if fmt is None:
+            fmt = self.FORMATTERS[logging.DEBUG]
+
+        output = fmt.format(record)
+        output = output.replace("BLANK", " " * (8 - len(record.levelname)), 1)
+        record.exc_text = None
+        return output
 
 
 class _SettingsSentinel:
@@ -40,6 +77,7 @@ class _SettingsSentinel:
         "mapping",
         "kwargs"
     )
+
     def __init__(self, **kwargs: Any):
         self.__allow_global_uses: bool = kwargs.setdefault("allow_global_uses", False)
         self.__flag_delimiter: str = kwargs.setdefault("flag_delimiter", "=")
@@ -80,6 +118,7 @@ class _SettingsSentinel:
         Defaults to `=`.
         """
         return self.__flag_delimiter
+
     @flag_delimiter.setter
     def flag_delimiter(self, value: str) -> None:
         if not isinstance(value, str):
@@ -199,12 +238,35 @@ class _SettingsSentinel:
         return setting_name in self.mapping.keys()
 
 
-
 Settings = _SettingsSentinel()
 
 
-async def set_settings(bot: types.Bot) -> None:
-    if not owner_exists(bot):
+def setup_logging(
+        *,
+        level: int = logging.INFO,
+        handler: logging.Handler = logging.StreamHandler(),
+        formatter: logging.Formatter = MISSING
+) -> logging.Logger:
+    if formatter is MISSING:
+        formatter = (
+            _ColoredFormatter()
+            if isinstance(handler, logging.StreamHandler) and stream_supports_colour(handler.stream)
+            else _DefaultFormatter()
+        )
+
+    lib, _, _ = __name__.partition(".")
+    logger = logging.getLogger(lib)
+    #  Check if logging has already been set up
+    if not logger.handlers:
+        handler.setFormatter(formatter)
+        logger.setLevel(level)
+        logger.addHandler(handler)
+    return logger
+
+
+async def enforce_owner(bot: types.Bot) -> logging.Logger:
+    _log = setup_logging()
+    if not any((Settings.owners, bot.owner_ids, bot.owner_id)):
         #  Try to set the owner as the application's owner or its team members
         try:
             if bot.application.owner:  # type: ignore
@@ -213,10 +275,12 @@ async def set_settings(bot: types.Bot) -> None:
                 Settings.owners = {owner.id for owner in bot.application.team.members}  # type: ignore
         except AttributeError:
             pass
-    if not owner_exists(bot):
+        else:
+            _log.warning(
+                "No owners were set. Falling back to the owner of the application (%s).",
+                ", ".join(map(str, Settings.owners))
+            )
+    if not any((Settings.owners, bot.owner_ids, bot.owner_id)):
         #  The application was not logged in when we tried to get the info, and no other owner IDs were set
         raise RuntimeError("For security reasons, an owner ID must be set")
-
-
-def owner_exists(bot: types.Bot, /) -> bool:
-    return any((Settings.owners, bot.owner_ids, bot.owner_id))
+    return _log

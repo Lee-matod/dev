@@ -12,6 +12,7 @@ Basic classes used within the dev extension.
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -44,6 +45,8 @@ if TYPE_CHECKING:
     P = ParamSpec("P")
 else:
     P = TypeVar("P")
+
+_log = logging.getLogger(__name__)
 
 T = TypeVar("T")
 CogT_co = TypeVar("CogT_co", bound="Root", covariant=True)
@@ -384,7 +387,7 @@ class Root(commands.Cog):
             #  Shouldn't instantiate nested Roots, but check if cog has already been loaded and add commands.
             fronted_cog: Root | None = bot.get_cog("Dev")  # type: ignore
             if fronted_cog is not None:
-                for cmd in self._get_commands(type(self).__mro__):
+                for cmd in sorted(self._get_commands(type(self).__mro__), key=lambda c: c.level):
                     actual = cmd.to_instance(fronted_cog.commands)
                     if actual.qualified_name == actual.name:
                         #  Top level coomand
@@ -422,17 +425,13 @@ class Root(commands.Cog):
     def _get_commands(self, cls: tuple[type, ...]) -> set[Command[Root] | Group[Root]]:
         cmds: set[Command[Root] | Group[Root]] = set()
         for kls in cls:
+            if issubclass(kls, Root):
+                _log.debug("Loading Root class %r", kls)
             for val in kls.__dict__.values():
                 if isinstance(val, (Command, Group)):
                     cmd: Command[Root] | Group[Root] = val
                     cmds.add(cmd)
         return cmds
-
-    @classmethod
-    def add_cog(cls, cog: type[Root]) -> None:
-        if not issubclass(cog, Root):
-            raise TypeError(f"{cog.__name__!r} must subclass Root")
-        cls._subclasses.add(cog)
 
     def _refresh_base_registrations(self) -> list[BaseCommandRegistration]:
         base_list: list[BaseCommandRegistration] = []

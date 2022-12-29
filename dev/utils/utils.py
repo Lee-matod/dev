@@ -9,8 +9,13 @@ Basic utilities used within the dev extension.
 :copyright: Copyright 2022 Lee (Lee-matod)
 :license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
 """
+from typing import TYPE_CHECKING
 from discord.utils import escape_markdown, escape_mentions
 
+if TYPE_CHECKING:
+    from discord.ext import commands
+
+    from dev import types
 
 __all__ = (
     "clean_code",
@@ -20,7 +25,6 @@ __all__ = (
     "responses"
 )
 
-
 responses: dict[str, str] = {
     "1": "Informational response",
     "2": "Successful response",
@@ -28,6 +32,15 @@ responses: dict[str, str] = {
     "4": "Client error response",
     "5": "Server error response"
 }
+
+
+def parse_invoked_subcommand(context: commands.Context[types.Bot], /) -> str:
+    assert context.prefix is not None and context.invoked_with is not None
+    command = context.prefix + context.invoked_with
+    invoked = context.message.content.removeprefix(command).strip()
+    if not invoked:
+        return invoked
+    return invoked.split()[0]
 
 
 def clean_code(content: str) -> str:

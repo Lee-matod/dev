@@ -27,7 +27,6 @@ from dev.utils.functs import *
 from dev.utils.startup import *
 from dev.utils.utils import *
 
-
 __all__ = (
     "BaseCommandRegistration",
     "BoolInput",
@@ -70,6 +69,7 @@ __all__ = (
     "replace_vars",
     "root",
     "send",
+    "setup_logging",
     "str_bool",
     "str_ints"
 )
@@ -97,5 +97,7 @@ class Dev(
 
 
 async def setup(bot: commands.Bot) -> None:
-    await set_settings(bot)
+    _log = await enforce_owner(bot)
+    _log.debug("Owners have been verified")
     await bot.add_cog(Dev(bot))
+    _log.info("Dev cog has been successfully added")
