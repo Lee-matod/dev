@@ -33,10 +33,10 @@ from dev.components import CodeView, ToggleSettings
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import flag_parser, generate_ctx, table_creator, send
 from dev.utils.startup import Settings
-from dev.utils.utils import clean_code, codeblock_wrapper, parse_invoked_subcommand, plural
+from dev.utils.utils import clean_code, codeblock_wrapper, escape, parse_invoked_subcommand, plural
 
 if TYPE_CHECKING:
-    from dev import types
+    from dev import Dev, types
 
 
 class RootOver(Root):
@@ -74,10 +74,21 @@ class RootOver(Root):
         command.callback = impl.callback
         await ctx.message.add_reaction("\u2611")
 
-    @root.command(name="changes", parent="dev override")
-    async def root_override_changes(self, ctx: commands.Context[types.Bot], index1: int = 0, index2: int | None = None):
-        """Compare changes made between overrides. Optionally compare unique overrides."""
-        return await send(ctx, "Pending...")
+    @root.command(name="view", parent="dev override")
+    async def root_override_view(self: Dev, ctx: commands.Context[types.Bot], index: int = 0):  # type: ignore
+        """Similar to `dev --source|-src`, with the added functionality of specifying an override ID.
+        By default, this will just call `dev --source|-src` and return whatever the last override is.
+        """
+        overrides = self.registers_from_type(Over.OVERRIDE)
+        if index < 0 or index > len(overrides):
+            return await send(ctx, "Invalid override.")
+        if index in [0, len(overrides)]:
+            last = overrides[-1]
+            return await self.root_source(ctx, command_string=last.qualified_name)
+        override = overrides[index - 1]  # Shouldn't raise IndexError because we sanitized it before
+        if not override.source:
+            return await send(ctx, "Could not get source of command.")
+        await send(ctx, codeblock_wrapper(override.source, "py"))
 
     @root.command(
         name="command",
@@ -119,12 +130,7 @@ class RootOver(Root):
                 return await send(ctx, "Could not find source.")
             with open(file, "r") as f:
                 read = f.read()
-            command_registrations = [cmd for cmd in self.registers_from_type(Over.OVERRIDE)
-                                     if cmd.qualified_name == command.qualified_name]
-            if command_registrations:
-                file = read.replace(command_registrations[-1].source, "")
-            else:
-                file = read.replace(base_command.source, "")
+            file = read.replace(base_command.source, "")
             additional_attrs = {}
             with contextlib.redirect_stdout(io.StringIO()), \
                     contextlib.redirect_stderr(io.StringIO()), \
@@ -304,6 +310,33 @@ class RootOver(Root):
             self.update_register(overwrite, Over.DELETE)
             await ctx.message.add_reaction("\u2611")
 
+    @root.command(name="view", parent="dev overwrite")
+    async def root_overwrite_command(self, ctx: commands.Context[types.Bot], index: int = 0):
+        overwrites = self.registers_from_type(Over.OVERWRITE)
+        if index < 0 or index > len(overwrites):
+            return await send(ctx, "Invalid overwrite.")
+        if index in [0, len(overwrites)]:
+            last = overwrites[-1]
+            if isinstance(last, CommandRegistration):
+                if not last.source:
+                    return await send(ctx, "Could not get source of command.")
+                return await send(ctx, codeblock_wrapper(last.source, "py"))
+            assert isinstance(last, SettingRegistration)
+            return await send(
+                ctx,
+                "\n".join(f"Settings.{sett.lower()} = `{escape(value)}`" for sett, value in last.changed.items())
+            )
+        overwrite = overwrites[index - 1]  # Shouldn't raise IndexError because we sanitized it before
+        if isinstance(overwrite, CommandRegistration):
+            if not overwrite.source:
+                return await send(ctx, "Could not get source of command.")
+            return await send(ctx, codeblock_wrapper(overwrite.source, "py"))
+        assert isinstance(overwrite, SettingRegistration)
+        await send(
+            ctx,
+            "\n".join(f"Settings.{sett.lower()} = `{escape(value)}`" for sett, value in overwrite.changed.items())
+        )
+
     @root.command(
         name="command",
         parent="dev overwrite",
@@ -444,23 +477,13 @@ class RootOver(Root):
         )
 
     @root_override.error
+    @root_overwrite.error
     async def root_override_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError):
         if isinstance(exception, commands.TooManyArguments):
             assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(
                 ctx,
-                f"`{ctx.invoked_with}` has no subcommand "
-                f"`{parse_invoked_subcommand(ctx)}`."
-            )
-        optional_raise(ctx, exception)
-
-    @root_overwrite.error
-    async def root_overwrite_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError):
-        if isinstance(exception, commands.TooManyArguments):
-            assert ctx.prefix is not None and ctx.invoked_with is not None
-            return await send(
-                ctx,
-                f"`{ctx.invoked_with}` has no subcommand "
+                f"`dev {ctx.invoked_with}` has no subcommand "
                 f"`{parse_invoked_subcommand(ctx)}`."
             )
         optional_raise(ctx, exception)
