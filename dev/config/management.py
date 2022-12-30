@@ -253,7 +253,7 @@ class RootManagement(Root):
             assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(
                 ctx,
-                f"`{ctx.invoked_with}` has no subcommand "
+                f"`dev {ctx.invoked_with}` has no subcommand "
                 f"`{parse_invoked_subcommand(ctx)}`."
             )
         optional_raise(ctx, exception)
