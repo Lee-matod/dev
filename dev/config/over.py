@@ -311,7 +311,7 @@ class RootOver(Root):
             await ctx.message.add_reaction("\u2611")
 
     @root.command(name="view", parent="dev overwrite")
-    async def root_overwrite_command(self, ctx: commands.Context[types.Bot], index: int = 0):
+    async def root_overwrite_view(self, ctx: commands.Context[types.Bot], index: int = 0):
         overwrites = self.registers_from_type(Over.OVERWRITE)
         if index < 0 or index > len(overwrites):
             return await send(ctx, "Invalid overwrite.")
