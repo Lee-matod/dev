@@ -91,11 +91,11 @@ def get_app_command(
     possible_subcommands = content.split()
     app_command_name = possible_subcommands[0]
     possible_subcommands = possible_subcommands[1:]
-    app_command = discord.utils.get(app_command_list, name=app_command_name)  # type: ignore
+    app_command = discord.utils.get(app_command_list, name=app_command_name)
     while isinstance(app_command, discord.app_commands.Group):
         app_command_name = f"{app_command_name} {possible_subcommands[0]}"
         possible_subcommands = possible_subcommands[1:]
-        app_command = discord.utils.get(app_command.commands, qualified_name=app_command_name)  # type: ignore
+        app_command = discord.utils.get(app_command.commands, qualified_name=app_command_name)
     return app_command
 
 
@@ -250,7 +250,7 @@ class SyntheticInteraction:
     @discord.utils.cached_slot_property("_cs_channel")
     def channel(self) -> InteractionChannel | None:
         if isinstance(self._context.channel, InteractionChannel):  # type: ignore
-            return self._context.channel  # type: ignore
+            return self._context.channel
 
     @property
     def permissions(self) -> discord.Permissions:

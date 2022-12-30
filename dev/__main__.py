@@ -84,7 +84,7 @@ class RootCommand(Root):
         """Toggle whether the dev command is hidden.
         Pass no arguments to check current status
         """
-        root_command = self.commands.get("dev")  # type: ignore
+        root_command = self.commands.get("dev")
         assert root_command is not None
         if toggle:
             if root_command.hidden:

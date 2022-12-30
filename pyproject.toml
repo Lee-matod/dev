@@ -3,4 +3,7 @@
 exclude = ["tests", "**/__pycache__", "venv"]
 typeCheckingMode = "strict"
 reportUnnecessaryIsInstance = false
+reportCallInDefaultInitializer = "warning"
+reportPropertyTypeMismatch = "error"
+reportUnnecessaryTypeIgnoreComment = "warning"
 pythonVersion = "3.9"

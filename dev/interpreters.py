@@ -619,8 +619,8 @@ class Execute:
 
             if not isinstance(expr.value, ast.Yield):
                 yield_stmt = ast.Yield(expr.value)
-                ast.copy_location(yield_stmt, expr)  # type: ignore
+                ast.copy_location(yield_stmt, expr)
                 yield_expr = ast.Expr(yield_stmt)
-                ast.copy_location(yield_expr, expr)  # type: ignore
+                ast.copy_location(yield_expr, expr)
                 function.body[-1].body[-1].body[-index] = yield_expr  # type: ignore
         return function

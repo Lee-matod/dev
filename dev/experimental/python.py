@@ -117,7 +117,7 @@ class RootPython(Root):
                 else:
                     await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)  # type: ignore
         try:
-            self.last_output = expr
+            self.last_output = expr  # type: ignore
         except NameError:
             self.last_output = None
 

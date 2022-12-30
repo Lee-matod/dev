@@ -231,7 +231,7 @@ async def send(ctx: Any, *args: Any, paginator: Any = MISSING, **options: Any) -
                     kwargs["content"] = content
     kwargs.update(_check_kwargs(options))
     view: discord.ui.View | None = kwargs.get("view")
-    if not forced_pagination and pag_view is not None:  # type: ignore
+    if not forced_pagination and pag_view is not None:
         if view is not None:
             if len(view.children) > 15:
                 raise IndexError(

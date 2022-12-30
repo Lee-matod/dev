@@ -151,7 +151,7 @@ class _SettingsSentinel:
         return self.__locale
 
     @locale.setter
-    def locale(self, value: str | discord.Locale) -> None:
+    def locale(self, value: str | discord.Locale) -> None:  # type: ignore
         if isinstance(value, str):
             try:
                 locale = discord.Locale(value)
@@ -244,13 +244,16 @@ Settings = _SettingsSentinel()
 def setup_logging(
         *,
         level: int = logging.INFO,
-        handler: logging.Handler = logging.StreamHandler(),
+        handler: logging.Handler = MISSING,
         formatter: logging.Formatter = MISSING
 ) -> logging.Logger:
+    if handler is MISSING:
+        handler = logging.Handler()
+
     if formatter is MISSING:
         formatter = (
             _ColoredFormatter()
-            if isinstance(handler, logging.StreamHandler) and stream_supports_colour(handler.stream)
+            if isinstance(handler, logging.StreamHandler) and stream_supports_colour(handler.stream)  # type: ignore
             else _DefaultFormatter()
         )
 
@@ -260,7 +263,7 @@ def setup_logging(
     if not logger.handlers:
         handler.setFormatter(formatter)
         logger.setLevel(level)
-        logger.addHandler(handler)
+        logger.addHandler(handler)  # type: ignore
     return logger
 
 

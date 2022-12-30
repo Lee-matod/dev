@@ -300,7 +300,7 @@ class Command(BaseCommand[CogT_co, ..., Any]):
             **self.kwargs
         )(self.callback)
         if self.on_error:
-            cmd.error(self.on_error)  # type: ignore
+            cmd.error(self.on_error)
         return cmd
 
 
@@ -341,9 +341,9 @@ class Group(BaseCommand[CogT_co, ..., Any]):
             name=self.name,
             cls=_DiscordGroup,
             **self.kwargs
-        )(self.callback)  # type: ignore
+        )(self.callback)
         if self.on_error:
-            cmd.error(self.on_error)  # type: ignore
+            cmd.error(self.on_error)
         return cmd
 
 
@@ -485,7 +485,7 @@ class Root(commands.Cog):
         ...
 
     def registers_from_type(self, rgs_type: Any) -> Any:
-        return [rgs for rgs in self.registrations.values() if rgs.register_type is rgs_type]  # type: ignore
+        return [rgs for rgs in self.registrations.values() if rgs.register_type is rgs_type]
 
     def update_register(
             self,

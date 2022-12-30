@@ -76,7 +76,7 @@ class RootVariables(Root):
             variables = '\n'.join(f"+ {var}" for var in Root.scope.keys()) if Root.scope else "- No variables found."
             await send(ctx, f"```diff\n{variables}\n```")
 
-        elif mode == "exists":  # pyright: ignore [reportUnnecessaryContains, reportUnnecessaryComparison]
+        elif mode == "exists":  # pyright: ignore [reportUnnecessaryComparison]
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             if name not in Root.scope.keys():

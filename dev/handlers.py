@@ -297,7 +297,7 @@ def optional_raise(ctx: commands.Context[types.Bot], error: commands.CommandErro
     # We have to somehow check if the on_command_error event was overridden, the most logical way I could think of was
     # checking if the functions were the same which is the aim of this bit. Do note, however, that this might fail under
     # certain circumstances.
-    events = ctx.bot.on_command_error.__code__ == commands.Bot.on_command_error.__code__  # type: ignore
+    events = ctx.bot.on_command_error.__code__ == commands.Bot.on_command_error.__code__
     listeners = ctx.bot.extra_events.get("on_command_error")
     if events or listeners:
         ctx.bot.dispatch("command_error", ctx, error)
