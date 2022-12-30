@@ -37,8 +37,8 @@ responses: dict[str, str] = {
 
 
 def parse_invoked_subcommand(context: commands.Context[types.Bot], /) -> str:
-    assert context.prefix is not None and context.invoked_with is not None
-    command = context.prefix + context.invoked_with
+    assert context.prefix is not None and context.command is not None
+    command = context.prefix + context.command.qualified_name
     invoked = context.message.content.removeprefix(command).strip()
     if not invoked:
         return invoked
