@@ -80,6 +80,8 @@ class RootOver(Root):
         By default, this will just call `dev --source|-src` and return whatever the last override is.
         """
         overrides = self.registers_from_type(Over.OVERRIDE)
+        if not overrides:
+            return await send(ctx, "No overrides have been made.")
         if index < 0 or index > len(overrides):
             return await send(ctx, "Invalid override.")
         if index in [0, len(overrides)]:
@@ -313,6 +315,8 @@ class RootOver(Root):
     @root.command(name="view", parent="dev overwrite")
     async def root_overwrite_view(self, ctx: commands.Context[types.Bot], index: int = 0):
         overwrites = self.registers_from_type(Over.OVERWRITE)
+        if not overwrites:
+            return await send(ctx, "No overwrites have been made")
         if index < 0 or index > len(overwrites):
             return await send(ctx, "Invalid overwrite.")
         if index in [0, len(overwrites)]:
