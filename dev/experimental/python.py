@@ -35,6 +35,7 @@ class RootPython(Root):
         super().__init__(bot)
         self.retain: bool = False
         self._vars: GlobalLocals | None = None
+        self.last_output: Any = None
 
     @property
     def inst(self) -> GlobalLocals:
@@ -98,6 +99,8 @@ class RootPython(Root):
             # if 'file' is passed within the method.
             "print": lambda *a, **kw: print(*a, **kw, file=kw.pop("file", stdout))  # type: ignore
         }
+        if self.last_output is not None:
+            args["_"] = self.last_output
         code = clean_code(replace_vars(code.replace("|root|", Settings.root_folder), Root.scope))
 
         async with ExceptionHandler(ctx.message):
@@ -113,6 +116,10 @@ class RootPython(Root):
                     await send(ctx, expr, forced=True)  # type: ignore
                 else:
                     await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)  # type: ignore
+        try:
+            self.last_output = expr
+        except NameError:
+            self.last_output = None
 
         if out := stdout.getvalue():
             await send(ctx, codeblock_wrapper(out, "py"), forced=True)
