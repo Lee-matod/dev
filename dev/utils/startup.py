@@ -248,7 +248,7 @@ def setup_logging(
         formatter: logging.Formatter = MISSING
 ) -> logging.Logger:
     if handler is MISSING:
-        handler = logging.Handler()
+        handler = logging.StreamHandler()
 
     if formatter is MISSING:
         formatter = (
