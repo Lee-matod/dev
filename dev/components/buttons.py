@@ -11,8 +11,6 @@ All :class:`discord.ui.Button` related classes.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import discord
 
 from dev.types import InteractionResponseType
@@ -22,18 +20,15 @@ from dev.components.views import AuthoredView
 from dev.utils.functs import interaction_response
 from dev.utils.startup import Settings
 
-if TYPE_CHECKING:
-    from dev import types
-
 __all__ = (
     "SettingsToggler",
 )
 
 
 class SettingsToggler(discord.ui.Button[AuthoredView]):
-    def __init__(self, setting: str, author: types.User, *, label: str) -> None:
+    def __init__(self, setting: str, author: int, *, label: str) -> None:
         super().__init__(label=label)
-        self.author: types.User = author
+        self.author: int = author
         self.setting: str = setting
         if label in ("Allow Global Uses", "Invoke on Edit"):
             self.style = discord.ButtonStyle.green if getattr(Settings, setting) else discord.ButtonStyle.red
@@ -51,7 +46,7 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
             label = self.label
             if label is not None:
                 return await interaction.response.send_modal(
-                    SettingEditor(self.author, label.replace(" ", "_").lower())
+                    SettingEditor(label.replace(" ", "_").lower())
                 )
             return await interaction_response(
                 interaction,

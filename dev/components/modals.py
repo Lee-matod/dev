@@ -138,8 +138,7 @@ class CodeEditor(discord.ui.Modal):
 
 
 class SettingEditor(discord.ui.Modal):
-    def __init__(self, author: types.User, setting: str) -> None:
-        self.author: types.User = author
+    def __init__(self, setting: str) -> None:
         self.setting: str = setting
         self.setting_obj: set[int] | str = getattr(Settings, setting)
         self.item: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(
