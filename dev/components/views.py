@@ -16,12 +16,12 @@ from typing import TYPE_CHECKING, Any, Callable, Coroutine, overload
 
 import discord
 
+from dev import types
 from dev.types import InteractionResponseType
 
 from dev.utils.functs import interaction_response
 
 if TYPE_CHECKING:
-    from dev import types
     from dev.interpreters import Process
 
 __all__ = (
