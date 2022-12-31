@@ -137,10 +137,16 @@ class SearchCategory(discord.ui.Select[AuthoredView]):
             members: list[str],
             roles: list[str]
     ):
-        super().__init__(options=list(self.OPTIONS))
+        options: list[discord.SelectOption] = [
+            option for option, value in zip(self.OPTIONS, (True, cogs, cmds, emojis, channels, members, roles))
+            if value
+        ]
+        super().__init__(options=options)
         self.embed: discord.Embed = embed
         self.mapping: dict[str, str] = {
-            "all": "\n".join(list(itertools.chain(cogs, cmds, channels, emojis, members, roles))[:8]),
+            "all": "\n".join(
+                list(itertools.chain(cogs[:3], cmds[:3], channels[:3], emojis[:3], members[:3], roles[:3]))[:8]
+            ),
             "cogs": "\n".join(cogs),
             "commands": "\n".join(cmds),
             "text_channels": "\n".join(channels),

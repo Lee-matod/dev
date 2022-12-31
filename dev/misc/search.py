@@ -67,6 +67,6 @@ class RootSearch(Root):
 
 def match(query: str, array: list[tuple[str, str]]) -> list[str]:
     results: list[str] = []
-    for m in difflib.get_close_matches(query, [item[0] for item in array], 7, 0.5):
+    for m in difflib.get_close_matches(query, [item[0] for item in array], 10, 0.5):
         results.append([item[1] for item in array][[item[0] for item in array].index(str(m))])
     return results
