@@ -442,9 +442,7 @@ class RootOver(Root):
         """
         if settings is None:
             view = AuthoredView(ctx.author)
-            for setting in [setting for setting in Settings.kwargs.keys()]:
-                fmt = " ".join(word.lower() if len(word) <= 2 else word.title() for word in setting.split("_"))
-                view.add_item(SettingsToggler(setting, ctx.author, label=fmt))
+            SettingsToggler.add_buttons(view)
             return await send(ctx, view)
         default = Settings.kwargs.copy()
         changed: list[str] = []  # a formatted version of the settings that were changed

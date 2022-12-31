@@ -40,6 +40,12 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
         else:
             self.style = discord.ButtonStyle.blurple
 
+    @classmethod
+    def add_buttons(cls, view: AuthoredView, /) -> None:
+        for setting in [setting for setting in Settings.kwargs.keys()]:
+            fmt = " ".join(word.lower() if len(word) <= 2 else word.title() for word in setting.split("_"))
+            view.add_item(cls(setting, view.author, label=fmt))
+
     async def callback(self, interaction: discord.Interaction) -> None:
         if self.setting not in [sett for sett, ann in Settings.mapping.items() if ann == bool]:
             label = self.label
@@ -60,8 +66,10 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
         else:
             setattr(Settings, setting, True)
             self.style = discord.ButtonStyle.green
+        view = AuthoredView(self.author)
+        self.add_buttons(view)
         await interaction_response(
             interaction,
             InteractionResponseType.EDIT,
-            type(self.view)(self.author)  # type: ignore
+            view
         )
