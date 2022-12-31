@@ -17,6 +17,7 @@ import discord
 
 from dev.types import InteractionResponseType
 from dev.components.modals import SettingEditor
+from dev.components.views import AuthoredView
 
 from dev.utils.functs import interaction_response
 from dev.utils.startup import Settings
@@ -24,14 +25,12 @@ from dev.utils.startup import Settings
 if TYPE_CHECKING:
     from dev import types
 
-    from dev.components.views import ToggleSettings
-
 __all__ = (
     "SettingsToggler",
 )
 
 
-class SettingsToggler(discord.ui.Button["ToggleSettings"]):
+class SettingsToggler(discord.ui.Button[AuthoredView]):
     def __init__(self, setting: str, author: types.User, *, label: str) -> None:
         super().__init__(label=label)
         self.author: types.User = author

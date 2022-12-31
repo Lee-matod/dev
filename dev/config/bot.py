@@ -18,7 +18,7 @@ import discord
 from discord.ext import commands
 
 from dev.handlers import optional_raise
-from dev.components import PermissionsViewer
+from dev.components import AuthoredView, PermissionsSelector
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
@@ -96,14 +96,14 @@ class RootBot(Root):
         """
         if ctx.guild is None:
             return await send(ctx, "Please execute this command in a guild.")
-        view = PermissionsViewer(ctx.guild.me, channel)
+        select = PermissionsSelector(target=ctx.guild.me, channel=channel)
         await send(
             ctx,
             discord.Embed(
-                description="\n".join(["```ansi", *view.sort_perms('general'), "```"]),
+                description="\n".join(["```ansi", *select.sort_perms("general"), "```"]),
                 color=discord.Color.blurple()
             ),
-            view
+            AuthoredView(ctx.author, select)
         )
 
     @root.command(name="reload", parent="dev bot")

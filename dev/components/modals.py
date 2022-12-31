@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from discord.ext import commands
 
     from dev import types
-    from dev.components.views import CodeView, ToggleSettings, VariableModalSender
+    from dev.components.views import ModalSender
 
 __all__ = (
     "CodeEditor",
@@ -42,7 +42,7 @@ __all__ = (
 
 
 class VariableValueSubmitter(discord.ui.Modal):
-    value: discord.ui.TextInput[VariableModalSender] = discord.ui.TextInput(
+    value: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(
         label="Value",
         style=discord.TextStyle.paragraph
     )
@@ -50,8 +50,8 @@ class VariableValueSubmitter(discord.ui.Modal):
     def __init__(self, name: str, new: bool, default: str | None = None) -> None:
         self.value.default = default
         super().__init__(title="Value Submitter")
-        self.name = name
-        self.new = new
+        self.name: str = name
+        self.new: bool = new
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         Root.scope.update({self.name: self.value.value})
@@ -62,7 +62,7 @@ class VariableValueSubmitter(discord.ui.Modal):
 
 
 class CodeEditor(discord.ui.Modal):
-    code: discord.ui.TextInput[CodeView] = discord.ui.TextInput(
+    code: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(
         label="Code inspection for 'command'",
         style=discord.TextStyle.long
     )
@@ -142,7 +142,7 @@ class SettingEditor(discord.ui.Modal):
         self.author: types.User = author
         self.setting: str = setting
         self.setting_obj: set[int] | str = getattr(Settings, setting)
-        self.item: discord.ui.TextInput[ToggleSettings] = discord.ui.TextInput(
+        self.item: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(
             label=setting.replace("_", " ").title(),
             default=", ".join([str(i) for i in self.setting_obj])
         )

@@ -28,7 +28,7 @@ from dev.converters import CodeblockConverter, OverrideSettings, str_bool, str_i
 from dev.handlers import ExceptionHandler, replace_vars, optional_raise
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 
-from dev.components import CodeView, ToggleSettings
+from dev.components import AuthoredView, CodeEditor, ModalSender, SettingsToggler
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import flag_parser, generate_ctx, table_creator, send
@@ -119,7 +119,15 @@ class RootOver(Root):
         if not script and len(impl.source) > 4000:
             return await send(ctx, "The command's source code exceeds the 4000 maximum character limit.")
         if not script:
-            return await send(ctx, CodeView(ctx, command, self))
+            return await send(
+                ctx,
+                ModalSender(
+                    CodeEditor(ctx, command, self),
+                    ctx.author,
+                    label="View Code",
+                    style=discord.ButtonStyle.blurple
+                )
+            )
         self.bot.remove_command(command_string)
 
         # Get file imports, functions and any other top-level expression,
@@ -433,7 +441,11 @@ class RootOver(Root):
         Adding single or double quotes in between the different parameters is also a valid option.
         """
         if settings is None:
-            return await send(ctx, ToggleSettings(ctx.author))
+            view = AuthoredView(ctx.author)
+            for setting in [setting for setting in Settings.kwargs.keys()]:
+                fmt = " ".join(word.lower() if len(word) <= 2 else word.title() for word in setting.split("_"))
+                view.add_item(SettingsToggler(setting, ctx.author, label=fmt))
+            return await send(ctx, view)
         default = Settings.kwargs.copy()
         changed: list[str] = []  # a formatted version of the settings that were changed
         raw_changed = {}

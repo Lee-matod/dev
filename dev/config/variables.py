@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Literal
 from discord.ext import commands
 
 from dev.converters import LiteralModes
-from dev.components import VariableModalSender
+from dev.components import ModalSender, VariableValueSubmitter
 
 from dev.utils.functs import send
 from dev.utils.baseclass import Root, root
@@ -55,7 +55,7 @@ class RootVariables(Root):
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             if name in Root.scope.keys():
                 return await send(ctx, f"A variable called `{name}` already exists.")
-            await send(ctx, VariableModalSender(name, True, ctx.author))
+            await send(ctx, ModalSender(VariableValueSubmitter(name, True), ctx.author, label="Submit Variable Value"))
 
         elif mode in ["delete", "del"]:  # pyright: ignore [reportUnnecessaryContains]
             if name is None:
@@ -70,7 +70,14 @@ class RootVariables(Root):
                 raise commands.MissingRequiredArgument(ctx.command.clean_params.get("name"))  # type: ignore
             if name not in Root.scope.keys():
                 return await send(ctx, f"No variable called `{name}` found.")
-            await send(ctx, VariableModalSender(name, False, ctx.author, Root.scope[name]))
+            await send(
+                ctx,
+                ModalSender(
+                    VariableValueSubmitter(name, False, Root.scope[name]),
+                    ctx.author,
+                    label="Submit Variable Value"
+                )
+            )
 
         elif mode in ["all", "~"]:  # pyright: ignore [reportUnnecessaryContains]
             variables = '\n'.join(f"+ {var}" for var in Root.scope.keys()) if Root.scope else "- No variables found."

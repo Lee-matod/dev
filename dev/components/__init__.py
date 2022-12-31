@@ -11,18 +11,18 @@ All Discord component related classes.
 """
 from dev.components.buttons import *
 from dev.components.modals import *
+from dev.components.selects import *
 from dev.components.views import *
 
 __all__ = (
+    "AuthoredView",
     "BoolInput",
     "CodeEditor",
-    "CodeView",
-    "PermissionsViewer",
-    "SearchResultCategory",
+    "ModalSender",
+    "PermissionsSelector",
+    "SearchCategory",
     "SettingEditor",
     "SettingsToggler",
     "SigKill",
-    "ToggleSettings",
-    "VariableModalSender",
     "VariableValueSubmitter"
 )

@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 import discord
 
-from dev.components.views import SearchResultCategory
+from dev.components import AuthoredView, SearchCategory
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
@@ -49,15 +49,10 @@ class RootSearch(Root):
             return await send(ctx, "Couldn't find anything.")
         embed = discord.Embed(
             title=f"Query {query} returned...",
-            description=SearchResultCategory.join_multi_iter(
-                [cogs, cmds, channels, emojis, members, roles],
-                max_amount=7
-            ),
             color=discord.Color.blurple()
         )
         embed.set_footer(text="Category: All")
-        view = SearchResultCategory(
-            ctx,
+        select = SearchCategory(
             embed,
             cogs=cogs,
             cmds=cmds,
@@ -66,8 +61,8 @@ class RootSearch(Root):
             members=members,
             roles=roles
         )
-        message = await send(ctx, embed, view)
-        view.message = message
+        embed.description = select.mapping.get("all")
+        await send(ctx, embed, AuthoredView(ctx.author, select))
 
 
 def match(query: str, array: list[tuple[str, str]]) -> list[str]:
