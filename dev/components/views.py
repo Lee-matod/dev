@@ -61,8 +61,6 @@ class AuthoredView(discord.ui.View):
 class ModalSender(AuthoredView):
     """A view that automatically creates a button that sends a modal.
 
-    Use :meth:`ModalSender.add_item` to add more components to this view.
-
     Subclass of :class:`AuthoredView`.
 
     Parameters
