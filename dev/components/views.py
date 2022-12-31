@@ -76,6 +76,9 @@ class ModalSender(AuthoredView):
     ----------
     modal: :class:`discord.ui.Modal`
         The modal that was passed to the constructor of this class.
+
+    Methods
+    -------
     sender: :class:`discord.ui.Button`
         The button that handles sending the given modal.
     """
