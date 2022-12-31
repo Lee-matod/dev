@@ -85,9 +85,16 @@ class ModalSender(AuthoredView):
     def __init__(self, modal: discord.ui.Modal, /, author: types.User | int, **kwargs: Any) -> None:
         super().__init__(author)
         self.modal: discord.ui.Modal = modal
-        self.sender: discord.ui.Button[AuthoredView] = discord.ui.button(**kwargs)(self.callback)  # type: ignore
+        self.sender.label = kwargs.pop("label", None)
+        if custom_id := kwargs.pop("custom_id", None):
+            self.sender.custom_id = custom_id
+        self.sender.disabled = kwargs.pop("disabled", False)
+        self.sender.style = kwargs.pop("style", discord.ButtonStyle.secondary)
+        self.sender.emoji = kwargs.pop("emoji", None)
+        self.sender.row = kwargs.pop("row", None)
 
-    async def callback(self, interaction: discord.Interaction, _) -> None:
+    @discord.ui.button()
+    async def sender(self, interaction: discord.Interaction, _) -> None:
         await interaction.response.send_modal(self.modal)
 
 
