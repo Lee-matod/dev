@@ -144,7 +144,7 @@ class SettingEditor(discord.ui.Modal):
         self.setting_obj: set[int] | str = getattr(Settings, setting)
         self.item: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(
             label=setting.replace("_", " ").title(),
-            default=", ".join([str(i) for i in self.setting_obj])
+            default=(", ".join(map(str, self.setting_obj)) if isinstance(self.setting_obj, set) else self.setting_obj)
         )
         super().__init__(title=f"{setting.replace('_', ' ').title()} Editor")
         self.add_item(self.item)
@@ -157,6 +157,5 @@ class SettingEditor(discord.ui.Modal):
             setattr(Settings, self.setting, self.item.value)
         await interaction_response(
             interaction,
-            InteractionResponseType.EDIT,
-            type(self.item.view)(self.author)  # type: ignore
+            InteractionResponseType.EDIT
         )
