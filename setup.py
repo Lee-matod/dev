@@ -10,21 +10,21 @@ with open("dev/__init__.py") as file:
 if version.endswith(("a", "b", "rc")):
     try:
         import subprocess
-        count, err = subprocess.Popen(
+
+        count, _ = subprocess.Popen(
             ["git", "rev-list", "--count", "HEAD"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         ).communicate()
+        commit, _ = subprocess.Popen(
+            ["git", "rev-parse", "--short", "HEAD"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        ).communicate()
         if count:
-            commit, err = subprocess.Popen(
-                ["git", "rev-parse", "--short", "HEAD"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            ).communicate()
-            if commit:
-                version += count.decode("utf-8").strip() + "+g" + commit.decode("utf-8").strip()
-            else:
-                version += count.decode("utf-8").strip()
+            version += count.decode("utf-8").strip()
+        if commit:
+            version += f"+g{commit.decode('utf-8')}".strip()
     except Exception:  # noqa
         pass
 
