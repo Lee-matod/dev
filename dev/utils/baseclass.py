@@ -383,37 +383,65 @@ class Root(commands.Cog):
 
     def __init__(self, bot: types.Bot) -> None:
         self.bot: types.Bot = bot
+        if frontend_cog := bot.get_cog("Dev"):
+            children: set[types.Command] = set()
+            for cmd in sorted(_get_commands(type(self).__mro__), key=lambda c: c.level):
+                if cmd.qualified_name in frontend_cog.commands:  # type: ignore
+                    original: type[_DiscordCommand] | type[_DiscordGroup] = frontend_cog.commands.get(  # type: ignore
+                        cmd.qualified_name
+                    )
+                    mapping: dict[Any, Any] = {
+                        _DiscordCommand: Command,
+                        _DiscordGroup: Group,
+                        Group: "group",
+                        Command: "command"
+                    }
+                    as_method: type[Command[Root]] | type[Group[Root]] | None = mapping.get(type(original))
+                    if as_method != type(cmd):
+                        raise RuntimeError(
+                            f"Overrided command {cmd!r} in {self} has been set as a {mapping.get(type(cmd))} when "
+                            f"its original is a {mapping.get(as_method)}"
+                        )
+                    if isinstance(cmd, Command) and cmd.parent:
+                        parent: _DiscordGroup = frontend_cog.commands.get(cmd.parent)  # type: ignore
+                        parent.remove_command(cmd.name)
+                    elif isinstance(cmd, Group):
+                        subcommands: commands.Group[Any, ..., Any] = frontend_cog.commands.get(  # type: ignore
+                            cmd.qualified_name
+                        )
+                        for child in subcommands.commands:
+                            children.add(child)
+                        if cmd.parent:
+                            parent: _DiscordGroup = frontend_cog.commands.get(cmd.parent)  # type: ignore
+                            parent.remove_command(cmd.name)
+                        else:
+                            bot.remove_command(cmd.name)
+                actual = cmd.to_instance(frontend_cog.commands)  # type: ignore
+                if isinstance(actual, _DiscordGroup):
+                    for child in children:
+                        actual.add_command(child)
+                if actual.qualified_name == actual.name:
+                    #  Top level command
+                    bot.add_command(actual)
+                if type(self).__base__ == Root:
+                    actual.cog = frontend_cog  # type: ignore
+                else:
+                    self.__dict__.update(frontend_cog.__dict__)
+                    actual.cog = self
+                frontend_cog.commands[actual.qualified_name] = actual  # type: ignore
+            return
         if type(self).__base__ == Root:
-            #  Shouldn't instantiate nested Roots, but check if cog has already been loaded and add commands.
-            fronted_cog: Root | None = bot.get_cog("Dev")  # type: ignore
-            if fronted_cog is not None:
-                for cmd in sorted(self._get_commands(type(self).__mro__), key=lambda c: c.level):
-                    actual = cmd.to_instance(fronted_cog.commands)
-                    if actual.qualified_name == actual.name:
-                        #  Top level coomand
-                        try:
-                            bot.add_command(actual)
-                        except commands.CommandRegistrationError:
-                            #  Maybe we should let this propagate instead of dealing with it.
-                            #  But I believe that it's more user-friendly if we keep it this way.
-                            bot.remove_command(actual.qualified_name)
-                            bot.add_command(actual)
-                    actual.cog = fronted_cog
-                    fronted_cog.commands[actual.qualified_name] = actual
             return
         self.commands: dict[str, types.Command] = {}
         self.registrations: dict[int, CommandRegistration | SettingRegistration] = {}
 
-        root_commands: list[Command[Root] | Group[Root]] = list(self._get_commands(tuple(Root._subclasses)))
+        root_commands: list[Command[Root] | Group[Root]] = list(_get_commands(tuple(Root._subclasses)))
         root_commands.sort(key=lambda c: c.level)
         for command in root_commands:
             command.cog = self
             command = command.to_instance(self.commands)
             self.commands[command.qualified_name] = command
             self.commands[command.qualified_name].cog = self
-        root_command = self.commands.get("dev")
-        if root_command is None:
-            raise RuntimeError("Could not get root command")
         for r in self.commands.values():
             if r.qualified_name == r.name:
                 # Top level command
@@ -421,17 +449,6 @@ class Root(commands.Cog):
 
         self._base_registrations: tuple[BaseCommandRegistration, ...] = ()
         self._refresh_base_registrations()
-
-    def _get_commands(self, cls: tuple[type, ...]) -> set[Command[Root] | Group[Root]]:
-        cmds: set[Command[Root] | Group[Root]] = set()
-        for kls in cls:
-            if issubclass(kls, Root):
-                _log.debug("Loading Root class %r", kls)
-            for val in kls.__dict__.values():
-                if isinstance(val, (Command, Group)):
-                    cmd: Command[Root] | Group[Root] = val
-                    cmds.add(cmd)
-        return cmds
 
     def _refresh_base_registrations(self) -> list[BaseCommandRegistration]:
         base_list: list[BaseCommandRegistration] = []
@@ -540,3 +557,15 @@ class Root(commands.Cog):
         elif await self.bot.is_owner(ctx.author) and not Settings.owners:
             return True
         raise commands.NotOwner("You have to own this bot to be able to use this command")
+
+
+def _get_commands(cls: tuple[type, ...]) -> set[Command[Root] | Group[Root]]:
+    cmds: set[Command[Root] | Group[Root]] = set()
+    for kls in cls:
+        if issubclass(kls, Root):
+            _log.debug("Loading Root class %r", kls)
+        for val in kls.__dict__.values():
+            if isinstance(val, (Command, Group)):
+                cmd: Command[Root] | Group[Root] = val
+                cmds.add(cmd)
+    return cmds
