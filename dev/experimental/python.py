@@ -113,12 +113,7 @@ class RootPython(Root):
             if handler.debug or exc_type is None or exc_val is None or exc_tb is None:
                 return
             elif isinstance(exc_val, (SyntaxError, ImportError, NameError, AttributeError)):
-                error = discord.Embed(
-                    title=f"{exc_type.__name__} at line {exc_tb.tb_lineno}:{exc_tb.tb_lasti}",
-                    description=codeblock_wrapper(str(exc_val), "py"),
-                    color=discord.Color.red()
-                )
-                await send(ctx, error)
+                await send(ctx, codeblock_wrapper(f"{exc_type.__name__}: {exc_val}", "py"))
 
         async with ExceptionHandler(ctx.message, on_error=maybe_send) as handler:
             async for expr in Execute(code, self.inst, args):
