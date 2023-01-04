@@ -97,7 +97,7 @@ class OverrideSettings(commands.Converter[None]):
         else:
             self.command_string = argument
 
-    def back_to_default(self) -> None:
+    def back_to_default(self, *_: Any) -> None:
         for module, value in self.default_settings.items():
             setattr(Settings, module, value)
 

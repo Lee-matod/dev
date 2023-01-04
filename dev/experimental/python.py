@@ -27,6 +27,8 @@ from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper
 
 if TYPE_CHECKING:
+    from types import TracebackType
+
     from dev import types
 
 
@@ -103,7 +105,22 @@ class RootPython(Root):
             args["_"] = self.last_output
         code = clean_code(replace_vars(code.replace("|root|", Settings.root_folder), Root.scope))
 
-        async with ExceptionHandler(ctx.message):
+        async def maybe_send(
+                exc_type: type[Exception] | None,
+                exc_val: Exception | None,
+                exc_tb: TracebackType | None
+        ) -> None:
+            if handler.debug or exc_type is None or exc_val is None or exc_tb is None:
+                return
+            elif isinstance(exc_val, (SyntaxError, ImportError, NameError, AttributeError)):
+                error = discord.Embed(
+                    title=f"{exc_type.__name__} at line {exc_tb.tb_lineno}:{exc_tb.tb_lasti}",
+                    description=codeblock_wrapper(str(exc_val), "py"),
+                    color=discord.Color.red()
+                )
+                await send(ctx, error)
+
+        async with ExceptionHandler(ctx.message, on_error=maybe_send) as handler:
             async for expr in Execute(code, self.inst, args):
                 if expr is None:
                     continue

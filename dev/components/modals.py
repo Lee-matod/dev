@@ -82,7 +82,10 @@ class CodeEditor(discord.ui.Modal):
         self.ctx.bot.remove_command(self.command.qualified_name)
         lcls: dict[str, Any] = {"discord": discord, "commands": commands, "bot": self.ctx.bot}
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            async with ExceptionHandler(self.ctx.message, lambda: self.ctx.bot.add_command(self.command)):
+            async with ExceptionHandler(
+                self.ctx.message,
+                lambda *_: self.ctx.bot.add_command(self.command)  # type: ignore
+            ):
                 # make sure everything is parsed correctly
                 parsed = ast.parse(self.code.value)
                 if [ast.AsyncFunctionDef] != [type(expr) for expr in parsed.body]:

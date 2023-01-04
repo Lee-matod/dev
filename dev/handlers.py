@@ -16,7 +16,7 @@ import contextlib
 import inspect
 import itertools
 from traceback import format_exception
-from typing import TYPE_CHECKING, Any, Callable, Coroutine, overload
+from typing import TYPE_CHECKING, Any, Callable
 
 import discord
 from discord.ext import commands
@@ -200,8 +200,8 @@ class ExceptionHandler:
     ----------
     message: :class:`discord.Message`
         The message that the reactions will be added to.
-    on_error: Optional[Callable[[], Any]]
-        An optional, argument-less function that is called whenever an exception is raised inside the context manager.
+    on_error: Optional[Callable[[Optional[Type[Exception]], Optional[Exception], Optional[TracebackType]], Any]]
+        An optional function that will receive any raised exceptions inside the context manager.
         This function *can* be a coroutine.
     save_traceback: :class:`bool`
         Whether to save a traceback if an exception is raised.
@@ -210,36 +210,27 @@ class ExceptionHandler:
     error: list[tuple[str, str]] = []
     debug: bool = False
 
-    @overload
     def __init__(
             self,
             message: discord.Message,
             /,
-            on_error: Callable[[], Coroutine[Any, Any, Any]] | None = ...,
-            save_traceback: bool = ...
+            on_error: Callable[[type[Exception] | None, Exception | None, TracebackType | None], Any] | None = None,
+            save_traceback: bool = False
     ) -> None:
-        ...
-
-    @overload
-    def __init__(
-            self,
-            message: discord.Message,
-            /,
-            on_error: Callable[[], Any] | None = ...,
-            save_traceback: bool = ...
-    ) -> None:
-        ...
-
-    def __init__(self, message: Any, /, on_error: Any = None, save_traceback: bool = False) -> None:
         self.message: discord.Message = message
-        self.on_error: Callable[..., Any] | None = on_error
+        self.on_error: Callable[[type[Exception] | None, Exception | None, TracebackType | None], Any] | None = on_error
         if save_traceback:
             ExceptionHandler.debug = True
 
     async def __aenter__(self) -> ExceptionHandler:
         return self
 
-    async def __aexit__(self, exc_type: type[Exception], exc_val: Exception, exc_tb: TracebackType | None) -> bool:
+    async def __aexit__(
+            self,
+            exc_type: type[Exception] | None,
+            exc_val: Exception | None,
+            exc_tb: TracebackType | None
+    ) -> bool:
         if exc_val is None:
             if not self.debug:
                 with contextlib.suppress(discord.NotFound):
@@ -250,7 +241,7 @@ class ExceptionHandler:
                 await self.message.add_reaction("\U0001f4a2")
             elif isinstance(exc_val, (TimeoutError, asyncio.TimeoutError)):
                 await self.message.add_reaction("\u23f0")
-            elif isinstance(exc_val, (AssertionError, ImportError, NameError, UnboundLocalError)):
+            elif isinstance(exc_val, (AssertionError, ImportError, NameError)):
                 await self.message.add_reaction("\u2753")
             elif isinstance(
                 exc_val,
@@ -272,11 +263,11 @@ class ExceptionHandler:
                 await self.message.add_reaction("\u2049")
             else:  # error doesn't fall under any other category
                 await self.message.add_reaction("\u203c")
-        if self.on_error:
+        if self.on_error is not None:
             if inspect.iscoroutinefunction(self.on_error):
-                await self.on_error()
+                await self.on_error(exc_type, exc_val, exc_tb)
             else:
-                self.on_error()
+                self.on_error(exc_type, exc_val, exc_tb)
 
         if self.debug:
             ExceptionHandler.error.append(

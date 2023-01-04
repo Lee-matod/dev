@@ -154,7 +154,7 @@ class RootOver(Root):
         while function_name in scope:
             function_name += choice(ascii_letters)
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            async with ExceptionHandler(ctx.message, lambda: self.bot.add_command(command)):
+            async with ExceptionHandler(ctx.message, lambda *_: self.bot.add_command(command)):  # type: ignore
                 # Make sure everything is parsed correctly
                 parsed = ast.parse(script)
                 if [ast.AsyncFunctionDef] != [type(expr) for expr in parsed.body]:

@@ -69,8 +69,9 @@ value.
 
 - message([discord.Message](https://discordpy.readthedocs.io/en/latest/api.html#discord.Message)) – The message that
   the reactions will be added to.
-- on_error(Callable[[], Any]) – An optional, argument-less function that is called whenever an exception is raised
-  inside the context manager. This function *can* be a coroutine.
+- on_error(Callable[[Optional[Type[[Exception](https://docs.python.org/3/library/exceptions.html#Exception)]], Optional[[Exception](https://docs.python.org/3/library/exceptions.html#Exception)], Optional[[TracebackType](https://docs.python.org/3/library/types.html#types.TracebackType)]], Any]) – An
+  optional function that will receive any raised exceptions inside the context manager.  
+  This function *can* be a coroutine.
 - save_traceback([bool](https://docs.python.org/3/library/functions.html#bool)) – Whether to save a traceback if an
   exception is raised. Defaults to `False`.
 
