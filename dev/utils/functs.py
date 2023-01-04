@@ -509,7 +509,7 @@ def _check_embed(embed: discord.Embed, token: str, /, replace_path: bool) -> dis
 def _replace(string: str, token: str, /, *, path: bool) -> str:
     string = string.replace(token, "[token]")
     if path:
-        string.replace(Settings.path_to_file, "~")
+        string = string.replace(Settings.path_to_file, "~")
     return string
 
 
