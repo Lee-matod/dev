@@ -237,7 +237,7 @@ class ExceptionHandler:
                     await self.message.add_reaction("\u2611")
             return False
         with contextlib.suppress(discord.NotFound):
-            if isinstance(exc_val, (EOFError, IndentationError, SyntaxError)):
+            if isinstance(exc_val, (EOFError, SyntaxError)):
                 await self.message.add_reaction("\U0001f4a2")
             elif isinstance(exc_val, (TimeoutError, asyncio.TimeoutError)):
                 await self.message.add_reaction("\u23f0")
