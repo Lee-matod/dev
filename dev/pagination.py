@@ -11,10 +11,13 @@ Pagination interface and objects.
 """
 from __future__ import annotations
 
+from textwrap import wrap
+
 import discord
 from discord.ext import commands
 
 from dev import types
+from dev.components import AuthoredView
 
 __all__ = (
     "Interface",
@@ -82,9 +85,9 @@ class Paginator(commands.Paginator):
         """
         max_page_size = self.max_size - self._prefix_len - self._suffix_len - 2 * self._linesep_len
         if len(line) > max_page_size:
-            lines = [line[:max_page_size]]
+            lines: list[str] = []
             checker = ""
-            for char in line[max_page_size:]:
+            for char in wrap(line, max_page_size):
                 if len(checker) < max_page_size:
                     checker += char
                 else:
@@ -104,10 +107,10 @@ class Paginator(commands.Paginator):
             self.__pages[-1] += f"\n{line}"
 
 
-class Interface(discord.ui.View):
+class Interface(AuthoredView):
     """A paginator interface that implements basic pagination functionality.
 
-    Subclass of :class:`discord.ui.View`.
+    Subclass of :class:`AuthoredView`.
 
     Parameters
     ----------
@@ -126,9 +129,8 @@ class Interface(discord.ui.View):
     """
 
     def __init__(self, paginator: commands.Paginator, author: types.User | int) -> None:
-        super().__init__()
+        super().__init__(author)
         self.paginator: commands.Paginator = paginator
-        self.author: int = author.id if isinstance(author, types.User) else author  # type: ignore
         if hasattr(paginator, "force_last_page") and paginator.force_last_page:  # type: ignore
             self.last_page.disabled = True
             self.next_page.disabled = True
@@ -146,9 +148,6 @@ class Interface(discord.ui.View):
             self._display_page: int = 1
             self._real_page: int = 0
         self.current.label = str(self._display_page)
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return interaction.user.id == self.author
 
     @property
     def display_page(self) -> str:
