@@ -191,8 +191,8 @@ class _SettingsSentinel:
         _folder = pathlib.Path(value)
         if not _folder.exists() or not _folder.is_dir():
             raise NotADirectoryError(value)
-        if not value.endswith("/"):
-            value += "/"
+        if value.endswith("/"):
+            value = value[:-1]
         self.__path_to_file = value
         self.kwargs["path_to_file"] = value
 
