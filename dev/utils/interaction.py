@@ -91,11 +91,17 @@ def get_app_command(
     possible_subcommands = content.split()
     app_command_name = possible_subcommands[0]
     possible_subcommands = possible_subcommands[1:]
-    app_command = discord.utils.get(app_command_list, name=app_command_name)
+    app_command: app_commands.Command[Any, ..., Any] | app_commands.Group | None = discord.utils.get(
+        app_command_list,
+        name=app_command_name
+    )
     while isinstance(app_command, discord.app_commands.Group):
         app_command_name = f"{app_command_name} {possible_subcommands[0]}"
         possible_subcommands = possible_subcommands[1:]
-        app_command = discord.utils.get(app_command.commands, qualified_name=app_command_name)
+        app_command: app_commands.Command[Any, ..., Any] | app_commands.Group | None = discord.utils.get(
+            app_command.commands,
+            qualified_name=app_command_name
+        )
     return app_command
 
 
@@ -190,7 +196,7 @@ class SyntheticInteraction:
             context: commands.Context[types.Bot],
             /
     ) -> None:  # Match signature of commands.Command.invoke
-        if not await self._command._check_can_run(self):  # type: ignore  # pyright: ignore [reportPrivateUsage]
+        if not await self._command._check_can_run(self):  # type: ignore
             raise app_commands.CheckFailure(f"The check functions for command {self._command.qualified_name!r} failed.")
         arguments = context.message.content.removeprefix(f"/{self._command.qualified_name} ")
         if len(self._command.parameters) == 1:
@@ -389,7 +395,7 @@ class InteractionResponse(discord.InteractionResponse):
                 UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
             )
         kwargs.pop("ephemeral", None)
-        message = await self.__parent._context.send(  # type: ignore  # pyright: ignore [reportPrivateUsage]
+        message = await self.__parent._context.send(  # type: ignore
             content,
             **kwargs
         )

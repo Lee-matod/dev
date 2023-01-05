@@ -206,7 +206,7 @@ class Process:
                         context,
                         self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
                         SigKill(self),
-                        paginator=self.__session.paginator,
+                        paginator=self.__session.paginator,  # type: ignore
                         forced_pagination=False
                     )
                     if paginator is not None:
@@ -219,7 +219,7 @@ class Process:
                     context,
                     self.__session.raw,
                     view=None,
-                    paginator=self.__session.paginator,
+                    paginator=self.__session.paginator,  # type: ignore
                     forced_pagination=False
                 )
             try:
@@ -231,7 +231,7 @@ class Process:
                     context,
                     self.__session.set_exit_message("Timed out"),
                     forced_pagination=False,
-                    paginator=self.__session.paginator,
+                    paginator=self.__session.paginator,  # type: ignore
                     view=None
                 )
             except InterruptedError:
@@ -241,7 +241,7 @@ class Process:
                     context,
                     self.__session.raw,
                     forced_pagination=False,
-                    paginator=self.__session.paginator,
+                    paginator=self.__session.paginator,  # type: ignore
                     view=None
                 )
                 if paginator is not None:
@@ -256,7 +256,7 @@ class Process:
                     context,
                     self.__session.add_line(line),
                     forced_pagination=False,
-                    paginator=self.__session.paginator,
+                    paginator=self.__session.paginator,  # type: ignore
                     view=None
                 )
             else:
@@ -267,7 +267,7 @@ class Process:
                     context,
                     self.__session.raw,
                     forced_pagination=False,
-                    paginator=self.__session.paginator,
+                    paginator=self.__session.paginator,  # type: ignore
                     view=None
                 )
             if paginator is not None:

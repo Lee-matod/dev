@@ -151,7 +151,12 @@ async def send(  # type: ignore
     ...
 
 
-async def send(ctx: Any, *args: Any, paginator: Any = MISSING, **options: Any) -> Any:  # type: ignore
+async def send(  # type: ignore
+        ctx: commands.Context[types.Bot],
+        *args: Any,
+        paginator: Any = MISSING,
+        **options: Any
+) -> Any:
     """Evaluates how to safely send a Discord message.
 
     `content`, `embed`, `embeds`, `file`, `files`, `stickers` and `view` are all positional arguments.
@@ -215,8 +220,9 @@ async def send(ctx: Any, *args: Any, paginator: Any = MISSING, **options: Any) -
                 elif isinstance(i, (discord.GuildSticker, discord.StickerItem)):
                     _try_add("stickers", i, kwargs)
                 else:
-                    iterable_items.append(_replace(repr(i), token, path=replace_path_to_file))
+                    iterable_items.append(_replace(repr(i), token, path=replace_path_to_file))  # type: ignore
         else:
+            await ctx.send()
             content = _replace(_revert_virtual_var_value(str(item)), token, path=replace_path_to_file)
             if iterable_items:
                 content = str(iterable_items) + content

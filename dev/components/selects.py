@@ -101,7 +101,7 @@ class PermissionsSelector(discord.ui.Select[AuthoredView]):
             if not value:
                 continue
             if self.channel_target is not None:
-                toggled = dict(self.channel_target.permissions_for(self.member_target)).get(perm)
+                toggled = dict(self.channel_target.permissions_for(self.member_target)).get(perm)  # type: ignore
                 perms_list.append(
                     f"\x1b[1;37m{perm.replace('_', ' ').title():26}\x1b[0;{'32' if toggled else '31'}m{toggled}"
                 )

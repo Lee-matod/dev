@@ -127,7 +127,7 @@ class CodeEditor(discord.ui.Modal):
                     )
                 self.root.update_register(
                     CommandRegistration(
-                        obj,  # type: ignore
+                        obj,
                         Over.OVERRIDE,
                         source=f"{upper.lstrip()}\nasync def {func.name}({parameters}\n{body}"),
                     Over.ADD
