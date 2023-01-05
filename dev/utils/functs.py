@@ -196,6 +196,7 @@ async def send(ctx: Any, *args: Any, paginator: Any = MISSING, **options: Any) -
 
     kwargs: dict[str, Any] = {}
     pag_view: Interface | None = None
+    iterable_items: list[str] = []
     for item in args:
         if isinstance(item, discord.File):
             _try_add("files", _check_file(item, token, replace_path_to_file), kwargs)
@@ -213,8 +214,13 @@ async def send(ctx: Any, *args: Any, paginator: Any = MISSING, **options: Any) -
                     _try_add("embeds", _check_embed(i, token, replace_path_to_file), kwargs)
                 elif isinstance(i, (discord.GuildSticker, discord.StickerItem)):
                     _try_add("stickers", i, kwargs)
+                else:
+                    iterable_items.append(_replace(repr(i), token, path=replace_path_to_file))
         else:
             content = _replace(_revert_virtual_var_value(str(item)), token, path=replace_path_to_file)
+            if iterable_items:
+                content = str(iterable_items) + content
+                iterable_items.clear()
             if paginator is not MISSING and paginator is not None:
                 for line in content.split("\n"):
                     paginator.add_line(line)
