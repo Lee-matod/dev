@@ -222,7 +222,6 @@ async def send(  # type: ignore
                 else:
                     iterable_items.append(_replace(repr(i), token, path=replace_path_to_file))  # type: ignore
         else:
-            await ctx.send()
             content = _replace(_revert_virtual_var_value(str(item)), token, path=replace_path_to_file)
             if iterable_items:
                 content = str(iterable_items) + content
