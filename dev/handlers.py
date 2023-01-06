@@ -43,17 +43,17 @@ __all__ = (
 class RelativeStandard(io.StringIO):
     def __init__(
             self,
-            filename: str,
             origin: TextIO = sys.__stdout__,
+            callback: Callable[[str], Any] | None = None,
+            *,
             initial_value: str | None = None,
             newline: str | None = None,
-            *,
-            callback: Callable[[str], Any] | None = None
+            filename: str | None = None
     ):
         super().__init__(initial_value, newline)
-        self.filename: str = filename
         self.origin: TextIO = origin
         self.callback: Callable[[str], Any] | None = callback
+        self.filename: str | None = filename
 
     def write(self, __s: str) -> int:
         if __s == "\n":
@@ -63,8 +63,8 @@ class RelativeStandard(io.StringIO):
             if self.callback is not None:
                 self.callback(__s)
             return super().write(__s)
-        else:
-            print(__s, file=self.origin)
+        print(__s, file=self.origin)
+        return 0
 
 
 class TimedInfo:
