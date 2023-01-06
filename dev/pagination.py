@@ -17,7 +17,6 @@ import discord
 from discord.ext import commands
 
 from dev import types
-from dev.components import AuthoredView
 
 __all__ = (
     "Interface",
@@ -107,10 +106,10 @@ class Paginator(commands.Paginator):
             self.__pages[-1] += f"\n{line}"
 
 
-class Interface(AuthoredView):
+class Interface(discord.ui.View):
     """A paginator interface that implements basic pagination functionality.
 
-    Subclass of :class:`AuthoredView`.
+    Subclass of :class:`discord.ui.View`.
 
     Parameters
     ----------
@@ -129,7 +128,8 @@ class Interface(AuthoredView):
     """
 
     def __init__(self, paginator: commands.Paginator, author: types.User | int) -> None:
-        super().__init__(author)
+        super().__init__()
+        self.author: int = author.id if isinstance(author, types.User) else author  # type: ignore
         self.paginator: commands.Paginator = paginator
         if hasattr(paginator, "force_last_page") and paginator.force_last_page:  # type: ignore
             self.last_page.disabled = True
@@ -148,6 +148,9 @@ class Interface(AuthoredView):
             self._display_page: int = 1
             self._real_page: int = 0
         self.current.label = str(self._display_page)
+
+    async def interaction_check(self, interaction: Interaction, /) -> bool:
+        return interaction.user.id == self.author
 
     @property
     def display_page(self) -> str:
