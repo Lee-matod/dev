@@ -223,8 +223,11 @@ async def send(  # type: ignore
                     iterable_items.append(_replace(repr(i), token, path=replace_path_to_file))  # type: ignore
         else:
             content = _replace(_revert_virtual_var_value(str(item)), token, path=replace_path_to_file)
+            lang, content = _get_highlight_lang(content)
+            if lang is not None:
+                content = f"```{lang}\n" + content.replace("``", "`\u200b`") + "```"
             if iterable_items:
-                content = str(iterable_items) + content
+                content = "\n".join(iterable_items) + "\n" + content
                 iterable_items.clear()
             if paginator is not MISSING and paginator is not None:
                 for line in content.split("\n"):
@@ -382,6 +385,7 @@ async def interaction_response(  # type: ignore
 
     kwargs: dict[str, Any] = {}
     pag_view: Interface | None = None
+    iterable_items: list[str] = []
     for item in args:
         if isinstance(item, discord.File):
             _try_add("files", _check_file(item, token, replace_path_to_file), kwargs)
@@ -395,8 +399,16 @@ async def interaction_response(  # type: ignore
                     _try_add("files", _check_file(i, token, replace_path_to_file), kwargs)
                 elif isinstance(i, discord.Embed):
                     _try_add("embeds", _check_embed(i, token, replace_path_to_file), kwargs)
+                else:
+                    iterable_items.append(_replace(repr(i), token, path=replace_path_to_file))  # type: ignore
         else:
-            content = _revert_virtual_var_value(str(item)).replace(token, "[token]").replace(Settings.path_to_file, "~")
+            content = _replace(_revert_virtual_var_value(str(item)), token, path=replace_path_to_file)
+            lang, content = _get_highlight_lang(content)
+            if lang is not None:
+                content = f"```{lang}\n" + content.replace("``", "`\u200b`") + "```"
+            if iterable_items:
+                content = "\n".join(iterable_items) + "\n" + content
+                iterable_items.clear()
             if paginator is not MISSING and paginator is not None:
                 for line in content.splitlines():
                     paginator.add_line(line)
@@ -473,6 +485,16 @@ async def generate_ctx(ctx: commands.Context[types.Bot], **kwargs: Any) -> comma
     message.guild = guild or message.guild
 
     return await ctx.bot.get_context(message, cls=type(ctx))
+
+
+def _get_highlight_lang(content: str) -> tuple[str | None, str]:
+    if content.startswith("```") and content.endswith("```"):
+        lines = content.split("\n")
+        highlight = lines[0].removeprefix("```")
+        if lines[-1] == "```":
+            return highlight, "\n".join(lines[1:-1])
+        return highlight, "\n".join(lines[1:][:-3])
+    return None, content
 
 
 def _check_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
