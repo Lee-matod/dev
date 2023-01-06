@@ -14,9 +14,11 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import inspect
+import io
 import itertools
+import sys
 from traceback import format_exception
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, TextIO
 
 import discord
 from discord.ext import commands
@@ -31,10 +33,38 @@ if TYPE_CHECKING:
 __all__ = (
     "ExceptionHandler",
     "GlobalLocals",
+    "RelativeStandard",
     "TimedInfo",
     "optional_raise",
     "replace_vars"
 )
+
+
+class RelativeStandard(io.StringIO):
+    def __init__(
+            self,
+            filename: str,
+            origin: TextIO = sys.__stdout__,
+            initial_value: str | None = None,
+            newline: str | None = None,
+            *,
+            callback: Callable[[str], Any] | None = None
+    ):
+        super().__init__(initial_value, newline)
+        self.filename: str = filename
+        self.origin: TextIO = origin
+        self.callback: Callable[[str], Any] | None = callback
+
+    def write(self, __s: str) -> int:
+        if __s == "\n":
+            return 0
+        stack: inspect.FrameInfo | None = discord.utils.get(inspect.stack(), filename=self.filename)
+        if stack:
+            if self.callback is not None:
+                self.callback(__s)
+            return super().write(__s)
+        else:
+            print(__s, file=self.origin)
 
 
 class TimedInfo:

@@ -11,14 +11,15 @@ Direct evaluation or execution of Python code.
 """
 from __future__ import annotations
 
-import io
-from collections.abc import Iterable
+import contextlib
+import sys
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 import discord
 from discord.ext import commands
 
-from dev.handlers import ExceptionHandler, GlobalLocals, replace_vars
+from dev.handlers import ExceptionHandler, GlobalLocals, RelativeStandard, replace_vars
 from dev.interpreters import Execute
 
 from dev.utils.baseclass import Root, root
@@ -30,6 +31,17 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from dev import types
+
+
+def _maybe_raw_send(item: Any, /) -> bool:
+    if isinstance(item, (discord.Embed, discord.File, discord.ui.View)):
+        return True
+    elif isinstance(item, Sequence) and item:
+        same_type = all(map(lambda x: isinstance(x, type(item[0])), item))
+        if not same_type:
+            return False
+        elif type(item[0]) in (discord.Embed, discord.File, discord.ui.View):
+            return True
 
 
 class RootPython(Root):
@@ -92,20 +104,25 @@ class RootPython(Root):
         elif code is None and not ctx.message.attachments:
             raise commands.MissingRequiredArgument(ctx.command.clean_params.get("code"))  # type: ignore
         assert code is not None
-        stdout = io.StringIO()
+
+        def callback(string: str) -> None:
+            if string.strip() == "":
+                return
+            self.bot.loop.create_task(
+                send(ctx, codeblock_wrapper(repr(string), "py"))
+            )
+
+        stdout = RelativeStandard("<repl>", callback=callback)
+        stderr = RelativeStandard("<repl>", sys.__stderr__, callback=callback)
         args: dict[str, Any] = {
             "bot": self.bot,
-            "ctx": ctx,
-            # Stdout redirect shouldn't be used with async code, but I still don't like print outputting to the console,
-            # so this is probably the simplest workaround I could think of. Output can still be printed to the console
-            # if 'file' is passed within the method.
-            "print": lambda *a, **kw: print(*a, **kw, file=kw.pop("file", stdout))  # type: ignore
+            "ctx": ctx
         }
         if self.last_output is not None:
             args["_"] = self.last_output
         code = clean_code(replace_vars(code.replace("|root|", Settings.root_folder), Root.scope))
 
-        async def maybe_send(
+        async def on_error(
                 exc_type: type[Exception] | None,
                 exc_val: Exception | None,
                 exc_tb: TracebackType | None
@@ -115,23 +132,16 @@ class RootPython(Root):
             elif isinstance(exc_val, (SyntaxError, ImportError, NameError, AttributeError)):
                 await send(ctx, codeblock_wrapper(f"{exc_type.__name__}: {exc_val}", "py"))
 
-        async with ExceptionHandler(ctx.message, on_error=maybe_send) as handler:
-            async for expr in Execute(code, self.inst, args):
-                if expr is None:
-                    continue
-                elif isinstance(expr, (discord.ui.View, discord.Embed, discord.File)) or (
-                        isinstance(expr, Iterable) and (
-                        all(isinstance(i, discord.Embed) for i in expr) or  # type: ignore
-                        all(isinstance(i, discord.File) for i in expr)  # type: ignore
-                )
-                ):
-                    await send(ctx, expr, forced=True)  # type: ignore
-                else:
-                    await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)  # type: ignore
+        async with ExceptionHandler(ctx.message, on_error=on_error) as handler:
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                async for expr in Execute(code, self.inst, args):
+                    if expr is None:
+                        continue
+                    elif _maybe_raw_send(expr):
+                        await send(ctx, expr, forced=True)  # type: ignore
+                    else:
+                        await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)  # type: ignore
         try:
             self.last_output = expr  # type: ignore
         except NameError:
             self.last_output = None
-
-        if out := stdout.getvalue():
-            await send(ctx, codeblock_wrapper(out, "py"), forced=True)
