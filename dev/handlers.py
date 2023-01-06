@@ -63,7 +63,7 @@ class RelativeStandard(io.StringIO):
             if self.callback is not None:
                 self.callback(__s)
             return super().write(__s)
-        print(__s, file=self.origin)
+        self.origin.write(__s)
         return 0
 
 
