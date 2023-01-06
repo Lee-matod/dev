@@ -591,10 +591,14 @@ class Execute:
     )
 
     def __init__(self, code: str, global_locals: GlobalLocals, args: dict[str, Any]) -> None:
-        self.args_name = ["_self_variables", *args.keys()]
-        self.args_value = [global_locals, *args.values()]
-        self.code = code
-        self.vars = global_locals
+        self.code: str = code
+        self.vars: GlobalLocals = global_locals
+        self.args_name: list[str] = ["_self_variables", *args.keys()]
+        self.args_value: list[Any] = [global_locals, *args.values()]
+
+    @property
+    def filename(self) -> str:
+        return "<repl>"
 
     async def __aiter__(self) -> AsyncGenerator[Any, Any]:
         exec(compile(self.wrapper(), "<repl>", "exec"), self.vars.globals, self.vars.locals)
@@ -607,20 +611,23 @@ class Execute:
 
     def wrapper(self) -> ast.Module:
         code = ast.parse(self.code)
-        function: ast.Module = ast.parse(CODE_TEMPLATE.format(", ".join(self.args_name)))
-        function.body[-1].body[-1].body.extend(code.body)  # type: ignore
-        ast.fix_missing_locations(function)
-        ast.NodeTransformer().generic_visit(function.body[-1].body[-1])  # type: ignore
-        expressions: list[ast.stmt] = function.body[-1].body[-1].body  # type: ignore
+        template: ast.Module = ast.parse(CODE_TEMPLATE.format(", ".join(self.args_name), int(time.time())))
+        function: ast.AsyncFunctionDef = template.body[-1]
+
+        ast_try: ast.Try = function.body[-1]
+        ast_try.body.extend(code.body)
+        ast.fix_missing_locations(template)
+        ast.NodeTransformer().generic_visit(ast_try)
+        expressions: list[ast.stmt] = ast_try.body
 
         for index, expr in enumerate(reversed(expressions), start=1):
             if not isinstance(expr, ast.Expr):
-                return function
+                return template
 
             if not isinstance(expr.value, ast.Yield):
                 yield_stmt = ast.Yield(expr.value)
                 ast.copy_location(yield_stmt, expr)
                 yield_expr = ast.Expr(yield_stmt)
                 ast.copy_location(yield_expr, expr)
-                function.body[-1].body[-1].body[-index] = yield_expr  # type: ignore
-        return function
+                ast_try.body[-index] = yield_expr
+        return template
