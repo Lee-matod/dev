@@ -11,6 +11,7 @@ Direct evaluation or execution of Python code.
 """
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import sys
 from collections.abc import Sequence
@@ -105,15 +106,6 @@ class RootPython(Root):
             raise commands.MissingRequiredArgument(ctx.command.clean_params.get("code"))  # type: ignore
         assert code is not None
 
-        def callback(string: str) -> None:
-            if string.strip() == "":
-                return
-            self.bot.loop.create_task(
-                send(ctx, codeblock_wrapper(repr(string), "py"))
-            )
-
-        stdout = RelativeStandard("<repl>", callback=callback)
-        stderr = RelativeStandard("<repl>", sys.__stderr__, callback=callback)
         args: dict[str, Any] = {
             "bot": self.bot,
             "ctx": ctx
@@ -121,6 +113,13 @@ class RootPython(Root):
         if self.last_output is not None:
             args["_"] = self.last_output
         code = clean_code(replace_vars(code.replace("|root|", Settings.root_folder), Root.scope))
+
+        def callback(string: str) -> None:
+            if string.strip() == "":
+                return
+            self.bot.loop.create_task(
+                send(ctx, codeblock_wrapper(repr(string), "py"), forced=True)
+            )
 
         async def on_error(
                 exc_type: type[Exception] | None,
@@ -132,15 +131,20 @@ class RootPython(Root):
             elif isinstance(exc_val, (SyntaxError, ImportError, NameError, AttributeError)):
                 await send(ctx, codeblock_wrapper(f"{exc_type.__name__}: {exc_val}", "py"))
 
+        executor = Execute(code, self.inst, args)
+        stdout = RelativeStandard(callback=callback, filename=executor.filename)
+        stderr = RelativeStandard(sys.__stderr__, callback, filename=executor.filename)
+
         async with ExceptionHandler(ctx.message, on_error=on_error) as handler:
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-                async for expr in Execute(code, self.inst, args):
+                async for expr in executor:
                     if expr is None:
                         continue
                     elif _maybe_raw_send(expr):
                         await send(ctx, expr, forced=True)  # type: ignore
                     else:
                         await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)  # type: ignore
+                await asyncio.sleep(1)
         try:
             self.last_output = expr  # type: ignore
         except NameError:
