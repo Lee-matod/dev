@@ -149,7 +149,7 @@ class Interface(discord.ui.View):
             self._real_page: int = 0
         self.current.label = str(self._display_page)
 
-    async def interaction_check(self, interaction: Interaction, /) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
         return interaction.user.id == self.author
 
     @property

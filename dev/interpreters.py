@@ -612,9 +612,9 @@ class Execute:
     def wrapper(self) -> ast.Module:
         code = ast.parse(self.code)
         template: ast.Module = ast.parse(CODE_TEMPLATE.format(", ".join(self.args_name), int(time.time())))
-        function: ast.AsyncFunctionDef = template.body[-1]
+        function: ast.AsyncFunctionDef = template.body[-1]  # type: ignore
 
-        ast_try: ast.Try = function.body[-1]
+        ast_try: ast.Try = function.body[-1]  # type: ignore
         ast_try.body.extend(code.body)
         ast.fix_missing_locations(template)
         ast.NodeTransformer().generic_visit(ast_try)

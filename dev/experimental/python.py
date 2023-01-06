@@ -38,11 +38,12 @@ def _maybe_raw_send(item: Any, /) -> bool:
     if isinstance(item, (discord.Embed, discord.File, discord.ui.View)):
         return True
     elif isinstance(item, Sequence) and item:
-        same_type = all(map(lambda x: isinstance(x, type(item[0])), item))
+        same_type = all(map(lambda x: isinstance(x, type(item[0])), item))  # type: ignore
         if not same_type:
             return False
-        elif type(item[0]) in (discord.Embed, discord.File, discord.ui.View):
+        elif type(item[0]) in (discord.Embed, discord.File, discord.ui.View):  # type: ignore
             return True
+    return False
 
 
 class RootPython(Root):
@@ -141,9 +142,9 @@ class RootPython(Root):
                     if expr is None:
                         continue
                     elif _maybe_raw_send(expr):
-                        await send(ctx, expr, forced=True)  # type: ignore
+                        await send(ctx, expr, forced=True)
                     else:
-                        await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)  # type: ignore
+                        await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)
                 await asyncio.sleep(1)
         try:
             self.last_output = expr  # type: ignore

@@ -1,12 +1,13 @@
 [tool.pyright]
 
-pythonVersion = "3.9"
 exclude = ["tests", "**/__pycache__", "venv"]
+pythonVersion = "3.9"
 typeCheckingMode = "strict"
 
-reportUnnecessaryIsInstance = false
 reportImportCycles = false
+reportUnnecessaryIsInstance = false
 
 reportCallInDefaultInitializer = "warning"
 reportUnnecessaryTypeIgnoreComment = "warning"
+
 reportPropertyTypeMismatch = "error"
