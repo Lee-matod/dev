@@ -114,13 +114,7 @@ class RootPython(Root):
         if self.last_output is not None:
             args["_"] = self.last_output
         code = clean_code(replace_vars(code.replace("|root|", Settings.root_folder), Root.scope))
-
-        def callback(string: str) -> None:
-            if string.strip() == "":
-                return
-            self.bot.loop.create_task(
-                send(ctx, codeblock_wrapper(repr(string), "py"), forced=True)
-            )
+        output: list[str] = []
 
         async def on_error(
                 exc_type: type[Exception] | None,
@@ -132,21 +126,37 @@ class RootPython(Root):
             elif isinstance(exc_val, (SyntaxError, ImportError, NameError, AttributeError)):
                 await send(ctx, codeblock_wrapper(f"{exc_type.__name__}: {exc_val}", "py"))
 
+        reader_task: asyncio.Task[None] = self.bot.loop.create_task(self._on_update(ctx, output))
         executor = Execute(code, self.inst, args)
-        stdout = RelativeStandard(callback=callback, filename=executor.filename)
-        stderr = RelativeStandard(sys.__stderr__, callback, filename=executor.filename)
-
-        async with ExceptionHandler(ctx.message, on_error=on_error) as handler:
-            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-                async for expr in executor:
-                    if expr is None:
-                        continue
-                    elif _maybe_raw_send(expr):
-                        await send(ctx, expr, forced=True)
-                    else:
-                        await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)
-                await asyncio.sleep(1)
+        stdout = RelativeStandard(lambda s: output.append(s), filename=executor.filename)  # type: ignore
+        stderr = RelativeStandard(
+            sys.__stderr__,
+            lambda s: output.append(s),
+            filename=executor.filename
+        )
         try:
-            self.last_output = expr  # type: ignore
-        except NameError:
-            self.last_output = None
+            async with ExceptionHandler(ctx.message, on_error=on_error) as handler:
+                with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                    async for expr in executor:
+                        if expr is None:
+                            continue
+                        elif _maybe_raw_send(expr):
+                            await send(ctx, expr, forced=True)
+                        else:
+                            await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)
+                    await asyncio.sleep(1)
+            try:
+                self.last_output = expr  # type: ignore
+            except NameError:
+                self.last_output = None
+        finally:
+            reader_task.cancel()
+
+    async def _on_update(self, ctx: commands.Context[types.Bot], view: list[str], /) -> None:
+        current = len(view)
+        if view:
+            await send(ctx, codeblock_wrapper("".join(view).strip("\n"), "py"))
+        while True:
+            if current != len(view):
+                await send(ctx, codeblock_wrapper("".join(view).strip("\n"), "py"))
+            await asyncio.sleep(0)
