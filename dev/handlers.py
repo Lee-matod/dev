@@ -56,8 +56,6 @@ class RelativeStandard(io.StringIO):
         self.filename: str | None = filename
 
     def write(self, __s: str) -> int:
-        if __s == "\n":
-            return 0
         stack: inspect.FrameInfo | None = discord.utils.get(inspect.stack(), filename=self.filename)
         if stack:
             if self.callback is not None:
