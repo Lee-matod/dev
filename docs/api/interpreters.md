@@ -76,8 +76,6 @@ It is also recommended to use this class as a context manager to ensure proper p
 > - context([discord.ext.commands.Context](https://discordpy.readthedocs.io/en/stable/ext/commands/api.html#discord.ext.commands.Context)) –
 The invocation context in which the function should send the output to. If not given, it will return the output as a
 string when the subprocess is completed.
-> - first([bool](https://docs.python.org/3/library/functions.html#bool)) – Whether this is the first command of the
-    session. Defaults to `False`.
 > #### Returns
 > Tuple[[discord.Message](https://discordpy.readthedocs.io/en/stable/api.html#discord.Message),
 > Optional[[Paginator](https://github.com/Lee-matod/dev/wiki/api#class-devpaginationpaginator)]] –
