@@ -84,20 +84,11 @@ class Paginator(commands.Paginator):
         """
         max_page_size = self.max_size - self._prefix_len - self._suffix_len - 2 * self._linesep_len
         if len(line) > max_page_size:
-            lines: list[str] = []
-            checker = ""
-            for char in wrap(line, max_page_size):
-                if len(checker) < max_page_size:
-                    checker += char
-                else:
-                    lines.append(checker)
-                    checker = ""
-            if checker:
-                lines.append(checker)
+            lines: list[str] = wrap(line, max_page_size)
             for l in lines:  # noqa: E741
                 self.line_handler(l, max_page_size, empty=empty)
-            return
-        self.line_handler(line, max_page_size, empty=empty)
+        else:
+            self.line_handler(line, max_page_size, empty=empty)
 
     def line_handler(self, line: str, /, max_page_size: int, *, empty: bool) -> None:
         if len(self.__pages) == 0 or len(line) + len(self.__pages[-1]) > max_page_size:
