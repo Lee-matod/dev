@@ -70,7 +70,7 @@ It is also recommended to use this class as a context manager to ensure proper p
 - process([subprocess.Popen](https://docs.python.org/3/library/subprocess.html#subprocess.Popen)) – The actual
   subprocess.
 
-> ### *await* run_until_complete(context=None, /, *, first=False)
+> ### *await* run_until_complete(context=None, /)
 > Continues executing the current subprocess until it has finished or is forcefully terminated.
 > #### Parameters
 > - context([discord.ext.commands.Context](https://discordpy.readthedocs.io/en/stable/ext/commands/api.html#discord.ext.commands.Context)) –
@@ -160,15 +160,6 @@ that wraps the executed command.
 > #### Raises
 > - [ConnectionRefusedError](https://docs.python.org/3/library/exceptions.html?highlight=timeouterror#ConnectionRefusedError) –
     The current session has already been terminated.
-
-> ### format_process(p, /)
-> Similar to [add_line](https://github.com/Lee-matod/dev/wiki/api#add_lineline), only that this should be called once.
-> This method starts the session's interface, therefore it should only be called once the first command is executed.
-> #### Parameters
-> - p([Process](https://github.com/Lee-matod/dev/wiki/api#class-with-devinterpretersprocesssession-cwd-cmd-)) – The
-    first process of the session.
-> #### Returns
-> [str](https://docs.python.org/3/library/stdtypes.html#str) – The full formatted message.
 
 > ### add_line(line)
 > Appends a new line to the current session's interface.
