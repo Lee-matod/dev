@@ -21,6 +21,7 @@ from typing import (
     Coroutine,
     Generator,
     Generic,
+    Iterator,
     Literal,
     NoReturn,
     TypeVar,
@@ -29,6 +30,7 @@ from typing import (
 
 import discord
 from discord.ext import commands
+from discord.ext import tasks
 from discord.utils import MISSING
 
 from dev.handlers import GlobalLocals
@@ -450,6 +452,8 @@ class Root(commands.Cog):
         self._base_registrations: tuple[BaseCommandRegistration, ...] = ()
         self._refresh_base_registrations()
 
+        self._clear_cached_messages.start()
+
     def _refresh_base_registrations(self) -> list[BaseCommandRegistration]:
         base_list: list[BaseCommandRegistration] = []
         for cmd in self.bot.walk_commands():
@@ -557,6 +561,18 @@ class Root(commands.Cog):
         elif await self.bot.is_owner(ctx.author) and not Settings.owners:
             return True
         raise commands.NotOwner("You have to own this bot to be able to use this command")
+
+    @tasks.loop(minutes=10)
+    async def _clear_cached_messages(self):
+
+        def function(msg_id: int) -> bool:
+            created_at = discord.utils.snowflake_time(msg_id).timestamp()
+            time_since_created = int(discord.utils.utcnow().timestamp() - created_at)
+            return time_since_created >= 120
+
+        message_ids: Iterator[int] = filter(function, Root.cached_messages.copy())
+        for _id in message_ids:
+            del Root.cached_messages[_id]
 
 
 def _get_commands(cls: tuple[type, ...]) -> set[Command[Root] | Group[Root]]:
