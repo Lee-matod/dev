@@ -11,10 +11,10 @@ Root command and other that do not fall under any other category.
 """
 from __future__ import annotations
 
-import importlib.metadata
-import os
+import math
 import sys
 import time
+from importlib import metadata as import_meta
 from typing import TYPE_CHECKING
 
 import discord
@@ -30,6 +30,14 @@ from dev.utils.utils import parse_invoked_subcommand, plural
 
 if TYPE_CHECKING:
     from dev import types
+
+
+def _as_readable(percent: float, bytes_size: int) -> str:
+    if bytes_size == 0:
+        return "0B"
+    units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
+    power = math.floor(math.log(abs(bytes_size), 1024))
+    return f"{round(bytes_size / (1024 ** power), 2)} {units[power]} ({percent * 100:.2f}%)"
 
 
 class RootCommand(Root):
@@ -53,23 +61,46 @@ class RootCommand(Root):
         `--file`|`-f` <command> = Shows the source file of a command.
         `--inspect`|`-i` <command> = Get the signature of a command as well as some information of it.
         """
-        pid = os.getpid()
-        process = psutil.Process(pid)
+        process = psutil.Process()
         version = sys.version.replace("\n", "")
-        description = (
-            "dev is a debugging, testing and editing extension for discord.py. "
-            f"It features a total of {plural(len(self.commands), 'command')} "
-            f"which were loaded <t:{self.load_time}:R>.\n"
-            f"\nThis process (`{process.name()} {str(__file__).rsplit('/', maxsplit=1)[-1]}`) "
-            f"is currently running on Python version `{version}` on a `{sys.platform}` machine, "
-            f"with discord version `{importlib.metadata.version('discord.py')}` "
-            f"and dev version `{importlib.metadata.version('dev')}`.\n"
-            f"Running with a PID of `{pid}` "
-            f"and {plural(process.num_threads(), 'thread')} which are using "
-            f"`{process.cpu_percent():.2f}%` of CPU power "
-            f"and `{process.memory_info().rss / psutil.virtual_memory().total * 100:.2f}%` of memory.\n"
-        )
-        await send(ctx, description)
+        load_time = f"<t:{self.load_time}:R>"
+
+        #  Extension info
+        brief = [
+            f"dev {import_meta.version('dev')} was loaded {load_time} with a total of "
+            f"{plural(len(self.commands), 'command')} which are unique to this extension.",
+            ""
+        ]
+        with process.oneshot():
+            process.cpu_percent()
+            try:
+                discord_version = import_meta.version("discord.py")
+            except import_meta.PackageNotFoundError:
+                discord_version = discord.__version__
+            #  Process and version info
+            brief.append(
+                f"Process `{process.name()}` started <t:{round(process.create_time())}:R> on `Python {version}` with "
+                f"discord.py v{discord_version}."
+            )
+            brief.append(
+                f"Running on PID {process.pid} with {plural(process.num_threads(), 'thread')} "
+                f"on a `{sys.platform}` machine."
+            )
+            brief.append("")
+
+            cpu_percent = process.cpu_percent()
+            cpu_count = psutil.cpu_count()
+            mem = process.memory_full_info()
+
+            physical = _as_readable(process.memory_percent(), mem.rss)
+            virtual = _as_readable(process.memory_percent("vms"), mem.vms)
+            unique = _as_readable(process.memory_percent("uss"), mem.uss)
+            brief.append(
+                f"Using {cpu_percent:.2f}% of total CPU power with {cpu_count or 'unknown'} "
+                f"logical {plural(cpu_count or 2, 'CPU', False)}, {physical} of physical memory and "
+                f"{virtual} of virtual memory, {unique} of which is unique to this process."
+            )
+        await send(ctx, "\n".join(brief))
 
     @root.command(name="exit", parent="dev", aliases=["quit", "kys"])
     async def root_exit(self, ctx: commands.Context[types.Bot]):
