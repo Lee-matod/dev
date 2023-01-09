@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
+from distutils.util import strtobool
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import discord
@@ -27,6 +28,20 @@ __all__ = (
     "enforce_owner",
     "setup_logging"
 )
+
+
+def strtoints(val: str) -> list[int]:
+    int_list: list[int] = []
+    ints: str = ""
+    for char in val:
+        if char.isnumeric():
+            ints += char
+        if not char.isnumeric() and ints:
+            int_list.append(int(ints))
+            ints = ""
+    if ints.isnumeric():
+        int_list.append(int(ints))
+    return int_list
 
 
 class _DefaultFormatter(logging.Formatter):
@@ -92,11 +107,30 @@ class _SettingsSentinel:
             "allow_global_uses": bool,
             "flag_delimiter": str,
             "invoke_on_edit": bool,
+            "locale": str,
             "owners": set,
             "path_to_file": str,
             "root_folder": str,
             "virtual_vars": str
         }
+
+        for setting, set_type in self.mapping.items():
+            env_var = os.getenv(f"DEV_{setting.upper()}", "").strip()
+            name = f"{type(self).__name__}__{setting}"
+            if not name.startswith("_"):
+                name = "_" + name
+            if env_var:
+                if set_type is bool:
+                    try:
+                        value: int = strtobool(env_var)
+                    except ValueError:
+                        value: int = 0
+                    setattr(type(self), name, bool(value))
+                elif set_type is set:
+                    setattr(type(self), name, set(strtoints(env_var)))
+                else:
+                    setattr(type(self), name, env_var)
+            os.environ[f"DEV_{setting.upper()}"] = str(getattr(self, name))
 
     @property
     def allow_global_uses(self) -> bool:
@@ -109,7 +143,7 @@ class _SettingsSentinel:
     @allow_global_uses.setter
     def allow_global_uses(self, value: bool) -> None:
         self.__allow_global_uses = bool(value)
-        self.kwargs["allow_global_uses"] = value
+        self.kwargs["allow_global_uses"] = os.environ["DEV_ALLOW_GLOBAL_USES"] = value
 
     @property
     def flag_delimiter(self) -> str:
@@ -126,7 +160,7 @@ class _SettingsSentinel:
         if value.strip() == ":":
             raise ValueError(f"Delimiter cannot be {value!r}")
         self.__flag_delimiter = value
-        self.kwargs["flag_delimiter"] = value
+        self.kwargs["flag_delimiter"] = os.environ["DEV_FLAG_DELIMITER"] = value
 
     @property
     def invoke_on_edit(self) -> bool:
@@ -141,6 +175,7 @@ class _SettingsSentinel:
     def invoke_on_edit(self, value: bool) -> None:
         self.__invoke_on_edit = bool(value)
         self.kwargs["invoke_on_edit"] = bool(value)
+        os.environ["DEV_INVOKE_ON_EDIT"] = str(self.__invoke_on_edit)
 
     @property
     def locale(self) -> str:
@@ -160,6 +195,7 @@ class _SettingsSentinel:
             self.__locale = locale.value
         else:
             self.__locale = value.value  # noqa
+        os.environ["DEV_LOCALE"] = self.__locale
 
     @property
     def owners(self) -> set[int]:
@@ -175,6 +211,7 @@ class _SettingsSentinel:
             value = set(value)
         self.__owners = value
         self.kwargs["owners"] = value
+        os.environ["DEV_OWNERS"] = str(value)
 
     @property
     def path_to_file(self) -> str:
@@ -194,7 +231,7 @@ class _SettingsSentinel:
         if value.endswith("/"):
             value = value[:-1]
         self.__path_to_file = value
-        self.kwargs["path_to_file"] = value
+        self.kwargs["path_to_file"] = os.environ["DEV_ROOT_FOLDER"] = value
 
     @property
     def root_folder(self) -> str:
@@ -211,7 +248,7 @@ class _SettingsSentinel:
         if not _folder.exists() or not _folder.is_dir():
             raise NotADirectoryError(value)
         self.__root_folder = value
-        self.kwargs["root_folder"] = value
+        self.kwargs["root_folder"] = os.environ["DEV_ROOT_FOLDER"] = value
 
     @property
     def virtual_vars(self) -> str:
@@ -229,7 +266,7 @@ class _SettingsSentinel:
         if value.count("%s") != 1:
             raise ValueError(f"Got 0 or more than 1 instance of '%s', exactly 1 expected")
         self.__virtual_vars = value
-        self.kwargs["virtual_vars"] = value
+        self.kwargs["virtual_vars"] = os.environ["DEV_ROOT_FOLDER"] = value
 
     def copy(self) -> _SettingsSentinel:
         return _SettingsSentinel(**self.kwargs)
