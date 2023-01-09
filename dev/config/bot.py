@@ -89,8 +89,8 @@ class RootBot(Root):
         embed.add_field(name="Information", value=information_field, inline=False)
         await send(ctx, embed)
 
-    @root.command(name="perms", parent="dev bot", aliases=["permissions"])
-    async def root_bot_here(self, ctx: commands.Context[types.Bot], channel: discord.TextChannel | None = None):
+    @root.command(name="permissions", parent="dev bot", aliases=["perms"])
+    async def root_bot_permissions(self, ctx: commands.Context[types.Bot], channel: discord.TextChannel | None = None):
         """Show which permissions the bot has.
         A text channel may be optionally passed to check for permissions in the given channel.
         """
@@ -106,27 +106,82 @@ class RootBot(Root):
             AuthoredView(ctx.author, select)
         )
 
+    @root.command(name="load", parent="dev bot", require_var_positional=True)
+    async def root_bot_load(self, ctx: commands.Context[types.Bot], *extensions: str):
+        """Load a set of extensions"""
+        successful: list[str] = []
+        unsuccessful: list[str] = []
+        start = time.perf_counter()
+        for ext in extensions:
+            try:
+                await self.bot.load_extension(ext)
+            except commands.ExtensionError as exc:
+                unsuccessful.append(f"{ext} ‒ {exc}")
+            else:
+                successful.append(ext)
+        end = time.perf_counter()
+        loaded_extensions = (
+                ("\u2611 " + "\n\u2611 ".join(successful) if successful else "")
+                + ("\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else "")
+        )
+        embed = discord.Embed(
+            title=f"Unloaded {plural(len(successful), 'Cog')}",
+            description=loaded_extensions.strip("\n"),
+            color=discord.Color.green()
+        )
+        embed.set_footer(text=f"Unloading took {end - start:.3f}s")
+        await send(ctx, embed)
+
+    @root.command(name="unload", parent="dev bot", require_var_positional=True)
+    async def root_bot_unload(self, ctx: commands.Context[types.Bot], *extensions: str):
+        """Unload a set of extensions"""
+        successful: list[str] = []
+        unsuccessful: list[str] = []
+        start = time.perf_counter()
+        for ext in extensions:
+            try:
+                await self.bot.unload_extension(ext)
+            except commands.ExtensionError as exc:
+                unsuccessful.append(f"{ext} ‒ {exc}")
+            else:
+                successful.append(ext)
+        end = time.perf_counter()
+        unloaded_extensions = (
+                ("\u2611 " + "\n\u2611 ".join(successful) if successful else "")
+                + ("\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else "")
+        )
+        embed = discord.Embed(
+            title=f"Loaded {plural(len(successful), 'Cog')}",
+            description=unloaded_extensions.strip("\n"),
+            color=discord.Color.green()
+        )
+        embed.set_footer(text=f"Loading took {end - start:.3f}s")
+        await send(ctx, embed)
+
     @root.command(name="reload", parent="dev bot")
-    async def root_bot_reload(self, ctx: commands.Context[types.Bot], *cogs: str):
-        """Reload all or a specific set of bot cog(s).
-        When adding specific cogs, each extension must be separated but a blank space.
+    async def root_bot_reload(self, ctx: commands.Context[types.Bot], *extensions: str):
+        """Reload all or a specific set of bot extension(s).
+        When adding specific extensions, each one must be separated but a blank space.
         """
-        if not cogs:
+        if not extensions:
             successful: list[str] = []
             unsuccessful: list[str] = []
             start = time.perf_counter()
             for ext in list(self.bot.extensions):
                 try:
                     await self.bot.reload_extension(ext)
+                except commands.ExtensionError as exc:
+                    unsuccessful.append(f"{ext} ‒ {exc}")
+                else:
                     successful.append(ext)
-                except commands.ExtensionError as e:
-                    unsuccessful.append(f"{ext} ‒ {e}")
             end = time.perf_counter()
-            reloaded_cogs = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + \
-                            ("\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else "")
+            reloaded_extensions = (
+                    ("\u2611 " + "\n\u2611 ".join(successful) if successful else "")
+                    + ("\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else "")
+            )
             embed = discord.Embed(
                 title=f"Reloaded {plural(len(successful), 'Cog')}",
-                description=reloaded_cogs.strip("\n"),
+                description=reloaded_extensions.strip("\n"),
                 color=discord.Color.blurple()
             )
             embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
@@ -135,18 +190,21 @@ class RootBot(Root):
         successful = []
         unsuccessful = []
         start = time.perf_counter()
-        for cog in cogs:
+        for ext in extensions:
             try:
-                await self.bot.reload_extension(cog)
-                successful.append(cog)
+                await self.bot.reload_extension(ext)
             except commands.ExtensionError as e:
-                unsuccessful.append(f"{cog} ‒ {e}")
+                unsuccessful.append(f"{ext} ‒ {e}")
+            else:
+                successful.append(ext)
         end = time.perf_counter()
-        reloaded_cogs = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + \
-                        ("\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else '')
+        reloaded_extensions = (
+                ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") +
+                ("\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else '')
+        )
         embed = discord.Embed(
             title=f"Reloaded {plural(len(successful), 'Cog')}",
-            description=reloaded_cogs,
+            description=reloaded_extensions,
             color=discord.Color.blurple()
         )
         embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
