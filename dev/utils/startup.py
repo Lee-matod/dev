@@ -143,7 +143,8 @@ class _SettingsSentinel:
     @allow_global_uses.setter
     def allow_global_uses(self, value: bool) -> None:
         self.__allow_global_uses = bool(value)
-        self.kwargs["allow_global_uses"] = os.environ["DEV_ALLOW_GLOBAL_USES"] = value
+        self.kwargs["allow_global_uses"] = value
+        os.environ["DEV_ALLOW_GLOBAL_USES"] = str(self.__allow_global_uses)
 
     @property
     def flag_delimiter(self) -> str:
