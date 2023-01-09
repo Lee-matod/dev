@@ -79,11 +79,13 @@ string when the subprocess is completed.
 > - first([bool](https://docs.python.org/3/library/functions.html#bool)) – Whether this is the first command of the
     session. Defaults to `False`.
 > #### Returns
-> Union[Optional[Tuple[[discord.Message](https://discordpy.readthedocs.io/en/stable/api.html#discord.Message),
-Optional[[Paginator](https://github.com/Lee-matod/dev/wiki/api#class-devpaginationpaginator)]]],
-Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)]] – If *context* was not `None`, then this returns
-the message and optional paginator that were sent, if any. Usually you shouldn't need these objects.  
-> If instead *context* was `None`, then this returns the output of the subprocess when its lifetime is over.
+> Tuple[[discord.Message](https://discordpy.readthedocs.io/en/stable/api.html#discord.Message),
+> Optional[[Paginator](https://github.com/Lee-matod/dev/wiki/api#class-devpaginationpaginator)]] –
+> If *context* is given, then the message that was sent and paginator are returned. These are the return values from
+> [send](https://github.com/Lee-matod/dev/wiki/interactions#await-devutilsfunctssendctx-args-options).  
+> Usually, you shouldn't need these objects  
+> Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)] –
+> If *context* was not given, then the full output of the subprocess is returned.
 
 > ### get_next_line()
 > Tries to get the output of the subprocess within a 60-second time frame.
