@@ -73,7 +73,7 @@ It is also recommended to use this class as a context manager to ensure proper p
 > ### *await* run_until_complete(context=None, /)
 > Continues executing the current subprocess until it has finished or is forcefully terminated.
 > #### Parameters
-> - context([discord.ext.commands.Context](https://discordpy.readthedocs.io/en/stable/ext/commands/api.html#discord.ext.commands.Context)) –
+> - context(Optional[[discord.ext.commands.Context](https://discordpy.readthedocs.io/en/stable/ext/commands/api.html#discord.ext.commands.Context)]) –
 The invocation context in which the function should send the output to. If not given, it will return the output as a
 string when the subprocess is completed.
 > #### Returns
