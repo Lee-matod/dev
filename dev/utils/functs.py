@@ -496,7 +496,7 @@ def _get_highlight_lang(content: str) -> tuple[str | None, str]:
         highlight = lines[0].removeprefix("```")
         if lines[-1] == "```":
             return highlight, "\n".join(lines[1:-1])
-        return highlight, "\n".join(lines[1:][:-3])
+        return highlight, "\n".join(lines[1:])[:-3]
     return None, content
 
 

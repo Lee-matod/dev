@@ -105,7 +105,6 @@ class Process:
         "cmd",
         "errput",
         "force_kill",
-        "has_set_cmd",
         "loop",
         "output",
         "process",
@@ -117,7 +116,6 @@ class Process:
         self.__session: ShellSession = session
         self.cmd: str = cmd
         self.force_kill: bool = False
-        self.has_set_cmd: bool = False
         self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
         self.process: subprocess.Popen[bytes] = subprocess.Popen(
             session.prefix + (cmd + session.suffix,),
@@ -159,26 +157,18 @@ class Process:
         self.close_code = self.process.wait(timeout=0.5)
 
     @overload
-    async def run_until_complete(self, context: Literal[None], /, *, first: bool = False) -> str | None:
+    async def run_until_complete(self, context: Literal[None], /) -> str | None:
         ...
 
     @overload
     async def run_until_complete(
             self,
             context: commands.Context[types.Bot],
-            /,
-            *,
-            first: bool = False
+            /
     ) -> tuple[discord.Message, Paginator | None]:
         ...
 
-    async def run_until_complete(
-            self,
-            context: commands.Context[types.Bot] | None = None,
-            /,
-            *,
-            first: bool = False
-    ) -> Any:
+    async def run_until_complete(self, context: commands.Context[types.Bot] | None = None, /) -> Any:
         """Continues executing the current subprocess until it has finished or is forcefully terminated.
 
         Parameters
@@ -186,32 +176,30 @@ class Process:
         context: Optional[:class:`discord.ext.commands.Context`]
             The invocation context in which the function should send the output to. If not given, it will return the
             output as a string when the subprocess is completed.
-        first: :class:`bool`
-            Whether this is the first command of the session. Defaults to `False`.
 
         Returns
         -------
-        Union[Tuple[:class:`discord.Message`, Optional[:class:`Paginator`]], Optional[:class:`str`]]
-            If *context* was not `None`, then this returns the message and optional paginator that were sent, if any.
-            Usually you shouldn't need these objects.
-            If instead *context* was `None`, then this returns the output of the subprocess when its lifetime is over.
+        Tuple[:class:`discord.Message`, Optional[:class:`Paginator`]]
+            If *context* is given, then the message that was sent and paginator are returned. These are the return
+            values from :meth:`send`.
+            Usually, you shouldn't need these objects
+        Optional[:class:`str`]
+            If *context* was not given, then the full output of the subprocess is returned.
         """
         str_msg = ""
         while self.is_alive and not self.force_kill:
-            if not first and not self.has_set_cmd:
-                if context is None:
-                    str_msg = self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}")
-                else:
-                    _, paginator = await send(
-                        context,
-                        self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
-                        SigKill(self),
-                        paginator=self.__session.paginator,  # type: ignore
-                        forced_pagination=False
-                    )
-                    if paginator is not None:
-                        self.__session.paginator = paginator
-                    self.has_set_cmd = True
+            if context is None:
+                str_msg = self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}")
+            else:
+                _, paginator = await send(
+                    context,
+                    self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
+                    SigKill(self),
+                    paginator=self.__session.paginator,  # type: ignore
+                    forced_pagination=False
+                )
+                if paginator is not None:
+                    self.__session.paginator = paginator
             if self.__session.terminated:
                 if context is None:
                     return
@@ -272,6 +260,7 @@ class Process:
                 )
             if paginator is not None:
                 self.__session.paginator = paginator
+            await asyncio.sleep(0)
         else:
             if context is None:
                 return str_msg
@@ -436,34 +425,6 @@ class ShellSession:
         if self.terminated:
             raise ConnectionRefusedError("Shell has been terminated. Initiate another shell session")
         return Process(self, self.cwd, script.removesuffix(";"))
-
-    def format_process(self, p: Process, /) -> str:
-        """Similar to :meth:`add_line`, only that this should be called once.
-
-        This method starts the session's interface, therefore it should only be called once the first command is
-        executed.
-
-        Parameters
-        ----------
-        p: :class:`Process`
-            The first process of the session.
-
-        Returns
-        -------
-        :class:`str`
-            The full formatted message.
-        """
-        resp = (f"```{self.highlight}\n{self.interface} {p.cmd.strip()}".strip()
-                + "\n".join(self._previous_processes)
-                + "\n").strip("\n")
-        output: str = (
-                ("".join(p.output).replace("``", "`\u200b`") if p.output else "")
-                + "\n"
-                + ("".join(p.errput).replace("``", "\u200b") if p.errput else "")
-        )
-        self._previous_processes.append(f"{self.interface} {p.cmd.strip()}\n{output}".strip("\n"))
-        resp = (resp + output).strip("\n") + "```"
-        return resp
 
     def add_line(self, line: str) -> str:
         """Appends a new line to the current session's interface.

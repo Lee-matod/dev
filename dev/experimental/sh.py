@@ -42,13 +42,13 @@ class RootShell(Root):
         with shell(script) as process:  # type: ignore
             _, paginator = await send(
                 ctx,
-                shell.format_process(process),
+                shell.raw,
                 SigKill(process),
                 forced_pagination=False,
                 paginator=None
             )
             shell.paginator = paginator
-            await process.run_until_complete(ctx, first=True)
+            await process.run_until_complete(ctx)
 
         def check(msg: discord.Message) -> bool:
             return (
