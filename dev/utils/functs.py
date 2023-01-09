@@ -195,6 +195,7 @@ async def send(  # type: ignore
     forced_pagination: bool = options.pop("forced_pagination", True)
 
     ret_paginator: Paginator | None = None
+    last_message: discord.Message | None = None
 
     token = ctx.bot.http.token
     assert token is not None
@@ -223,9 +224,6 @@ async def send(  # type: ignore
                     iterable_items.append(_replace(repr(i), token, path=replace_path_to_file))  # type: ignore
         else:
             content = _replace(_revert_virtual_var_value(str(item)), token, path=replace_path_to_file)
-            lang, content = _get_highlight_lang(content)
-            if lang is not None:
-                content = f"```{lang}\n" + content.replace("``", "`\u200b`") + "```"
             if iterable_items:
                 content = "\n".join(iterable_items) + "\n" + content
                 iterable_items.clear()
@@ -238,12 +236,17 @@ async def send(  # type: ignore
                 if isinstance(return_type, Paginator):
                     pag_view = Interface(return_type, ctx.author.id)
                     if forced_pagination:
-                        await ctx.send(pag_view.display_page, view=pag_view)
+                        last_message = await ctx.send(pag_view.display_page, view=pag_view)
                     else:
                         ret_paginator = return_type
                 else:
+                    lang, content = _get_highlight_lang(content)
+                    if lang is not None:
+                        content = f"```{lang}\n" + content.replace("``", "`\u200b`") + "```"
                     kwargs["content"] = content
     kwargs.update(_check_kwargs(options))
+    if not kwargs and last_message is not None:
+        return last_message
     view: discord.ui.View | None = kwargs.get("view")
     if not forced_pagination and pag_view is not None:
         if view is not None:
