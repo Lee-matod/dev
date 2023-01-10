@@ -101,6 +101,7 @@ class Process:
 
     __slots__ = (
         "__session",
+        "_initial_command",
         "close_code",
         "cmd",
         "errput",
@@ -134,6 +135,7 @@ class Process:
             lambda b: self.errput.append(b.decode("utf-8").replace("``", "`\u200b`").strip("\n"))
         ) if self.process.stderr else None
 
+        self._initial_command: bool = False
         for a in cmd.split(";"):
             for b in a.split("&&"):
                 if b.strip().startswith("exit"):
@@ -188,18 +190,20 @@ class Process:
         """
         str_msg = ""
         while self.is_alive and not self.force_kill:
-            if context is None:
-                str_msg = self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}")
-            else:
-                _, paginator = await send(
-                    context,
-                    self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
-                    SigKill(self),
-                    paginator=self.__session.paginator,  # type: ignore
-                    forced_pagination=False
-                )
-                if paginator is not None:
-                    self.__session.paginator = paginator
+            if not self._initial_command:
+                self._initial_command = True
+                if context is None:
+                    str_msg = self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}")
+                else:
+                    _, paginator = await send(
+                        context,
+                        self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
+                        SigKill(self),
+                        paginator=self.__session.paginator,  # type: ignore
+                        forced_pagination=False
+                    )
+                    if paginator is not None:
+                        self.__session.paginator = paginator
             if self.__session.terminated:
                 if context is None:
                     return
