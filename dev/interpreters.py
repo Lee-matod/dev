@@ -21,15 +21,17 @@ import sys
 import time
 from typing import TYPE_CHECKING, Any, AsyncGenerator, Callable, IO, Literal, NoReturn, TypeVar, overload
 
-from dev.pagination import Paginator
-from dev.components.views import SigKill
+import discord
 
-from dev.utils.functs import send
+from dev.components.views import AuthoredView
+from dev.pagination import Paginator
+from dev.types import InteractionResponseType
+
+from dev.utils.functs import interaction_response, send
 
 if TYPE_CHECKING:
     from typing_extensions import ParamSpec
 
-    import discord
     from discord.ext import commands
 
     from dev import types
@@ -65,6 +67,42 @@ POWERSHELL = pathlib.Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershel
 SHELL = os.getenv("SHELL") or "/bin/bash"
 
 
+class StdinManager(discord.ui.Modal):
+    stdin: discord.ui.TextInput[AuthoredView] = discord.ui.TextInput(label="To stdin:")
+
+    def __init__(self, process: Process, /):
+        super().__init__(title="Write to stdin")
+        self.subprocess: subprocess.Popen[bytes] = process.subprocess
+
+    async def on_submit(self, interaction: discord.Interaction, /) -> None:
+        self.subprocess.communicate(f"{self.stdin.value}\n".encode("utf-8"))
+        await interaction_response(interaction, InteractionResponseType.EDIT)
+
+
+class ProcessHandler(AuthoredView):
+    def __init__(self, author: types.User | int, process: Process, /):
+        super().__init__(author)
+        self.session: ShellSession = process._Process__session  # type: ignore
+        self.process: Process = process
+
+    @discord.ui.button(label="Kill", emoji="\u26D4", style=discord.ButtonStyle.danger)
+    async def sigkill(self, interaction: discord.Interaction, _: discord.ui.Button):
+        self.process.subprocess.kill()
+        self.process.subprocess.terminate()
+        self.process.force_kill = True
+        await interaction_response(
+            interaction,
+            InteractionResponseType.EDIT,
+            self.session.raw,  # type: ignore
+            view=None,
+            paginator=self.session.paginator  # type: ignore
+        )
+
+    @discord.ui.button(label="Write to stdin")
+    async def stdin_writer(self, interaction: discord.Interaction, _: discord.ui.Button):
+        await interaction_response(interaction, InteractionResponseType.MODAL, StdinManager(self.process))
+
+
 class Process:
     """A class that wraps a :class:`subprocess.Popen` process
 
@@ -95,7 +133,7 @@ class Process:
     output: List[:class:`str`]
         A list of lines that have been outputted by the subprocess.
         This list is dynamically populated and exhausted, so it shouldn't be directly accessed.
-    process: :class:`subprocess.Popen`
+    subprocess: :class:`subprocess.Popen`
         The actual subprocess.
     """
 
@@ -108,7 +146,7 @@ class Process:
         "force_kill",
         "loop",
         "output",
-        "process",
+        "subprocess",
         "stdout_task",
         "stderr_task",
     )
@@ -118,22 +156,23 @@ class Process:
         self.cmd: str = cmd
         self.force_kill: bool = False
         self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-        self.process: subprocess.Popen[bytes] = subprocess.Popen(
+        self.subprocess: subprocess.Popen[bytes] = subprocess.Popen(
             session.prefix + (cmd + session.suffix,),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
             cwd=cwd
         )
         self.errput: list[str] = []
         self.output: list[str] = []
         self.stdout_task: asyncio.Task[str | None] | None = self.start_reading(
-            self.process.stdout,
+            self.subprocess.stdout,
             lambda b: self.output.append(b.decode("utf-8").replace("``", "`\u200b`").strip("\n"))
-        ) if self.process.stdout else None
+        ) if self.subprocess.stdout else None
         self.stderr_task: asyncio.Task[str | None] | None = self.start_reading(
-            self.process.stderr,
+            self.subprocess.stderr,
             lambda b: self.errput.append(b.decode("utf-8").replace("``", "`\u200b`").strip("\n"))
-        ) if self.process.stderr else None
+        ) if self.subprocess.stderr else None
 
         self._initial_command: bool = False
         for a in cmd.split(";"):
@@ -154,9 +193,13 @@ class Process:
         return self
 
     def __exit__(self, *_: Any) -> None:
-        self.process.kill()
-        self.process.terminate()
-        self.close_code = self.process.wait(timeout=0.5)
+        self.subprocess.kill()
+        self.subprocess.terminate()
+        self.close_code = self.subprocess.wait(timeout=0.5)
+
+    def _get_view(self, author: types.User | int) -> ProcessHandler | None:
+        if self.is_alive:
+            return ProcessHandler(author, self)
 
     @overload
     async def run_until_complete(self, context: Literal[None], /) -> str | None:
@@ -198,7 +241,7 @@ class Process:
                     _, paginator = await send(
                         context,
                         self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
-                        SigKill(self),
+                        self._get_view(context.author),
                         paginator=self.__session.paginator,  # type: ignore
                         forced_pagination=False
                     )
@@ -249,7 +292,7 @@ class Process:
                     self.__session.add_line(line),
                     forced_pagination=False,
                     paginator=self.__session.paginator,  # type: ignore
-                    view=None
+                    view=self._get_view(context.author)
                 )
             else:
                 if context is None:
@@ -260,7 +303,7 @@ class Process:
                     self.__session.raw,
                     forced_pagination=False,
                     paginator=self.__session.paginator,  # type: ignore
-                    view=None
+                    view=self._get_view(context.author)
                 )
             if paginator is not None:
                 self.__session.paginator = paginator
@@ -304,7 +347,7 @@ class Process:
                 raise InterruptedError("Subprocess has been killed")
             if time.perf_counter() - start > 60:
                 raise TimeoutError("No output in the last 60 seconds")
-        if self.process.poll() is None:
+        if self.subprocess.poll() is None:
             out = ("\n".join(self.output) + "\n" + "\n".join(self.errput)).strip("\n")
         else:
             out = ("\n".join(self.output[:-1]) + "\n" + "\n".join(self.errput)).strip("\n")
@@ -318,7 +361,7 @@ class Process:
         """:class:`bool`
         Whether the current process is active or has pending output to get formatted.
         """
-        return self.process.poll() is None or bool(self.output) or bool(self.errput)
+        return self.subprocess.poll() is None or bool(self.output) or bool(self.errput)
 
 
 class ShellSession:
