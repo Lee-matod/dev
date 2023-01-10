@@ -18,7 +18,6 @@ import discord
 from discord.ext import commands
 
 from dev.interpreters import ShellSession
-from dev.components.views import SigKill
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
