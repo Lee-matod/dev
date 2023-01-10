@@ -255,9 +255,8 @@ async def send(  # type: ignore
                     "Content exceeds character limit, but view attached does not permit pagination to work"
                 )
             else:
-                child: discord.ui.Item[discord.ui.View]
-                for idx, child in enumerate(view.children, start=1):
-                    child.row = idx % 5 + 1  # move after 'Quit' and pagination buttons
+                for idx, child in enumerate(view.children):
+                    child.row = idx // 5 + 2  # move after 'Quit' and pagination buttons
                     pag_view.add_item(child)
         kwargs["content"] = pag_view.display_page
     if ctx.message.id in Root.cached_messages and not forced:
@@ -436,8 +435,8 @@ async def interaction_response(  # type: ignore
             and pag_view is not None
     ):
         child: discord.ui.Item[discord.ui.View]
-        for idx, child in enumerate(view.children, start=1):
-            child.row = idx % 5 + 1  # move after 'Quit' and pagination buttons
+        for idx, child in enumerate(view.children):
+            child.row = idx // 5 + 2  # move after 'Quit' and pagination buttons
             pag_view.add_item(child)
     elif view is not None and len(view.children) < 15 and not forced_pagination and pag_view is not None:
         raise IndexError("Content exceeds character limit, but view attached does not permit pagination to work")
