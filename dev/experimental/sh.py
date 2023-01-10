@@ -40,14 +40,6 @@ class RootShell(Root):
         self.active_shell_sessions.append(ctx.author.id)
         shell = ShellSession()
         with shell(script) as process:  # type: ignore
-            _, paginator = await send(
-                ctx,
-                shell.raw,
-                SigKill(process),
-                forced_pagination=False,
-                paginator=None
-            )
-            shell.paginator = paginator
             await process.run_until_complete(ctx)
 
         def check(msg: discord.Message) -> bool:
