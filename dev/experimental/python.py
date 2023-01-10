@@ -128,7 +128,7 @@ class RootPython(Root):
 
         reader_task: asyncio.Task[None] = self.bot.loop.create_task(self._on_update(ctx, output))
         executor = Execute(code, self.inst, args)
-        stdout = RelativeStandard(lambda s: output.append(s), filename=executor.filename)  # type: ignore
+        stdout = RelativeStandard(callback=lambda s: output.append(s), filename=executor.filename)
         stderr = RelativeStandard(
             sys.__stderr__,
             lambda s: output.append(s),
@@ -155,8 +155,8 @@ class RootPython(Root):
     async def _on_update(self, ctx: commands.Context[types.Bot], view: list[str], /) -> None:
         current = len(view)
         if view:
-            await send(ctx, codeblock_wrapper("".join(view).strip("\n"), "py"))
+            await send(ctx, "[stdout/stderr]\n" + codeblock_wrapper("".join(view).strip("\n"), "py"))
         while True:
             if current != len(view):
-                await send(ctx, codeblock_wrapper("".join(view).strip("\n"), "py"))
+                await send(ctx, "[stdout/stderr]\n" + codeblock_wrapper("".join(view).strip("\n"), "py"))
             await asyncio.sleep(0)
