@@ -12,23 +12,16 @@ All :class:`discord.ui.View` related classes.
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, Any, Callable, Coroutine, overload
+from typing import Any, Callable, Coroutine, overload
 
 import discord
 
 from dev import types
-from dev.types import InteractionResponseType
-
-from dev.utils.functs import interaction_response
-
-if TYPE_CHECKING:
-    from dev.interpreters import Process
 
 __all__ = (
     "AuthoredView",
     "BoolInput",
-    "ModalSender",
-    "SigKill"
+    "ModalSender"
 )
 
 
@@ -147,23 +140,3 @@ class BoolInput(AuthoredView):
     @discord.ui.button(label="No", style=discord.ButtonStyle.red)
     async def no_button(self, interaction: discord.Interaction, _) -> None:
         await interaction.delete_original_response()
-
-
-class SigKill(discord.ui.View):
-    def __init__(self, process: Process, /):
-        super().__init__()
-        self.session: ShellSession = process._Process__session  # type: ignore
-        self.process: Process = process
-
-    @discord.ui.button(label="Kill", emoji="\u26D4", style=discord.ButtonStyle.danger)
-    async def signalkill(self, interaction: discord.Interaction, button: discord.ui.Button[SigKill]):
-        self.process.process.kill()
-        self.process.process.terminate()
-        self.process.force_kill = True
-        await interaction_response(
-            interaction,
-            InteractionResponseType.EDIT,
-            self.session.raw,  # type: ignore
-            view=None,
-            paginator=self.session.paginator  # type: ignore
-        )

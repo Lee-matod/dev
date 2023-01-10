@@ -23,6 +23,5 @@ __all__ = (
     "SearchCategory",
     "SettingEditor",
     "SettingsToggler",
-    "SigKill",
     "VariableValueSubmitter"
 )
