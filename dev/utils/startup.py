@@ -116,21 +116,18 @@ class _SettingsSentinel:
 
         for setting, set_type in self.mapping.items():
             env_var = os.getenv(f"DEV_{setting.upper()}", "").strip()
-            name = f"{type(self).__name__}__{setting}"
-            if not name.startswith("_"):
-                name = "_" + name
             if env_var:
                 if set_type is bool:
                     try:
                         value: int = strtobool(env_var)
                     except ValueError:
                         value: int = 0
-                    setattr(type(self), name, bool(value))
+                    setattr(type(self), setting, bool(value))
                 elif set_type is set:
-                    setattr(type(self), name, set(strtoints(env_var)))
+                    setattr(type(self), setting, set(strtoints(env_var)))
                 else:
-                    setattr(type(self), name, env_var)
-            os.environ[f"DEV_{setting.upper()}"] = str(getattr(self, name))
+                    setattr(type(self), setting, env_var)
+            os.environ[f"DEV_{setting.upper()}"] = str(getattr(self, setting))
 
     @property
     def allow_global_uses(self) -> bool:
@@ -229,8 +226,8 @@ class _SettingsSentinel:
         _folder = pathlib.Path(value)
         if not _folder.exists() or not _folder.is_dir():
             raise NotADirectoryError(value)
-        if value.endswith("/"):
-            value = value[:-1]
+        if not value.endswith("/"):
+            value += "/"
         self.__path_to_file = value
         self.kwargs["path_to_file"] = os.environ["DEV_ROOT_FOLDER"] = value
 
