@@ -67,7 +67,7 @@ It is also recommended to use this class as a context manager to ensure proper p
 - output(List[[str](https://docs.python.org/3/library/stdtypes.html#str)]) – A list of lines that have been outputted by
   the subprocess.  
   This list is dynamically populated and exhausted, so it shouldn't be directly accessed.
-- process([subprocess.Popen](https://docs.python.org/3/library/subprocess.html#subprocess.Popen)) – The actual
+- subprocess([subprocess.Popen](https://docs.python.org/3/library/subprocess.html#subprocess.Popen)) – The actual
   subprocess.
 
 > ### *await* run_until_complete(context=None, /)
