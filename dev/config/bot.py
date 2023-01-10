@@ -125,11 +125,11 @@ class RootBot(Root):
                 + ("\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else "")
         )
         embed = discord.Embed(
-            title=f"Unloaded {plural(len(successful), 'Cog')}",
+            title=f"Loaded {plural(len(successful), 'Cog')}",
             description=loaded_extensions.strip("\n"),
             color=discord.Color.green()
         )
-        embed.set_footer(text=f"Unloading took {end - start:.3f}s")
+        embed.set_footer(text=f"Loading took {end - start:.3f}s")
         await send(ctx, embed)
 
     @root.command(name="unload", parent="dev bot", require_var_positional=True)
@@ -151,11 +151,11 @@ class RootBot(Root):
                 + ("\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else "")
         )
         embed = discord.Embed(
-            title=f"Loaded {plural(len(successful), 'Cog')}",
+            title=f"Unloaded {plural(len(successful), 'Cog')}",
             description=unloaded_extensions.strip("\n"),
             color=discord.Color.green()
         )
-        embed.set_footer(text=f"Loading took {end - start:.3f}s")
+        embed.set_footer(text=f"Unloading took {end - start:.3f}s")
         await send(ctx, embed)
 
     @root.command(name="reload", parent="dev bot")
