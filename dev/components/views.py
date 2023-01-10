@@ -6,8 +6,8 @@ dev.components.views
 
 All :class:`discord.ui.View` related classes.
 
-:copyright: Copyright 2023 Lee (Lee-matod)
-:license: Licensed under the Apache License, Version 2.0; see LICENSE for more details.
+:copyright: Copyright 2022-present Lee (Lee-matod)
+:license: MIT, see LICENSE for more details.
 """
 from __future__ import annotations
 

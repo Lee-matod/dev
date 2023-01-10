@@ -47,7 +47,7 @@ setup(
     url="https://github.com/Lee-matod/dev",
     version=version,
     packages=["dev", "dev.components", "dev.config", "dev.experimental", "dev.misc", "dev.utils"],
-    license="Apache 2.0",
+    license="MIT",
     description="A debugging, testing and editing cog for discord.py",
     long_description=readme,
     long_description_content_type="text/markdown",
