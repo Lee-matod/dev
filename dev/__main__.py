@@ -144,6 +144,12 @@ class RootCommand(Root):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
+        #  There was an issue that occurred when using dev sh.
+        #  Commands would get reinvoked for some reason, and caused
+        #  some pretty annoying inputs. This is just an early exit
+        #  that fixes the issue.
+        if before.content == after.content:
+            return
         if Settings.invoke_on_edit:
             prefix = await self.bot.get_prefix(after)
             if isinstance(prefix, list):
