@@ -8,12 +8,13 @@ from dev import Settings
 from dev.converters import CodeblockConverter, LiteralModes, str_bool, str_ints
 from dev.handlers import replace_vars, GlobalLocals
 
-
 mock_ctx = Mock()
 
 
 async def send(*args, **kwargs):
     print(f"[1;33m\n{args} --- {kwargs}")
+
+
 mock_ctx.send.side_effect = send
 
 

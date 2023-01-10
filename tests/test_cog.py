@@ -6,7 +6,6 @@ from discord.ext import commands
 
 from dev import Dev, Settings
 
-
 ctx = Mock()
 
 
