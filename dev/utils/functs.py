@@ -262,13 +262,13 @@ async def send(  # type: ignore
         kwargs["content"] = pag_view.display_page
     if ctx.message.id in Root.cached_messages and not forced:
         edit: dict[str, Any] = {
-            "content": kwargs.get("content", MISSING),
-            "embeds": kwargs.get("embeds", MISSING),
-            "attachments": kwargs.get("files", MISSING),
+            "content": kwargs.get("content", None),
+            "embeds": kwargs.get("embeds", []),
+            "attachments": kwargs.get("files", []),
             "suppress": kwargs.get("suppress_embeds", False),
             "delete_after": kwargs.get("delete_after"),
             "allowed_mentions": kwargs.get("allowed_mentions", MISSING),
-            "view": kwargs.get("view", MISSING)
+            "view": kwargs.get("view", None)
         }
         if pag_view is not None and not forced_pagination:
             edit["view"] = pag_view
