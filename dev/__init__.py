@@ -50,7 +50,6 @@ __all__ = (
     "SettingRegistration",
     "Settings",
     "ShellSession",
-    "SigKill",
     "TimedInfo",
     "clean_code",
     "codeblock_wrapper",
