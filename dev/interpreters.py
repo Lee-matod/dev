@@ -86,20 +86,20 @@ class ProcessHandler(AuthoredView):
         self.process: Process = process
 
     @discord.ui.button(label="Kill", emoji="\u26D4", style=discord.ButtonStyle.danger)
-    async def sigkill(self, interaction: discord.Interaction, _: discord.ui.Button):
+    async def sigkill(self, interaction: discord.Interaction, _: discord.ui.Button[ProcessHandler]):
         self.process.subprocess.kill()
         self.process.subprocess.terminate()
         self.process.force_kill = True
         await interaction_response(
             interaction,
             InteractionResponseType.EDIT,
-            self.session.raw,  # type: ignore
+            self.session.raw,
             view=None,
-            paginator=self.session.paginator  # type: ignore
+            paginator=self.session.paginator
         )
 
     @discord.ui.button(label="Write to stdin")
-    async def stdin_writer(self, interaction: discord.Interaction, _: discord.ui.Button):
+    async def stdin_writer(self, interaction: discord.Interaction, _: discord.ui.Button[ProcessHandler]):
         await interaction_response(interaction, InteractionResponseType.MODAL, StdinManager(self.process))
 
 
@@ -238,11 +238,11 @@ class Process:
                 if context is None:
                     str_msg = self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}")
                 else:
-                    _, paginator = await send(
+                    _, paginator = await send(  # type: ignore
                         context,
                         self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
                         self._get_view(context.author),
-                        paginator=self.__session.paginator,  # type: ignore
+                        paginator=self.__session.paginator,
                         forced_pagination=False
                     )
                     if paginator is not None:
