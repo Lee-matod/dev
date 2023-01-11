@@ -130,6 +130,7 @@ class BoolInput(AuthoredView):
 
     @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
     async def yes_button(self, interaction: discord.Interaction, _) -> None:
+        await interaction.response.defer()
         if self.func is not None:
             if inspect.iscoroutinefunction(self.func):
                 await self.func()
@@ -139,4 +140,5 @@ class BoolInput(AuthoredView):
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.red)
     async def no_button(self, interaction: discord.Interaction, _) -> None:
-        await interaction.delete_original_response()
+        if interaction.message:
+            await interaction.message.delete()
