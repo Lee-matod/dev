@@ -38,10 +38,12 @@ def _maybe_raw_send(item: Any, /) -> bool:
     if isinstance(item, (discord.Embed, discord.File, discord.ui.View)):
         return True
     elif isinstance(item, Sequence) and item:
-        same_type = all(map(lambda x: isinstance(x, type(item[0])), item))  # type: ignore
+        if len(item[:11]) > 10:  # type: ignore # Early return check
+            return False
+        same_type = all(isinstance(i, type(item[0])) for i in item)  # type: ignore
         if not same_type:
             return False
-        elif type(item[0]) in (discord.Embed, discord.File, discord.ui.View):  # type: ignore
+        elif type(item[0]) in (discord.Embed, discord.File):  # type: ignore
             return True
     return False
 
