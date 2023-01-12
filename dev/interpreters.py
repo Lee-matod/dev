@@ -16,6 +16,7 @@ import asyncio
 import inspect
 import os
 import pathlib
+import queue
 import subprocess
 import sys
 import time
@@ -72,10 +73,10 @@ class StdinManager(discord.ui.Modal):
 
     def __init__(self, process: Process, /):
         super().__init__(title="Write to stdin")
-        self.subprocess: subprocess.Popen[bytes] = process.subprocess
+        self.process: Process = process
 
     async def on_submit(self, interaction: discord.Interaction, /) -> None:
-        self.subprocess.communicate(f"{self.stdin.value}\n".encode("utf-8"))
+        self.process.subprocess.communicate(f"{self.stdin.value}\n".encode("utf-8"))
         await interaction_response(interaction, InteractionResponseType.EDIT)
 
 
@@ -125,14 +126,10 @@ class Process:
         The exit code that the process obtains upon it being finished.
     cmd: :class:`str`
         The command string that was passed to the constructor of this class.
-    errput: List[:class:`str`]
-        A list of exceptions that occurred during the lifetime of this process.
-        This list is dynamically populated and exhausted, so it shouldn't be directly accessed.
     force_kill: :class:`bool`
         Whether the process should be forcefully terminated.
-    output: List[:class:`str`]
-        A list of lines that have been outputted by the subprocess.
-        This list is dynamically populated and exhausted, so it shouldn't be directly accessed.
+    queue: :class:`queue.Queue`
+        The current content's of stdout waiting to be formatted and sent to the interface.
     subprocess: :class:`subprocess.Popen`
         The actual subprocess.
     """
@@ -142,13 +139,12 @@ class Process:
         "_initial_command",
         "close_code",
         "cmd",
-        "errput",
         "force_kill",
         "loop",
-        "output",
-        "subprocess",
-        "stdout_task",
+        "queue",
         "stderr_task",
+        "stdout_task",
+        "subprocess"
     )
 
     def __init__(self, session: ShellSession, cwd: str, cmd: str, /) -> None:
@@ -163,15 +159,14 @@ class Process:
             stdin=subprocess.PIPE,
             cwd=cwd
         )
-        self.errput: list[str] = []
-        self.output: list[str] = []
+        self.queue: queue.Queue[str] = queue.Queue()
         self.stdout_task: asyncio.Task[str | None] | None = self.start_reading(
             self.subprocess.stdout,
-            lambda b: self.output.append(b.decode("utf-8").replace("``", "`\u200b`").strip("\n"))
+            lambda b: self.queue.put(b.decode("utf-8").replace("``", "`\u200b`").strip("\n"))
         ) if self.subprocess.stdout else None
         self.stderr_task: asyncio.Task[str | None] | None = self.start_reading(
             self.subprocess.stderr,
-            lambda b: self.errput.append(b.decode("utf-8").replace("``", "`\u200b`").strip("\n"))
+            lambda b: self.queue.put(b.decode("utf-8").replace("``", "`\u200b`").strip("\n"))
         ) if self.subprocess.stderr else None
 
         self._initial_command: bool = False
@@ -307,7 +302,6 @@ class Process:
                 )
             if paginator is not None:
                 self.__session.paginator = paginator
-            await asyncio.sleep(0)
         else:
             if context is None:
                 return str_msg
@@ -342,26 +336,46 @@ class Process:
             The subprocess did not output anything in the last 60 seconds.
         """
         start = time.perf_counter()
-        while not self.output and not self.errput:
+        while self.queue.empty():
             if self.force_kill:
                 raise InterruptedError("Subprocess has been killed")
             if time.perf_counter() - start > 60:
                 raise TimeoutError("No output in the last 60 seconds")
-        if self.subprocess.poll() is None:
-            out = ("\n".join(self.output) + "\n" + "\n".join(self.errput)).strip("\n")
-        else:
-            out = ("\n".join(self.output[:-1]) + "\n" + "\n".join(self.errput)).strip("\n")
-            self.__session.cwd = self.output[-1]
-        self.output.clear()
-        self.errput.clear()
-        return out
+        content: list[str] = []
+        while not self.queue.empty():
+            item = self.queue.get()
+            content.append(item)
+        if self.subprocess.poll() is not None:
+            #  There is a change that the current working directory
+            #  got eaten because of stdin, so we have to make sure
+            #  that we output the prompt and keep our cwd.
+            #  NOTE: For now, this will fail if stdout does
+            #  not include any spaces after stdin's prompt
+            maybe_cwd = content.pop()
+            if len(maybe_cwd.split()) > 1:
+                #  We're either in a folder that contains spaces,
+                #  or we have been eaten by stdin's prompt
+                actual_cwd = self._determine_cwd(maybe_cwd)
+                if actual_cwd:
+                    self.__session.cwd = actual_cwd
+                    content.append(maybe_cwd.removesuffix(actual_cwd).strip())
+            else:
+                self.__session.cwd = maybe_cwd
+        return "\n".join(content).strip().strip("\n")
 
     @property
     def is_alive(self) -> bool:
         """:class:`bool`
         Whether the current process is active or has pending output to get formatted.
         """
-        return self.subprocess.poll() is None or bool(self.output) or bool(self.errput)
+        return self.subprocess.poll() is None or not self.queue.empty()
+
+    def _determine_cwd(self, maybe_cwd: str, /) -> str | None:
+        cwd = ""
+        for maybe_path in reversed(maybe_cwd.split()):
+            cwd = (maybe_path + " " + cwd).strip()
+            if pathlib.Path(cwd).exists():
+                return cwd
 
 
 class ShellSession:
