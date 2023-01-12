@@ -59,14 +59,10 @@ It is also recommended to use this class as a context manager to ensure proper p
   obtains upon it being finished.
 - cmd([str](https://docs.python.org/3/library/stdtypes.html#str)) – The command string that was passed to the
   constructor of this class.
-- errput(List[[str](https://docs.python.org/3/library/stdtypes.html#str)]) – A list of exceptions that occurred during
-  the lifetime of this process.  
-  This list is dynamically populated and exhausted, so it shouldn't be directly accessed.
 - force_kill([bool](https://docs.python.org/3/library/functions.html#bool)) – Whether the process should be forcefully
   terminated.
-- output(List[[str](https://docs.python.org/3/library/stdtypes.html#str)]) – A list of lines that have been outputted by
-  the subprocess.  
-  This list is dynamically populated and exhausted, so it shouldn't be directly accessed.
+- queue([queue.Queue](https://docs.python.org/3/library/queue.html#queue.Queue)) – The current content's of stdout
+  waiting to be formatted and sent to the interface.
 - subprocess([subprocess.Popen](https://docs.python.org/3/library/subprocess.html#subprocess.Popen)) – The actual
   subprocess.
 
