@@ -21,7 +21,6 @@ __all__ = (
     "Bot",
     "Channel",
     "Command",
-    "InteractionResponseType",
     "Invokeable",
     "ManagementOperation",
     "MessageContent",
@@ -98,12 +97,6 @@ class Over(Enum):
 class OverType(Enum):
     COMMAND = 1
     SETTING = 2
-
-
-class InteractionResponseType(Enum):
-    SEND = 1
-    EDIT = 2
-    MODAL = 3
 
 
 class ManagementOperation(Enum):

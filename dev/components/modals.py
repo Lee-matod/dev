@@ -22,7 +22,6 @@ import discord
 from dev.converters import str_ints
 from dev.handlers import ExceptionHandler
 from dev.registrations import CommandRegistration, Over
-from dev.types import InteractionResponseType
 
 from dev.utils.baseclass import Root
 from dev.utils.functs import interaction_response
@@ -92,7 +91,7 @@ class CodeEditor(discord.ui.Modal):
                     self.ctx.bot.add_command(self.command)
                     return await interaction_response(
                         interaction,
-                        InteractionResponseType.EDIT,
+                        discord.InteractionResponseType.message_update,
                         "The entire parent body should only consist of a single asynchronous function definition.",
                         view=None
                     )
@@ -112,7 +111,7 @@ class CodeEditor(discord.ui.Modal):
                     self.ctx.bot.add_command(self.command)
                     return await interaction_response(
                         interaction,
-                        InteractionResponseType.EDIT,
+                        discord.InteractionResponseType.message_update,
                         "The asynchronous function should return an instance of `commands.Command`.",
                         view=None
                     )
@@ -121,7 +120,7 @@ class CodeEditor(discord.ui.Modal):
                     self.ctx.bot.add_command(self.command)
                     return await interaction_response(
                         interaction,
-                        InteractionResponseType.EDIT,
+                        discord.InteractionResponseType.message_update,
                         "The command's name cannot be changed.",
                         view=None
                     )
@@ -134,7 +133,7 @@ class CodeEditor(discord.ui.Modal):
                 )
         await interaction_response(
             interaction,
-            InteractionResponseType.EDIT,
+            discord.InteractionResponseType.message_update,
             "New script has been submitted.",
             view=None
         )
@@ -159,5 +158,5 @@ class SettingEditor(discord.ui.Modal):
             setattr(Settings, self.setting, self.item.value)
         await interaction_response(
             interaction,
-            InteractionResponseType.EDIT
+            discord.InteractionResponseType.message_update
         )

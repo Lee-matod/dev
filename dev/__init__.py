@@ -37,7 +37,6 @@ __all__ = (
     "Execute",
     "GlobalLocals",
     "GlobalTextChannelConverter",
-    "InteractionResponseType",
     "LiteralModes",
     "ManagementOperation",
     "ManagementRegistration",

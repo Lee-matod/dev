@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import discord
 
-from dev.types import InteractionResponseType
 from dev.components.modals import SettingEditor
 from dev.components.views import AuthoredView
 
@@ -50,7 +49,7 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
                 )
             return await interaction_response(
                 interaction,
-                InteractionResponseType.SEND,
+                discord.InteractionResponseType.channel_message,
                 "Something broke, this should not have happened.",
                 ephemeral=True
             )
@@ -65,6 +64,6 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
         self.add_buttons(view)
         await interaction_response(
             interaction,
-            InteractionResponseType.EDIT,
+            discord.InteractionResponseType.message_update,
             view
         )

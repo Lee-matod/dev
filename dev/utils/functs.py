@@ -22,7 +22,6 @@ import discord
 from discord.ext import commands
 from discord.utils import MISSING
 
-from dev.types import InteractionResponseType
 from dev.pagination import Interface, Paginator
 
 from dev.utils.baseclass import Root
@@ -286,7 +285,7 @@ async def send(  # type: ignore
 @overload
 async def interaction_response(
         interaction: discord.Interaction,
-        response_type: InteractionResponseType,
+        response_type: discord.InteractionResponseType,
         *args: str | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | Sequence[Any],
         paginator: Paginator | Literal[None],
         **options: Any
@@ -297,7 +296,7 @@ async def interaction_response(
 @overload
 async def interaction_response(  # type: ignore
         interaction: discord.Interaction,
-        response_type: InteractionResponseType,
+        response_type: discord.InteractionResponseType,
         *args: str | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | Sequence[Any],
         **options: Any
 ) -> None:
@@ -366,11 +365,11 @@ async def interaction_response(  # type: ignore
         `content` exceeded the 2000-character limit, and `view` did not permit pagination to work due to the amount of
         components it included.
     """
-    if response_type is InteractionResponseType.SEND:
+    if response_type is discord.InteractionResponseType.channel_message:
         method = interaction.response.send_message
-    elif response_type is InteractionResponseType.EDIT:
+    elif response_type is discord.InteractionResponseType.message_update:
         method = interaction.response.edit_message
-    elif response_type is InteractionResponseType.MODAL:
+    elif response_type is discord.InteractionResponseType.modal:
         if not isinstance(args[0], discord.ui.Modal):
             raise ValueError(f"Expected type {discord.ui.Modal} at index 0 but received {type(args[0])} instead")
         return await interaction.response.send_modal(args[0])
@@ -442,7 +441,7 @@ async def interaction_response(  # type: ignore
         raise IndexError("Content exceeds character limit, but view attached does not permit pagination to work")
 
     kwargs.update(allowed_mentions=options.get("allowed_mentions", discord.AllowedMentions.none()))
-    if response_type is InteractionResponseType.SEND:
+    if response_type is discord.InteractionResponseType.channel_message:
         kwargs.update(
             ephemeral=options.get("ephemeral", False),
             tts=options.get("tts", False),

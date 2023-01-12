@@ -26,7 +26,6 @@ import discord
 
 from dev.components.views import AuthoredView
 from dev.pagination import Paginator
-from dev.types import InteractionResponseType
 
 from dev.utils.functs import interaction_response, send
 
@@ -77,7 +76,7 @@ class StdinManager(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction, /) -> None:
         self.process.subprocess.communicate(f"{self.stdin.value}\n".encode("utf-8"))
-        await interaction_response(interaction, InteractionResponseType.EDIT)
+        await interaction_response(interaction, discord.InteractionResponseType.message_update)
 
 
 class ProcessHandler(AuthoredView):
@@ -93,7 +92,7 @@ class ProcessHandler(AuthoredView):
         self.process.force_kill = True
         await interaction_response(
             interaction,
-            InteractionResponseType.EDIT,
+            discord.InteractionResponseType.message_update,
             self.session.raw,
             view=None,
             paginator=self.session.paginator
@@ -101,7 +100,7 @@ class ProcessHandler(AuthoredView):
 
     @discord.ui.button(label="Write to stdin")
     async def stdin_writer(self, interaction: discord.Interaction, _: discord.ui.Button[ProcessHandler]):
-        await interaction_response(interaction, InteractionResponseType.MODAL, StdinManager(self.process))
+        await interaction_response(interaction, discord.InteractionResponseType.modal, StdinManager(self.process))
 
 
 class Process:
