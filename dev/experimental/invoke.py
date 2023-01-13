@@ -12,7 +12,7 @@ Command invocation or reinvocation with changeable execution attributes.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import discord
 from discord.ext import commands
@@ -23,7 +23,16 @@ from dev.types import Invokeable
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import generate_ctx, send
-from dev.utils.interaction import SyntheticInteraction, get_app_command
+from dev.utils.interaction import (
+    BadArgument,
+    BadChannel,
+    InvalidChoice,
+    MissingRequiredArgument,
+    MissingRequiredAttachment,
+    RangeError,
+    SyntheticInteraction,
+    get_app_command
+)
 
 if TYPE_CHECKING:
     from dev import types
@@ -39,22 +48,21 @@ class RootInvoke(Root):
             ctx: commands.Context[types.Bot],
             timeout: float | None,
             *,
-            command_string: str
+            command_name: str
     ):
         """Invoke a command and measure how long it takes to invoke finish.
         Optionally add a maximum amount of time that the command can take to finish executing.
         """
-        kwargs = {"content": f"{ctx.prefix}{command_string}"}
-        invokable = await self.get_invokable(ctx, command_string, kwargs)
+        kwargs = {"content": f"{ctx.prefix}{command_name}"}
+        invokable = await self._get_invokable(ctx, command_name, kwargs)
         if invokable is None:
-            return await send(ctx, f"Command `{command_string}` not found.")
-        command, context = invokable
+            return await send(ctx, f"Command `{command_name}` not found.")
 
         info = TimedInfo(timeout=timeout)
         if timeout is not None:
             self.bot.loop.create_task(info.wait_for(ctx.message))
         info.start = time.perf_counter()
-        await command.invoke(context)
+        await self._execute_invokable(*invokable)
         info.end = time.perf_counter()
         await send(ctx, f"Command finished in {info.end - info.start:.3f}s.", forced=True)
 
@@ -64,35 +72,31 @@ class RootInvoke(Root):
             ctx: commands.Context[types.Bot],
             amount: int,
             *,
-            command_string: str
+            command_name: str
     ):
         """Call a command a given amount of times.
         Checks can be optionally bypassed by using `dev repeat!` instead of `dev repeat`.
         """
-        kwargs = {"content": f"{ctx.prefix}{command_string}"}
+        kwargs = {"content": f"{ctx.prefix}{command_name}"}
         assert ctx.invoked_with is not None
         for _ in range(amount):
-            invokable = await self.get_invokable(ctx, command_string, kwargs)
+            invokable = await self._get_invokable(ctx, command_name, kwargs)
             if invokable is None:
-                return await send(ctx, f"Command `{command_string}` not found.")
-            command, context = invokable
-            if ctx.invoked_with.endswith("!"):
-                await command.reinvoke(context)
-            else:
-                await command.invoke(context)
+                return await send(ctx, f"Command `{command_name}` not found.")
+            args = *invokable, "reinvoke" if ctx.invoked_with.endswith("!") else "invoke"
+            await self._execute_invokable(*args)
 
     @root.command(name="debug", parent="dev", aliases=["dbg"], require_var_positional=True)
-    async def root_debug(self, ctx: commands.Context[types.Bot], *, command_string: str):
+    async def root_debug(self, ctx: commands.Context[types.Bot], *, command_name: str):
         """Catch errors when executing a command.
         This command will probably not work with commands that already have an error handler.
         """
-        kwargs = {"content": f"{ctx.prefix}{command_string}"}
-        invokable = await self.get_invokable(ctx, command_string, kwargs)
+        kwargs = {"content": f"{ctx.prefix}{command_name}"}
+        invokable = await self._get_invokable(ctx, command_name, kwargs)
         if invokable is None:
-            return await send(ctx, f"Command `{command_string}` not found.")
-        command, context = invokable
+            return await send(ctx, f"Command `{command_name}` not found.")
         async with ExceptionHandler(ctx.message, save_traceback=True) as handler:
-            await command.invoke(context)
+            await self._execute_invokable(*invokable)
         if handler.error:
             embeds = [
                 discord.Embed(
@@ -112,14 +116,14 @@ class RootInvoke(Root):
             ctx: commands.Context[types.Bot],
             attrs: commands.Greedy[_DiscordObjects],
             *,
-            command_attr: str
+            command_name: str
     ):
         """Execute a command with custom attributes.
         Attribute support types are `discord.Member`, `discord.Guild`, `discord.TextChannel` and `discord.Thread`.
         These will override the current context, thus executing the command in a different virtual environment.
         Command checks can be optionally disabled by adding an exclamation mark at the end of the `execute` command.
         """
-        kwargs: dict[str, Any] = {"content": f"{ctx.prefix}{command_attr}"}
+        kwargs: dict[str, Any] = {"content": f"{ctx.prefix}{command_name}"}
         for attr in attrs:
             if isinstance(attr, (discord.User, discord.Member)):
                 kwargs["author"] = attr
@@ -136,15 +140,28 @@ class RootInvoke(Root):
             kwargs["author"] = ctx.guild.get_member(author.id) or author
 
         assert ctx.invoked_with is not None
-        invokable = await self.get_invokable(ctx, command_attr, kwargs)
+        invokable = await self._get_invokable(ctx, command_name, kwargs)
         if invokable is None:
-            return await send(ctx, f"Command `{command_attr}` not found.")
-        command, context = invokable
-        if ctx.invoked_with.endswith("!"):
-            return await command.reinvoke(context)
-        return await command.invoke(context)
+            return await send(ctx, f"Command `{command_name}` not found.")
+        args = *invokable, "reinvoke" if ctx.invoked_with.endswith("!") else "invoke"
+        await self._execute_invokable(*args)
 
-    async def get_invokable(
+    async def _execute_invokable(
+            self,
+            command: Invokeable,
+            ctx: commands.Context[types.Bot],
+            action: Literal["invoke", "reinvoke"] = "invoke"
+    ) -> None:
+        try:
+            await (getattr(command, action)(ctx))
+        except BadArgument as exc:
+            await send(ctx, f"Failed to convert argument {exc.argument!r} to {exc.type.__name__}.")
+        except BadChannel as exc:
+            await send(ctx, f"{exc.argument!r} is not a {exc.channel_type}.")
+        except (InvalidChoice, MissingRequiredArgument, MissingRequiredAttachment, RangeError) as exc:
+            await send(ctx, f"{exc}.")
+
+    async def _get_invokable(
             self,
             ctx: commands.Context[types.Bot],
             content: str,
@@ -152,7 +169,7 @@ class RootInvoke(Root):
     ) -> tuple[Invokeable, commands.Context[types.Bot]] | None:
         if content.startswith("/"):
             app_commands = self.bot.tree.get_commands(type=discord.AppCommandType.chat_input)
-            app_command = get_app_command(content.removeprefix("/"), app_commands.copy())  # type: ignore
+            app_command = get_app_command(content[1:].split("\n")[0], app_commands.copy())  # type: ignore
             if app_command is None:
                 return
             kwargs["content"] = kwargs["content"].removeprefix(ctx.prefix)
