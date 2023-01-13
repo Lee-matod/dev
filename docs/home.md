@@ -45,7 +45,8 @@ async def example(
 After syncing this command with Discord, I will invoke it using the `dev exec` command.
 
 ![Lee_ executing ?dev exec /example in discord](https://user-images.githubusercontent.com/89663192/212227121-8b8e28a8-1613-41d1-b6ae-6d09be68edf3.png)
-<small>Removed timestamps to make image clearer</small>
+
+Removed timestamps to make image clearer
 
 The first thing that you might notice when viewing this image, is that the order of the parameters does not matter, and
 this is thanks to the way in which each parameter name and value are parsed (see notes below for a more in-depth
@@ -58,14 +59,13 @@ and not its actual function name.
 sure to report any bugs in the [issue tracker](https://github.com/Lee-matod/dev/issues).
 
 > #### Note
-> <small> At the time of writing this, an application command's interface does not support new lines without doing some
+> At the time of writing this, an application command's interface does not support new lines without doing some
 > wacky stuff. This is why I opted for each argument to be in a separate line rather than parsing a whole single line of
-> arguments.</small>
+> arguments.
 >
-> <small>Additionally, (as noted by Gorialis in
+> Additionally, (as noted by Gorialis in
 > [this issue comment](https://github.com/Gorialis/jishaku/issues/185#issuecomment-1329579269)) an application command's
 > parameter can perfectly accept `""""` as an argument, which makes parsing a lot more complicated than it has to be.
-> </small>
 
 ### Can I add my own commands?
 
