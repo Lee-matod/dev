@@ -13,13 +13,12 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-import inspect
-import shlex
 import time
-from typing import TYPE_CHECKING, Any, NamedTuple, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import discord
 from discord import app_commands
+from discord.app_commands import transformers
 from discord.ext import commands
 from discord.utils import MISSING
 
@@ -29,6 +28,9 @@ from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from discord.state import ConnectionState
+    from discord.app_commands.transformers import CommandParameter
 
     from dev import types
 
@@ -58,30 +60,20 @@ __all__ = (
     "get_app_command"
 )
 
-# I'm not too sure if all of these type hint converters are actually available in app command type hinting, but I
-# couldn't be bothered to check
-CONVERSIONS = {
-    discord.Role: commands.RoleConverter(),
-    discord.Member: commands.MemberConverter(),
-    discord.User: commands.UserConverter(),
-    discord.Color: commands.ColorConverter(),
-    discord.Colour: commands.ColourConverter(),
-    discord.TextChannel: commands.TextChannelConverter(),
-    discord.CategoryChannel: commands.CategoryChannelConverter(),
-    discord.Emoji: commands.EmojiConverter(),
-    discord.ForumChannel: commands.ForumChannelConverter(),
-    discord.abc.GuildChannel: commands.GuildChannelConverter(),
-    discord.Guild: commands.GuildConverter(),
-    discord.GuildSticker: commands.GuildStickerConverter(),
-    discord.Invite: commands.InviteConverter(),
-    discord.Message: commands.MessageConverter(),
-    discord.PartialEmoji: commands.PartialEmojiConverter(),
-    discord.PartialMessage: commands.PartialMessageConverter(),
-    discord.ScheduledEvent: commands.ScheduledEventConverter(),
-    discord.StageChannel: commands.StageChannelConverter(),
-    discord.VoiceChannel: commands.VoiceChannelConverter(),
-    discord.Thread: commands.ThreadConverter()
-}
+
+IGNORABLE_TRANSFORMERS: list[type[transformers.Transformer]] = [
+    transformers.IdentityTransformer,
+    transformers.RangeTransformer,
+    transformers.LiteralTransformer,
+    transformers.ChoiceTransformer,
+    transformers.EnumNameTransformer,
+    transformers.EnumValueTransformer,
+    transformers.InlineTransformer,
+    transformers.MemberTransformer,
+    transformers.BaseChannelTransformer,
+    transformers.RawChannelTransformer,
+    transformers.UnionChannelTransformer
+]
 
 
 def get_app_command(
@@ -110,20 +102,67 @@ class UnknownInteraction:
     reason: str = "Not Found"
 
 
-class Parameter(NamedTuple):
-    name: str
-    default: Any
-    annotation: Any
-    argument: str
-
-
+#  Custom AppCommandError to indicate an invalid choice argument
 class InvalidChoice(app_commands.AppCommandError):
-    def __init__(self, parameter: Parameter, choices: list[app_commands.Choice[str | int | float]]) -> None:
+    def __init__(self, argument: str, choices: list[app_commands.Choice[str | int | float]], /) -> None:
+        self.argument: str = argument
+        self.choices: list[app_commands.Choice[str | int | float]] = choices
         super().__init__(
-            f"Choice value {parameter.argument!r} "
-            f"passed to {parameter.name} "
-            f"not found as a valid choice: {', '.join([choice.name for choice in choices])}"
+            f"Chosen value {argument!r} is not a valid choice ({', '.join([choice.name for choice in choices])})"
         )
+
+
+#  Copy of commands.MissingRequiredArgument but as AppCommandError
+class MissingRequiredArgument(app_commands.AppCommandError):
+    def __init__(self, argument: app_commands.Parameter, /) -> None:
+        self.parameter: app_commands.Parameter = argument
+        super().__init__(f"Missing required argument {argument.display_name!r} ({argument.name})")
+
+
+#  Copy of commands.MissingRequiredAttachment but as AppCommandError
+class MissingRequiredAttachment(app_commands.AppCommandError):
+    def __init__(self, parameter: app_commands.Parameter, /) -> None:
+        self.parameter: app_commands.Parameter = parameter
+        super().__init__(f"{parameter.display_name} ({parameter.name}) is an argument that is missing an attachment")
+
+
+#  Exact copy of commands.RangeError but as AppCommandError
+class RangeError(app_commands.AppCommandError):
+    def __init__(self, value: int | float | str, /, max_size: int | float | None, min_size: int | float | None) -> None:
+        self.value: int | float | str = value
+        self.max_size: int | float | None = max_size
+        self.min_size: int | float | None = min_size
+
+        label: str = ""
+        if min_size is None and max_size is not None:
+            label = f"no more than {max_size}"
+        elif min_size is not None and max_size is None:
+            label = f"no less than {min_size}"
+        elif max_size is not None and min_size is not None:
+            label = f"between {min_size} and {max_size}"
+
+        if isinstance(value, str):
+            label += " characters"
+            count = len(value)
+            if count == 1:
+                value = "1 character"
+            else:
+                value = f"{count} characters"
+        super().__init__(f"Value must be {label} but received {value}")
+
+
+class BadArgument(app_commands.AppCommandError):
+    def __init__(self, argument: str, conversion_type: type[Any]) -> None:
+        self.argument: str = argument
+        self.type: type[Any] = conversion_type
+        super().__init__(f"Failed to convert {argument} to {conversion_type.__name__}")
+
+
+class BadChannel(app_commands.AppCommandError):
+    def __init__(self, argument: str, channel_type: str) -> None:
+        self.argument: str = argument
+        self.channel_type: str = channel_type
+        super().__init__(f"Channel {argument} does not meet expected properties: {channel_type}")
 
 
 class SyntheticInteraction:
@@ -133,6 +172,8 @@ class SyntheticInteraction:
         self._created_at: int = round(time.time())
         self._interaction_response: InteractionResponse = InteractionResponse(self)
         self._unknown_interaction: bool = False
+        self.__attachments: list[discord.Attachment] = context.message.attachments.copy()
+        self.__namespace: app_commands.Namespace | None = None
 
         # There are a few attributes that just cannot be obtained using the Context,
         # so I'll just leave them with a static value.
@@ -154,42 +195,136 @@ class SyntheticInteraction:
 
         # Protected attributes won't be defined, but we still need to keep track of the original response regardless
         self._original_response: discord.Message | None = None
+        self._state: ConnectionState = context._state  # type: ignore # Required for namespace
 
-    async def get_parameters(self, arguments: list[str], ignore_params: int) -> dict[str, Any]:
-        signature = inspect.signature(self._command.callback)
-        parameters = [
-            Parameter(name=name, annotation=param.annotation, argument=argument, default=param.default)
-            for argument, (name, param) in zip(arguments, list(signature.parameters.items())[ignore_params:])
-        ]
-        kwargs: dict[str, Any] = {}
-        for param in parameters:
-            if base_converter := CONVERSIONS.get(param.annotation, False):
-                kwargs[param.name] = await base_converter.convert(self._context, param.argument)  # type: ignore
-            elif choices := self._command.get_parameter(param.name).choices:  # type: ignore
-                for choice in choices:
-                    if choice.name == param.argument:
-                        kwargs[param.name] = choice.value
-                        break
-                else:
-                    raise InvalidChoice(param, choices)
-            elif inspect.isclass(param.annotation):
-                if issubclass(param.annotation, app_commands.Transformer):
-                    kwargs[param.name] = await param.annotation().transform(self, param.argument)  # type: ignore
+    async def __ensure_correct_argument(self, argument: str, parameter: app_commands.Parameter, /) -> Any:
+        #  Check argument type
+        value = argument
+        if parameter.type is discord.AppCommandOptionType.boolean:
+            try:
+                value = str_bool(argument)
+            except commands.BadBoolArgument as exc:
+                raise BadArgument(argument, bool) from exc
+        elif parameter.type is discord.AppCommandOptionType.integer:
+            try:
+                value = int(argument)
+            except ValueError as exc:
+                raise BadArgument(argument, int) from exc
+        elif parameter.type is discord.AppCommandOptionType.number:
+            try:
+                value = float(argument)
+            except ValueError as exc:
+                raise BadArgument(argument, float) from exc
+        elif parameter.type is discord.AppCommandOptionType.attachment:
+            try:
+                value = self.__attachments.pop()
+            except IndexError as exc:
+                raise MissingRequiredAttachment(parameter)
+        #  Check range
+        if parameter.max_value is not None or parameter.min_value is not None:
+            min_value = parameter.min_value if parameter.min_value is not None else 0
+            if parameter.type is discord.AppCommandOptionType.string:
+                max_value = parameter.max_value if parameter.max_value is not None else len(argument)
+                if len(argument) > max_value or len(argument) < min_value:
+                    raise RangeError(argument, max_size=parameter.max_value, min_size=parameter.min_value)
+            elif parameter.type is discord.AppCommandOptionType.integer:
+                max_value = parameter.max_value if parameter.max_value is not None else int(argument)
+                if int(argument) > max_value or int(argument) < min_value:
+                    raise RangeError(argument, max_size=parameter.max_value, min_size=parameter.min_value)
+            elif parameter.type is discord.AppCommandOptionType.number:
+                max_value = parameter.max_value if parameter.max_value is not None else float(argument)
+                if float(argument) > max_value or float(argument) < min_value:
+                    raise RangeError(argument, max_size=parameter.max_value, min_size=parameter.min_value)
+        #  Check choices
+        elif parameter.choices and argument not in [choice.name for choice in parameter.choices]:
+            raise InvalidChoice(argument, parameter.choices)
+        #  Check channel type
+        elif parameter.channel_types:
+            try:
+                channel = await commands.GuildChannelConverter().convert(self._context, argument)
+            except commands.ChannelNotFound:
                 try:
-                    kwargs[param.name] = param.annotation(param.argument)  # type: ignore
-                except TypeError:
-                    kwargs[param.name] = param.argument
-            elif not inspect.isclass(param.annotation):
-                if isinstance(param.annotation, app_commands.Transformer):
-                    kwargs[param.name] = await param.annotation.transform(self, param.argument)  # type: ignore
-            elif param.annotation is None and param.default not in (inspect.Parameter.empty, None):
-                # We should never run into this section, but might as well deal with it
-                kwargs[param.name] = type(param.default)(param.argument)
-            elif param.annotation == bool:
-                kwargs[param.name] = str_bool(param.argument)
+                    thread = await commands.ThreadConverter().convert(self._context, argument)
+                except commands.ThreadNotFound:
+                    raise BadArgument(argument, discord.abc.GuildChannel)
+                if thread.is_private() and discord.ChannelType.private_thread not in parameter.channel_types:
+                    raise BadChannel(argument, "private thread")
+                elif thread.is_news() and discord.ChannelType.news_thread not in parameter.channel_types:
+                    raise BadChannel(argument, "news thread")
+                elif not thread.is_private() and discord.ChannelType.public_thread not in parameter.channel_types:
+                    raise BadChannel(argument, "public thread")
+                value = thread
             else:
-                kwargs[param.name] = param.argument
-        return kwargs
+                if isinstance(channel, discord.TextChannel) and discord.ChannelType.text not in parameter.channel_types:
+                    raise BadChannel(argument, "text channel")
+                elif (
+                        isinstance(channel, discord.DMChannel)
+                        and discord.ChannelType.private not in parameter.channel_types
+                ):
+                    raise BadChannel(argument, "private channel")
+                elif (
+                        isinstance(channel, discord.GroupChannel)
+                        and discord.ChannelType.group not in parameter.channel_types
+                ):
+                    raise BadChannel(argument, "group channel")
+                elif (
+                        isinstance(channel, discord.VoiceChannel)
+                        and discord.ChannelType.voice not in parameter.channel_types
+                ):
+                    raise BadChannel(argument, "voice channel")
+                elif (
+                        isinstance(channel, discord.CategoryChannel)
+                        and discord.ChannelType.category not in parameter.channel_types
+                ):
+                    raise BadChannel(argument, "category channel")
+                elif (
+                        isinstance(channel, discord.StageChannel)
+                        and discord.ChannelType.stage_voice not in parameter.channel_types
+                ):
+                    raise BadChannel(argument, "stage channel")
+                elif (
+                        isinstance(channel, discord.ForumChannel)
+                        and discord.ChannelType.forum not in parameter.channel_types
+                ):
+                    raise BadChannel(argument, "forum channel")
+                value = channel
+        command_param: CommandParameter = parameter._Parameter__parent  # type: ignore
+        ann = command_param._annotation  # pyright: ignore [reportPrivateUsage]
+        if isinstance(ann, app_commands.Transformer) and type(ann) not in IGNORABLE_TRANSFORMERS:
+            value = await command_param.transform(self, value)  # type: ignore
+        return value
+
+    async def __validate_parameters(self, initial_arguments: list[str]) -> dict[app_commands.Parameter, Any]:
+        required_arguments = [param for param in self._command.parameters if param.required]
+        optional_arguments = [param for param in self._command.parameters if not param.required]
+        parameters: dict[str, str] = {
+            (name := param.split(Settings.flag_delimiter, 1)[0].strip()):
+                param.removeprefix(f"{name}{Settings.flag_delimiter}")
+            for param in initial_arguments
+        }
+        mapped: dict[app_commands.Parameter, Any] = {}
+        for req in required_arguments:
+            if req.display_name not in parameters:
+                raise MissingRequiredArgument(req)
+            mapped[req] = await self.__ensure_correct_argument(parameters[req.display_name], req)
+        for opt in optional_arguments:
+            if opt.display_name in parameters:
+                mapped[opt] = await self.__ensure_correct_argument(parameters[opt.display_name], opt)
+            else:
+                mapped[opt] = opt.default if opt.default is not MISSING else None
+        return mapped
+
+    def __create_namespace(self, parameters: dict[app_commands.Parameter, Any]) -> app_commands.Namespace:
+        options: list[dict[str, Any]] = []
+        for param, value in parameters.items():
+            if hasattr(value, "id"):
+                value = str(value.id)
+            options.append({"type": param.type, "name": param.display_name, "value": value})
+        #  All the data is already resolved previously, so parsing it again
+        #  really just makes everything even more complicated than what it
+        #  already is. I can parse it in the future and move to _invoke_with_namespace,
+        #  but for now, I don't see any issue in leaving this empty
+        return app_commands.Namespace(self, {}, options)  # type: ignore
 
     async def invoke(
             self,
@@ -198,16 +333,9 @@ class SyntheticInteraction:
     ) -> None:  # Match signature of commands.Command.invoke
         if not await self._command._check_can_run(self):  # type: ignore
             raise app_commands.CheckFailure(f"The check functions for command {self._command.qualified_name!r} failed.")
-        arguments = context.message.content.removeprefix(f"/{self._command.qualified_name} ")
-        if len(self._command.parameters) == 1:
-            arguments = [arguments]
-        else:
-            arguments = shlex.split(arguments)
-        # Pass in interaction and check if the command is inside a cog/group
-        required = (self,) if self._command.binding is None else (self._command.binding, self)
-        parameters = await self.get_parameters(arguments, len(required))
-        context.bot.loop.create_task(self._wait_for_response())
-        await self._command.callback(*required, **parameters)  # type: ignore
+        #  The only difference between these two methods is that reinvoke
+        #  does not call checks, meanwhile invoke does
+        await self.reinvoke(context)
 
     async def reinvoke(
             self,
@@ -216,18 +344,17 @@ class SyntheticInteraction:
             *,
             call_hooks: bool = False
     ) -> None:  # Match signature of commands.Command.reinvoke
-        arguments = context.message.content.removeprefix(f"/{self._command.qualified_name}")
-        if len(self._command.parameters) == 1:
-            arguments = [arguments]
-        else:
-            arguments = shlex.split(arguments)
-        # Pass in interaction and check if the command is inside a cog/group
+        arguments: list[str]
+        _, *arguments = self._context.message.content.split("\n")
         required = (self,) if self._command.binding is None else (self._command.binding, self)
-        parameters = await self.get_parameters(arguments, len(required))
-        context.bot.loop.create_task(self._wait_for_response())
-        await self._command.callback(*required, **parameters)  # type: ignore
+        parameters = await self.__validate_parameters(arguments)
+        self.__namespace = self.__create_namespace(parameters)
 
-    async def _wait_for_response(self) -> None:
+        kwargs = {param.name: value for param, value in parameters.items()}
+        self._context.bot.loop.create_task(self.__wait_for_response())
+        await self._command.callback(*required, **kwargs)  # type: ignore
+
+    async def __wait_for_response(self) -> None:
         await asyncio.sleep(3)  # simulate maximum of 3 seconds for a response
         if self._interaction_response._response_type is None:  # pyright: ignore [reportPrivateUsage]
             # The bot did not respond to the interaction, so we have to somehow tell the user that it took too long.
@@ -268,7 +395,7 @@ class SyntheticInteraction:
 
     @discord.utils.cached_slot_property("_cs_namespace")
     def namespace(self) -> app_commands.Namespace:
-        return app_commands.Namespace(self, {}, [])  # type: ignore
+        return self.__namespace  # type: ignore
 
     @discord.utils.cached_slot_property("_cs_command")
     def command(self) -> app_commands.Command[Any, ..., Any] | app_commands.ContextMenu | None:
