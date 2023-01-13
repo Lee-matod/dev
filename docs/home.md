@@ -13,6 +13,60 @@ any other category.
 
 ## FAQ
 
+### How can I invoke an application command?
+
+All the commands included in the RootInvoke cog (currently `timeit`, `repeat`, `debug`, and `execute`) accept
+application commands in their `command_name` parameters.  
+To specify a slash command instead of a message command, prefix the command's name with a slash (`/`) followed by the
+fully qualified name of the command (just like with normal prefix commands).
+
+When specifying arguments, you must provide them in a new line as name-value pairs, where each pair is separated by the
+[Settings.flag_delimiter](https://github.com/Lee-matod/dev#settings) character sequence.
+
+As an example, I will create an application command that looks a bit like this:
+
+```python
+import discord
+from discord import app_commands
+
+#  In this example, we will be using the default
+#  flag delimiter which is '='.
+@app_commands.command()
+async def example(
+        interaction: discord.Interaction,
+        name: str,
+        age: int,
+        can_drive: bool = False
+):
+    fmt = "can drive" if can_drive else "cannot drive"
+    await interaction.response.send_message(f"Greetings, {name}! You are {age} years old and {fmt}.")
+```
+
+After syncing this command with Discord, I will invoke it using the `dev exec` command.
+
+![Lee_ executing ?dev exec /example in discord](https://user-images.githubusercontent.com/89663192/212227121-8b8e28a8-1613-41d1-b6ae-6d09be68edf3.png)
+<small>Removed timestamps to make image clearer</small>
+
+The first thing that you might notice when viewing this image, is that the order of the parameters does not matter, and
+this is thanks to the way in which each parameter name and value are parsed (see notes below for a more in-depth
+explanation).  
+An additional thing to note is that, when specifying parameter names, you must use its
+[display_name](https://discordpy.readthedocs.io/en/latest/interactions/api.html#discord.app_commands.Parameter.display_name)
+and not its actual function name.
+
+**DISCLAIMER:** Locale is *not* currently supported in this environment. This is also an experimental feature, so be
+sure to report any bugs in the [issue tracker](https://github.com/Lee-matod/dev/issues).
+
+> #### Note
+> <small> At the time of writing this, an application command's interface does not support new lines without doing some
+> wacky stuff. This is why I opted for each argument to be in a separate line rather than parsing a whole single line of
+> arguments.</small>
+>
+> <small>Additionally, (as noted by Gorialis in
+> [this issue comment](https://github.com/Gorialis/jishaku/issues/185#issuecomment-1329579269)) an application command's
+> parameter can perfectly accept `""""` as an argument, which makes parsing a lot more complicated than it has to be.
+> </small>
+
 ### Can I add my own commands?
 
 Yes! This extension is fully extendable. To create your own cogs, you must
