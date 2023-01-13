@@ -80,7 +80,7 @@ class RootHTTP(Root):
         try:
             kwargs = flag_parser(replace_vars(options or '', Root.scope), Settings.flag_delimiter.strip())
         except json.JSONDecodeError as exc:
-            return await send(ctx, f"{exc}")
+            return await send(ctx, f"Parsing options failed. {exc}")
         async with aiohttp.ClientSession() as session:
             try:
                 request = await session.get(replace_vars(url, Root.scope), allow_redirects=allow_redirects, **kwargs)
