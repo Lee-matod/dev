@@ -51,7 +51,6 @@ __all__ = (
     "codeblock_wrapper",
     "escape",
     "interaction_response",
-    "optional_raise",
     "plural",
     "replace_vars",
     "root",

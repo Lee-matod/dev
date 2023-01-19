@@ -11,14 +11,7 @@ Basic utilities used within the dev extension.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from discord.utils import escape_markdown, escape_mentions
-
-if TYPE_CHECKING:
-    from discord.ext import commands
-
-    from dev import types
 
 __all__ = ("clean_code", "codeblock_wrapper", "escape", "plural", "responses")
 
@@ -29,15 +22,6 @@ responses: dict[str, str] = {
     "4": "Client error response",
     "5": "Server error response",
 }
-
-
-def parse_invoked_subcommand(context: commands.Context[types.Bot], /) -> str:
-    assert context.prefix is not None and context.command is not None
-    command = context.prefix + context.command.qualified_name
-    invoked = context.message.content.removeprefix(command).strip()
-    if not invoked:
-        return invoked
-    return invoked.split()[0]
 
 
 def clean_code(content: str) -> str:

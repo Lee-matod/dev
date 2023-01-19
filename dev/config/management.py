@@ -20,13 +20,12 @@ from typing import TYPE_CHECKING
 import discord
 
 from dev.components import BoolInput
-from dev.handlers import optional_raise
 from dev.registrations import ManagementRegistration
 from dev.types import ManagementOperation
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send, table_creator
 from dev.utils.startup import Settings
-from dev.utils.utils import escape, parse_invoked_subcommand, plural
+from dev.utils.utils import escape, plural
 
 if TYPE_CHECKING:
     from discord.ext import commands
@@ -53,7 +52,7 @@ class RootManagement(Root):
         self.cwd = new_cwd + "/" if not new_cwd.endswith("/") else new_cwd
         await ctx.message.add_reaction("☑")
 
-    @root.group(name="explorer", parent="dev", invoke_without_command=True, ignore_extra=True)
+    @root.group(name="explorer", parent="dev", ignore_extra=True, invoke_without_command=True)
     async def root_explorer(self, ctx: commands.Context[types.Bot]):
         """View modifications made to directories."""
         if operations := self.explorer_rgs:
@@ -254,16 +253,6 @@ class RootManagement(Root):
             path.rmdir()
             self.explorer_rgs.append(ManagementRegistration(f"{path.absolute()}", ManagementOperation.DELETE))
             await ctx.message.add_reaction("☑")
-
-    @root_explorer.error
-    async def root_files_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError):
-        if isinstance(exception, commands.TooManyArguments):
-            assert ctx.prefix is not None and ctx.invoked_with is not None
-            return await send(
-                ctx,
-                f"`dev {ctx.invoked_with}` has no subcommand " f"`{parse_invoked_subcommand(ctx)}`.",
-            )
-        optional_raise(ctx, exception)
 
     def format_path(self, directory: str, *, tailing: bool = True) -> str:
         """Format the given filepath to the correct directory."""

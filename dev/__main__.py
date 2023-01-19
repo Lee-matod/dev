@@ -21,11 +21,10 @@ import discord
 import psutil
 from discord.ext import commands
 
-from dev.handlers import optional_raise
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
-from dev.utils.utils import parse_invoked_subcommand, plural
+from dev.utils.utils import plural
 
 if TYPE_CHECKING:
     from dev import types
@@ -49,7 +48,7 @@ class RootCommand(Root):
     @root.group(
         name="dev",
         global_use=True,
-        ignore_extra=False,
+        ignore_extra=True,
         invoke_without_command=True,
         usage="[--help|--man] [--source|-src] [--file|--f] [--inspect|-i] <command>",
     )
@@ -131,16 +130,6 @@ class RootCommand(Root):
                 return await send(ctx, "`dev` is already visible.")
             root_command.hidden = False
             await ctx.message.add_reaction("\u2502")
-
-    @root_.error
-    async def root_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError):
-        if isinstance(exception, commands.TooManyArguments):
-            assert ctx.prefix is not None and ctx.invoked_with is not None
-            return await send(
-                ctx,
-                f"`{ctx.invoked_with}` has no subcommand " f"`{parse_invoked_subcommand(ctx)}`.",
-            )
-        optional_raise(ctx, exception)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:

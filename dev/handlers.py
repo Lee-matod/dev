@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING, Any, Callable, TextIO
 import discord
 from discord.ext import commands
 
-from dev import types
 from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
@@ -34,7 +33,6 @@ __all__ = (
     "GlobalLocals",
     "RelativeStandard",
     "TimedInfo",
-    "optional_raise",
     "replace_vars",
 )
 
@@ -319,18 +317,6 @@ class ExceptionHandler:
         """
         cls.error = []
         cls.debug = False
-
-
-def optional_raise(ctx: commands.Context[types.Bot], error: commands.CommandError, /) -> None:
-    # We have to somehow check if the on_command_error event was overridden, the most logical way I could think of was
-    # checking if the functions were the same which is the aim of this bit. Do note, however, that this might fail under
-    # certain circumstances.
-    events = ctx.bot.on_command_error.__code__ == commands.Bot.on_command_error.__code__
-    listeners = ctx.bot.extra_events.get("on_command_error")
-    if events or listeners:
-        ctx.bot.dispatch("command_error", ctx, error)
-    else:
-        raise error
 
 
 def replace_vars(string: str, scope: GlobalLocals) -> str:

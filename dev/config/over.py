@@ -21,13 +21,13 @@ from discord.ext import commands
 
 from dev.components import AuthoredView, CodeEditor, ModalSender, SettingsToggler
 from dev.converters import CodeblockConverter, str_bool, str_ints
-from dev.handlers import ExceptionHandler, optional_raise, replace_vars
+from dev.handlers import ExceptionHandler, replace_vars
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 from dev.types import Over, OverType
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import flag_parser, send, table_creator
 from dev.utils.startup import Settings
-from dev.utils.utils import clean_code, codeblock_wrapper, escape, parse_invoked_subcommand, plural
+from dev.utils.utils import clean_code, codeblock_wrapper, escape, plural
 
 if TYPE_CHECKING:
     from dev import types
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 class RootOver(Root):
     """Override and overwrite different attributes"""
 
-    @root.group(name="override", parent="dev", ignore_extra=False, invoke_without_command=True)
+    @root.group(name="override", parent="dev", ignore_extra=True, invoke_without_command=True)
     async def root_override(self, ctx: commands.Context[types.Bot]):
         """Get a table of overrides that have been made with their respective IDs.
         Name of the command and date modified are also included in the table.
@@ -194,7 +194,7 @@ class RootOver(Root):
             Over.ADD,
         )
 
-    @root.group(name="overwrite", parent="dev", ignore_extra=False, invoke_without_command=True)
+    @root.group(name="overwrite", parent="dev", ignore_extra=True, invoke_without_command=True)
     async def root_overwrite(self, ctx: commands.Context[types.Bot]):
         """Get a table of overwrites that have been made with their respective IDs.
         Overwrite type, changes made, and date modified are also included in the table.
@@ -459,14 +459,3 @@ class RootOver(Root):
                 color=discord.Color.green() if changed else discord.Color.red(),
             ),
         )
-
-    @root_override.error
-    @root_overwrite.error
-    async def root_override_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError):
-        if isinstance(exception, commands.TooManyArguments):
-            assert ctx.prefix is not None and ctx.invoked_with is not None
-            return await send(
-                ctx,
-                f"`dev {ctx.invoked_with}` has no subcommand " f"`{parse_invoked_subcommand(ctx)}`.",
-            )
-        optional_raise(ctx, exception)

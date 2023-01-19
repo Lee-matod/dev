@@ -18,10 +18,9 @@ import discord
 from discord.ext import commands
 
 from dev.components import AuthoredView, PermissionsSelector
-from dev.handlers import optional_raise
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
-from dev.utils.utils import escape, parse_invoked_subcommand, plural
+from dev.utils.utils import escape, plural
 
 if TYPE_CHECKING:
     from dev import types
@@ -245,13 +244,3 @@ class RootBot(Root):
         """Close the bot."""
         await ctx.message.add_reaction("\U0001f44b")
         await self.bot.close()
-
-    @root_bot.error
-    async def root_bot_error(self, ctx: commands.Context[types.Bot], exception: commands.CommandError):
-        if isinstance(exception, commands.TooManyArguments):
-            assert ctx.prefix is not None and ctx.invoked_with is not None
-            return await send(
-                ctx,
-                f"`dev {ctx.invoked_with}` has no subcommand " f"`{parse_invoked_subcommand(ctx)}`.",
-            )
-        optional_raise(ctx, exception)
