@@ -26,7 +26,7 @@ __all__ = (
     "MessageContent",
     "Over",
     "OverType",
-    "User"
+    "User",
 )
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
         discord.VoiceChannel,
         discord.CategoryChannel,
         discord.StageChannel,
-        discord.ForumChannel
+        discord.ForumChannel,
     ]
     Command = Union[commands.Command[Any, ..., Any], commands.Group[Any, ..., Any]]
     MessageContent = Union[
@@ -48,7 +48,7 @@ if TYPE_CHECKING:
         discord.File,
         Sequence[discord.File],
         Union[discord.GuildSticker, discord.StickerItem],
-        discord.ui.View
+        discord.ui.View,
     ]
     User = Union[discord.ClientUser, discord.Member, discord.User]
 
@@ -61,7 +61,7 @@ else:
         discord.VoiceChannel,
         discord.CategoryChannel,
         discord.StageChannel,
-        discord.ForumChannel
+        discord.ForumChannel,
     )
     Command = (commands.Command, commands.Group)
     MessageContent = (
@@ -72,7 +72,7 @@ else:
         Sequence[discord.File],
         discord.GuildSticker,
         discord.StickerItem,
-        discord.ui.View
+        discord.ui.View,
     )
     User = (discord.ClientUser, discord.Member, discord.User)
 
@@ -86,6 +86,7 @@ class Invokeable(Protocol):
 
 
 # Enums
+
 
 class Over(Enum):
     OVERRIDE = 1

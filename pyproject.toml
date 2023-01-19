@@ -1,6 +1,8 @@
-[tool.pyright]
+[tool.black]
+line-length = 120
 
-exclude = ["tests", "**/__pycache__", "venv"]
+[tool.pyright]
+exclude = ["**/tests/test_*.py", "**/__pycache__", ".venv/"]
 pythonVersion = "3.9"
 typeCheckingMode = "strict"
 

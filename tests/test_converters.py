@@ -1,12 +1,12 @@
 from typing import Literal
+from unittest.mock import Mock
 
 import pytest
 from discord.ext.commands import BadBoolArgument
-from unittest.mock import Mock
 
 from dev import Settings
 from dev.converters import CodeblockConverter, LiteralModes, str_bool, str_ints
-from dev.handlers import replace_vars, GlobalLocals
+from dev.handlers import GlobalLocals, replace_vars
 
 mock_ctx = Mock()
 
@@ -266,4 +266,3 @@ def test_replace_vars():
     assert result == "any value"
     result = replace_vars("one two one", scope)
     assert result == "two two two"
-

@@ -92,4 +92,3 @@ def test_paginator():
     assert paginator.pages[0][0] == "p" and paginator.pages[0][-1] == "s"
     paginator.add_line("x" * 3000)
     assert len(paginator.pages) == 2
-

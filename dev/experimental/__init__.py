@@ -14,9 +14,4 @@ from dev.experimental.invoke import *
 from dev.experimental.python import *
 from dev.experimental.sh import *
 
-__all__ = (
-    "RootHTTP",
-    "RootInvoke",
-    "RootPython",
-    "RootShell"
-)
+__all__ = ("RootHTTP", "RootInvoke", "RootPython", "RootShell")

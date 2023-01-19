@@ -25,18 +25,16 @@ from typing import (
     Literal,
     NoReturn,
     TypeVar,
-    overload
+    overload,
 )
 
 import discord
-from discord.ext import commands
-from discord.ext import tasks
+from discord.ext import commands, tasks
 from discord.utils import MISSING
 
 from dev.handlers import GlobalLocals
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 from dev.types import Over
-
 from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
@@ -53,19 +51,14 @@ _log = logging.getLogger(__name__)
 T = TypeVar("T")
 CogT_co = TypeVar("CogT_co", bound="Root", covariant=True)
 
-__all__ = (
-    "Command",
-    "Group",
-    "Root",
-    "root"
-)
+__all__ = ("Command", "Group", "Root", "root")
 
 
-class OperationNotAllowedError(BaseException):
+class _OperationNotAllowedError(BaseException):
     pass
 
 
-class root(Generic[CogT_co]):  # noqa E302
+class root(Generic[CogT_co]):
     """A super class that allows the conversion of coroutine functions to temporary command classes
     that can later be used to register them as an actual :class:`discord.ext.commands.Command`.
 
@@ -74,31 +67,42 @@ class root(Generic[CogT_co]):  # noqa E302
     """
 
     def __init__(self) -> NoReturn:
-        raise OperationNotAllowedError("Cannot instantiate root.")
+        raise _OperationNotAllowedError("Cannot instantiate root.")
 
     def __new__(cls, *args: Any, **kwargs: Any) -> NoReturn:
-        raise OperationNotAllowedError("Cannot instantiate root.")
+        raise _OperationNotAllowedError("Cannot instantiate root.")
 
-    def __init_subclass__(cls, **kwargs: Any) -> NoReturn:
-        raise OperationNotAllowedError("Cannot subclass root.")
+    def __init_subclass__(cls, *args: Any, **kwargs: Any) -> NoReturn:
+        raise _OperationNotAllowedError("Cannot subclass root.")
 
     @staticmethod
-    def command(name: str = MISSING, **kwargs: Any) -> Callable[
-        [Callable[Concatenate[CogT_co, commands.Context[types.Bot], P], Coroutine[Any, Any, Any]]],
-        Command[CogT_co]
+    def command(
+        name: str = MISSING, **kwargs: Any
+    ) -> Callable[
+        [
+            Callable[
+                Concatenate[CogT_co, commands.Context[types.Bot], P],
+                Coroutine[Any, Any, Any],
+            ]
+        ],
+        Command[CogT_co],
     ]:
         """A decorator that converts the given function to a temporary :class:`Command` class.
 
         Parameters
         ----------
         name: :class:`str`
-            The name of the command that should be used. If no name is provided, the function's name will be used.
+            The name of the command that should be used. If no name is provided, the function's
+            name will be used.
         kwargs:
             Key-word arguments that'll be forwarded to the :class:`Command` class.
         """
 
         def decorator(
-                func: Callable[Concatenate[CogT_co, commands.Context[types.Bot], P], Coroutine[Any, Any, Any]]
+            func: Callable[
+                Concatenate[CogT_co, commands.Context[types.Bot], P],
+                Coroutine[Any, Any, Any],
+            ]
         ) -> Command[CogT_co]:
             if isinstance(func, Command):
                 raise TypeError("Callback is already a command.")
@@ -107,16 +111,16 @@ class root(Generic[CogT_co]):  # noqa E302
         return decorator
 
     @staticmethod
-    def group(name: str = MISSING, **kwargs: Any) -> Callable[
-        [Callable[Concatenate[CogT_co, commands.Context[types.Bot], P], Any]],
-        Group[CogT_co]
-    ]:
+    def group(
+        name: str = MISSING, **kwargs: Any
+    ) -> Callable[[Callable[Concatenate[CogT_co, commands.Context[types.Bot], P], Any]], Group[CogT_co],]:
         """A decorator that converts the given function to a temporary :class:`Group` class.
 
         Parameters
         ----------
         name: :class:`str`
-            The name of the command that should be used. If no name is provided, the function's name will be used.
+            The name of the command that should be used. If no name is provided, the function's
+            name will be used.
         kwargs:
             Key-word arguments that'll be forwarded to the :class:`Group` class.
         """
@@ -131,9 +135,12 @@ class root(Generic[CogT_co]):  # noqa E302
 
 class _DiscordCommand(commands.Command[Any, ..., Any]):
     def __init__(
-            self,
-            func: Callable[Concatenate[CogT_co, commands.Context[types.Bot], P], Coroutine[Any, Any, Any]],
-            **kwargs: Any
+        self,
+        func: Callable[
+            Concatenate[CogT_co, commands.Context[types.Bot], P],
+            Coroutine[Any, Any, Any],
+        ],
+        **kwargs: Any,
     ) -> None:
         self.__global_use: bool | None = kwargs.pop("global_use", None)
         self.__virtual_vars: bool = kwargs.pop("virtual_vars", False)
@@ -150,7 +157,7 @@ class _DiscordCommand(commands.Command[Any, ..., Any]):
     @global_use.setter
     def global_use(self, value: bool) -> None:
         if self.__global_use is None:
-            raise TypeError("Cannot toggle global use value for a command that didn't have it enabled on startup")
+            raise TypeError("Cannot toggle global use value for a command that didn't have it enabled")
         if not isinstance(value, bool):
             raise TypeError(f"Expected type bool but received {type(value).__name__}")
         self.__global_use = value
@@ -187,7 +194,7 @@ class _DiscordGroup(commands.Group[Any, ..., Any]):
     @global_use.setter
     def global_use(self, value: bool) -> None:
         if self.__global_use is None:
-            raise TypeError("Cannot toggle global use value for a command that didn't have it enabled on startup")
+            raise TypeError("Cannot toggle global use value for a command that didn't have it enabled")
         if not isinstance(value, bool):
             raise TypeError(f"Expected type bool but received {type(value).__name__}")
         self.__global_use = value
@@ -209,9 +216,9 @@ class _DiscordGroup(commands.Group[Any, ..., Any]):
 
 class BaseCommand(Generic[CogT_co, P, T]):
     def __init__(
-            self,
-            func: Callable[Concatenate[CogT_co, commands.Context[types.Bot], P], Coroutine[Any, Any, T]],
-            **kwargs: Any
+        self,
+        func: Callable[Concatenate[CogT_co, commands.Context[types.Bot], P], Coroutine[Any, Any, T]],
+        **kwargs: Any,
     ) -> None:
         if not asyncio.iscoroutinefunction(func):
             raise TypeError("Callback must be a coroutine.")
@@ -228,9 +235,9 @@ class BaseCommand(Generic[CogT_co, P, T]):
             self.level = len(self.parent.split())
 
         self.on_error: Callable[
-                           [CogT_co, commands.Context[types.Bot], commands.CommandError],
-                           Coroutine[Any, Any, Any]
-                       ] | None = None
+            [CogT_co, commands.Context[types.Bot], commands.CommandError],
+            Coroutine[Any, Any, Any],
+        ] | None = None
         self.cog: CogT_co | None = None
 
     def __repr__(self) -> str:
@@ -247,17 +254,16 @@ class BaseCommand(Generic[CogT_co, P, T]):
             return f"{self.parent} {self.name}"
         return self.name
 
-    def to_instance(
-            self,
-            command_mapping: dict[str, types.Command],
-            /
-    ) -> types.Command | NoReturn:
+    def to_instance(self, command_mapping: dict[str, types.Command], /) -> types.Command | NoReturn:
         raise NotImplementedError
 
     def error(
-            self,
-            func: Callable[[CogT_co, commands.Context[types.Bot], commands.CommandError], Coroutine[Any, Any, Any]]
-    ) -> Callable[[CogT_co, commands.Context[types.Bot], commands.CommandError], Coroutine[Any, Any, Any]]:
+        self,
+        func: Callable[
+            [CogT_co, commands.Context[types.Bot], commands.CommandError],
+            Coroutine[Any, Any, Any],
+        ],
+    ) -> Callable[[CogT_co, commands.Context[types.Bot], commands.CommandError], Coroutine[Any, Any, Any],]:
         """Set a local error handler"""
         self.on_error = func
         return func
@@ -266,14 +272,13 @@ class BaseCommand(Generic[CogT_co, P, T]):
 class Command(BaseCommand[CogT_co, ..., Any]):
     """A class that simulates :class:`commands.Command`.
 
-    This class is used to keep track of which functions should be commands, and it shouldn't get called manually.
+    This class is used to keep track of which functions should be commands,
+    and it shouldn't get called manually.
     Instead, consider using :meth:`root.command` to instantiate this class.
     """
 
     def to_instance(
-            self,
-            command_mapping: dict[str, types.Command],
-            /
+        self, command_mapping: dict[str, types.Command], /
     ) -> commands.Command[CogT_co, ..., Any] | NoReturn:
         """Converts this class to an instance of its respective simulation.
 
@@ -296,11 +301,9 @@ class Command(BaseCommand[CogT_co, ..., Any]):
             deco = command.command
         else:
             deco = commands.command
-        cmd: commands.Command[CogT_co, ..., Any] = deco(
-            name=self.name,
-            cls=_DiscordCommand,
-            **self.kwargs
-        )(self.callback)
+        cmd: commands.Command[CogT_co, ..., Any] = deco(name=self.name, cls=_DiscordCommand, **self.kwargs)(
+            self.callback
+        )
         if self.on_error:
             cmd.error(self.on_error)
         return cmd
@@ -309,15 +312,12 @@ class Command(BaseCommand[CogT_co, ..., Any]):
 class Group(BaseCommand[CogT_co, ..., Any]):
     """A class that simulates :class:`discord.ext.commands.Group`.
 
-    This class is used to keep track of which functions be groups, and it shouldn't get called manually.
+    This class is used to keep track of which functions be groups,
+    and it shouldn't get called manually.
     Instead, consider using :meth:`root.group` to instantiate this class.
     """
 
-    def to_instance(
-            self,
-            command_mapping: dict[str, types.Command],
-            /
-    ) -> commands.Group[CogT_co, ..., Any] | NoReturn:
+    def to_instance(self, command_mapping: dict[str, types.Command], /) -> commands.Group[CogT_co, ..., Any] | NoReturn:
         """Converts this class to an instance of its respective simulation.
 
         Parameters
@@ -339,18 +339,15 @@ class Group(BaseCommand[CogT_co, ..., Any]):
             deco = command.group
         else:
             deco = commands.group
-        cmd: commands.Group[CogT_co, ..., Any] = deco(
-            name=self.name,
-            cls=_DiscordGroup,
-            **self.kwargs
-        )(self.callback)
+        cmd: commands.Group[CogT_co, ..., Any] = deco(name=self.name, cls=_DiscordGroup, **self.kwargs)(self.callback)
         if self.on_error:
             cmd.error(self.on_error)
         return cmd
 
 
 class Root(commands.Cog):
-    """A cog subclass that implements a global check and some default functionality that the dev extension should have.
+    """A cog subclass that implements a global check and some default functionality
+    that the dev extension should have.
 
     All other dev cogs will derive from this base class.
 
@@ -370,7 +367,7 @@ class Root(commands.Cog):
     commands: Dict[:class:`str`, types.Command]
         A dictionary that stores all dev commands.
     registrations: Dict[int, Union[CommandRegistration, SettingRegistration]]
-        A dictionary that stores all modifications made in the `dev override`/`dev overwrite` commands.
+        A dictionary that stores all modifications made in over commands.
     """
 
     scope: ClassVar[GlobalLocals] = GlobalLocals()
@@ -389,33 +386,32 @@ class Root(commands.Cog):
             children: set[types.Command] = set()
             for cmd in sorted(_get_commands(type(self).__mro__), key=lambda c: c.level):
                 if cmd.qualified_name in frontend_cog.commands:  # type: ignore
-                    original: type[_DiscordCommand] | type[_DiscordGroup] = frontend_cog.commands.get(  # type: ignore
-                        cmd.qualified_name
-                    )
+                    original = frontend_cog.commands[cmd.qualified_name]  # type: ignore
                     mapping: dict[Any, Any] = {
                         _DiscordCommand: Command,
                         _DiscordGroup: Group,
                         Group: "group",
-                        Command: "command"
+                        Command: "command",
                     }
-                    as_method: type[Command[Root]] | type[Group[Root]] | None = mapping.get(type(original))
+                    as_method: type[Command[Root]] | type[Group[Root]] | None = mapping.get(
+                        type(original)  # type: ignore
+                    )
                     if as_method != type(cmd):
                         raise RuntimeError(
-                            f"Overrided command {cmd!r} in {self} has been set as a {mapping.get(type(cmd))} when "
-                            f"its original is a {mapping.get(as_method)}"
+                            f"Overrided command {cmd!r} in {self} has been set as a "
+                            f"{mapping.get(type(cmd))} when its original is a "
+                            f"{mapping.get(as_method)}"
                         )
                     if isinstance(cmd, Command) and cmd.parent:
-                        parent: _DiscordGroup = frontend_cog.commands.get(cmd.parent)  # type: ignore
-                        parent.remove_command(cmd.name)
+                        parent = frontend_cog.commands[cmd.parent]  # type: ignore
+                        parent.remove_command(cmd.name)  # type: ignore
                     elif isinstance(cmd, Group):
-                        subcommands: commands.Group[Any, ..., Any] = frontend_cog.commands.get(  # type: ignore
-                            cmd.qualified_name
-                        )
-                        for child in subcommands.commands:
-                            children.add(child)
+                        subcommands = frontend_cog.commands[cmd.qualified_name]  # type: ignore
+                        for child in subcommands.commands:  # type: ignore
+                            children.add(child)  # type: ignore
                         if cmd.parent:
-                            parent: _DiscordGroup = frontend_cog.commands.get(cmd.parent)  # type: ignore
-                            parent.remove_command(cmd.name)
+                            parent = frontend_cog.commands.get(cmd.parent)  # type: ignore
+                            parent.remove_command(cmd.name)  # type: ignore
                         else:
                             bot.remove_command(cmd.name)
                 actual = cmd.to_instance(frontend_cog.commands)  # type: ignore
@@ -478,24 +474,26 @@ class Root(commands.Cog):
     def get_last_implementation(self, qualified_name: str, /) -> CommandRegistration | None:
         cmd = discord.utils.find(
             lambda c: isinstance(c, CommandRegistration) and c.qualified_name == qualified_name,
-            reversed(self.registrations.values())
+            reversed(self.registrations.values()),
         )
         if cmd is not None:
             return cmd  # type: ignore
         base = self.get_base_command(qualified_name)
         if base is not None:
             return base.to_command()
+        return None
 
     def get_first_implementation(self, qualified_name: str, /) -> CommandRegistration | None:
         cmd = discord.utils.find(
             lambda c: isinstance(c, CommandRegistration) and c.qualified_name == qualified_name,
-            self.registrations.values()
+            self.registrations.values(),
         )
         if cmd is not None:
             return cmd  # type: ignore
         base = self.get_base_command(qualified_name)
         if base is not None:
             return base.to_command()
+        return None
 
     @overload
     def registers_from_type(self, rgs_type: Literal[Over.OVERRIDE]) -> list[CommandRegistration]:
@@ -509,15 +507,18 @@ class Root(commands.Cog):
         return [rgs for rgs in self.registrations.values() if rgs.register_type is rgs_type]
 
     def update_register(
-            self,
-            register: CommandRegistration | SettingRegistration,
-            mode: Literal[Over.ADD] | Literal[Over.DELETE],
-            /
+        self,
+        register: CommandRegistration | SettingRegistration,
+        mode: Literal[Over.ADD] | Literal[Over.DELETE],
+        /,
     ) -> None:
         if mode is Over.DELETE and register not in self.registrations.values():
             raise IndexError("Registration cannot be deleted because it does not exist")
         if mode is Over.DELETE:
-            for k, v in self.registrations.copy().items():
+            for (
+                k,
+                v,
+            ) in self.registrations.copy().items():
                 if v == register:
                     del self.registrations[k]
         else:
@@ -528,11 +529,13 @@ class Root(commands.Cog):
         This check is called internally, and shouldn't be called elsewhere.
 
         It first checks if the command is allowed for global use.
-        If that check fails, it checks if the author of the invoked command is specified in :attr:`Settings.OWNERS`.
+        If that check fails, it checks if the author of the invoked command is
+        specified in :attr:`Settings.OWNERS`.
         If the owner list is empty, it'll lastly check if the author owns the bot.
 
-        If all checks fail, :class:`discord.ext.commands.NotOwner` is raised. This is done so that you can
-        customize the message that is sent by the bot through an error handler.
+        If all checks fail, :class:`discord.ext.commands.NotOwner` is raised.
+        This is done so that you can customize the message that is sent by the bot
+        through an error handler.
 
         Parameters
         ----------
@@ -558,13 +561,12 @@ class Root(commands.Cog):
                 return True
         if ctx.author.id in Settings.owners:
             return True
-        elif await self.bot.is_owner(ctx.author) and not Settings.owners:
+        if await self.bot.is_owner(ctx.author) and not Settings.owners:
             return True
         raise commands.NotOwner("You have to own this bot to be able to use this command")
 
     @tasks.loop(minutes=10)
     async def _clear_cached_messages(self):
-
         def function(msg_id: int) -> bool:
             created_at = discord.utils.snowflake_time(msg_id).timestamp()
             time_since_created = int(discord.utils.utcnow().timestamp() - created_at)

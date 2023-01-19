@@ -23,5 +23,5 @@ __all__ = (
     "SearchCategory",
     "SettingEditor",
     "SettingsToggler",
-    "VariableValueSubmitter"
+    "VariableValueSubmitter",
 )

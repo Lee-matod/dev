@@ -20,7 +20,6 @@ import discord
 
 from dev.converters import LiteralModes
 from dev.handlers import replace_vars
-
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import flag_parser, send
 from dev.utils.startup import Settings
@@ -48,21 +47,22 @@ CONTENT_TYPES: dict[str, str] = {
     "text/javascript": "js",
     "text/xml": "xml",
     "video/mp4": "mp4",
-    "video/webm": "webm"
+    "video/webm": "webm",
 }
 
 
 class RootHTTP(Root):
+    """HTTP request commands"""
 
     @root.group(name="http", parent="dev", virtual_vars=True)
     async def root_http(
-            self,
-            ctx: commands.Context[types.Bot],
-            url: str,
-            mode: LiteralModes[Literal["json", "read", "status"]],
-            allow_redirects: bool = False,
-            *,
-            options: str | None = None
+        self,
+        ctx: commands.Context[types.Bot],
+        url: str,
+        mode: LiteralModes[Literal["json", "read", "status"]],
+        allow_redirects: bool = False,
+        *,
+        options: str | None = None,
     ):
         """Send an HTTP GET request to *url*.
         *options* should be written in valid JSON format.
@@ -78,17 +78,21 @@ class RootHTTP(Root):
         if url.startswith("<") and url.endswith(">"):
             url = url[1:-1]
         try:
-            kwargs = flag_parser(replace_vars(options or '', Root.scope), Settings.flag_delimiter.strip())
+            kwargs = flag_parser(replace_vars(options or "", Root.scope), Settings.flag_delimiter.strip())
         except json.JSONDecodeError as exc:
             return await send(ctx, f"Parsing options failed. {exc}")
         async with aiohttp.ClientSession() as session:
             try:
-                request = await session.get(replace_vars(url, Root.scope), allow_redirects=allow_redirects, **kwargs)
+                request = await session.get(
+                    replace_vars(url, Root.scope),
+                    allow_redirects=allow_redirects,
+                    **kwargs,
+                )
             except aiohttp.InvalidURL:
                 return await send(ctx, "Invalid URL link.")
             except aiohttp.ClientConnectorError:
                 return await send(ctx, "Cannot connect to host. Name or service not known.")
-            if mode == "status":  # pyright: ignore [reportUnnecessaryComparison]
+            if mode == "status":  # type: ignore
                 status = str(request.status)
                 status_type = responses[status[0]]
                 colors = {
@@ -96,7 +100,7 @@ class RootHTTP(Root):
                     "2": discord.Color.green(),
                     "3": discord.Color.gold(),
                     "4": discord.Color.red(),
-                    "5": discord.Color.dark_red()
+                    "5": discord.Color.dark_red(),
                 }
                 await send(
                     ctx,
@@ -104,10 +108,10 @@ class RootHTTP(Root):
                         title=f"Status {status}",
                         description=f"{status_type} ‒ {request.reason}".strip(),  # type: ignore
                         color=colors[status[0]],
-                        url=f"https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{status}"
-                    )
+                        url=f"https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{status}",
+                    ),
                 )
-            elif mode == "json":  # pyright: ignore [reportUnnecessaryComparison]
+            elif mode == "json":  # type: ignore
                 try:
                     js = await request.json()
                 except (json.JSONDecodeError, aiohttp.ContentTypeError):
@@ -116,7 +120,7 @@ class RootHTTP(Root):
                     binary_file.write(json.dumps(js, indent=2).encode("utf-8"))
                     binary_file.seek(0)
                     await send(ctx, discord.File(filename="response.json", fp=binary_file))
-            elif mode == "read":  # pyright: ignore [reportUnnecessaryComparison]
+            elif mode == "read":  # type: ignore
                 data = await request.read()
                 if not data:
                     return await send(ctx, "Response was empty.")
@@ -124,4 +128,7 @@ class RootHTTP(Root):
                 with io.BytesIO() as binary_file:
                     binary_file.write(data)
                     binary_file.seek(0)
-                    await send(ctx, discord.File(filename=f"response.{file_ext}", fp=binary_file))
+                    await send(
+                        ctx,
+                        discord.File(filename=f"response.{file_ext}", fp=binary_file),
+                    )

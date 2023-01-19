@@ -13,14 +13,13 @@ from __future__ import annotations
 
 import inspect
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Literal, Callable, Coroutine, overload
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, Literal, overload
 
 from dev.types import ManagementOperation, Over, OverType
 
 if TYPE_CHECKING:
-    from typing_extensions import Concatenate, ParamSpec
-
     from discord.ext import commands
+    from typing_extensions import Concatenate, ParamSpec
 
     from dev import types
     from dev.utils.baseclass import Root
@@ -32,7 +31,7 @@ __all__ = (
     "BaseRegistration",
     "CommandRegistration",
     "ManagementRegistration",
-    "SettingRegistration"
+    "SettingRegistration",
 )
 
 
@@ -55,7 +54,7 @@ class BaseCommandRegistration:
         return CommandRegistration(
             self.command,
             Over.OVERWRITE,  # Technically an overwrite because it's implemented in the source code
-            source=self.source
+            source=self.source,
         )
 
 
@@ -70,17 +69,22 @@ class BaseRegistration:
 
 class ManagementRegistration(BaseRegistration):
     @overload
-    def __init__(self, directory: str, operation_type: Literal[ManagementOperation.RENAME], other: str) -> None:
+    def __init__(
+        self,
+        directory: str,
+        operation_type: Literal[ManagementOperation.RENAME],
+        other: str,
+    ) -> None:
         ...
 
     @overload
     def __init__(
-            self,
-            directory: str,
-            operation_type: Literal[ManagementOperation.CREATE] |
-                            Literal[ManagementOperation.EDIT] |
-                            Literal[ManagementOperation.DELETE] |
-                            Literal[ManagementOperation.UPLOAD]
+        self,
+        directory: str,
+        operation_type: Literal[ManagementOperation.CREATE]
+        | Literal[ManagementOperation.EDIT]
+        | Literal[ManagementOperation.DELETE]
+        | Literal[ManagementOperation.UPLOAD],
     ):
         ...
 

@@ -12,17 +12,13 @@ All :class:`discord.ui.View` related classes.
 from __future__ import annotations
 
 import inspect
-from typing import Any, Callable, Coroutine, overload
+from typing import Any, Callable
 
 import discord
 
 from dev import types
 
-__all__ = (
-    "AuthoredView",
-    "BoolInput",
-    "ModalSender"
-)
+__all__ = ("AuthoredView", "BoolInput", "ModalSender")
 
 
 class AuthoredView(discord.ui.View):
@@ -112,18 +108,11 @@ class BoolInput(AuthoredView):
     author: Union[types.User, :class:`int`]
         The author of the message. It can be either their ID or Discord object.
     func: Optional[Callable[[], Any]]
-        The function that should get called if the user clicks on the "Yes" button. This function cannot have arguments.
+        The function that should get called if the user clicks on the "Yes" button.
+        This function cannot have arguments.
     """
 
-    @overload
-    def __init__(self, author: types.User | int, func: Callable[[], Coroutine[Any, Any, Any]] | None = ...) -> None:
-        ...
-
-    @overload
-    def __init__(self, author: types.User | int, func: Callable[[], Any] | None = ...) -> None:
-        ...
-
-    def __init__(self, author: Any, func: Any = None) -> None:
+    def __init__(self, author: types.User | int, func: Callable[[], Any] | None = None) -> None:
         super().__init__(author)
         self.func: Callable[[], Any] | None = func
         self.author: int = author.id if isinstance(author, types.User) else author  # type: ignore

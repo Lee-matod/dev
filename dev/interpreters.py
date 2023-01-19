@@ -20,19 +20,17 @@ import queue
 import subprocess
 import sys
 import time
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Callable, IO, Literal, NoReturn, TypeVar, overload
+from typing import IO, TYPE_CHECKING, Any, AsyncGenerator, Callable, Literal, NoReturn, TypeVar, overload
 
 import discord
 
 from dev.components.views import AuthoredView
 from dev.pagination import Paginator
-
 from dev.utils.functs import interaction_response, send
 
 if TYPE_CHECKING:
-    from typing_extensions import ParamSpec
-
     from discord.ext import commands
+    from typing_extensions import ParamSpec
 
     from dev import types
     from dev.handlers import GlobalLocals
@@ -41,11 +39,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-__all__ = (
-    "Execute",
-    "Process",
-    "ShellSession"
-)
+__all__ = ("Execute", "Process", "ShellSession")
 
 CODE_TEMPLATE = """
 async def _executor({0}):
@@ -95,12 +89,16 @@ class ProcessHandler(AuthoredView):
             discord.InteractionResponseType.message_update,
             self.session.raw,
             view=None,
-            paginator=self.session.paginator
+            paginator=self.session.paginator,
         )
 
     @discord.ui.button(label="Write to stdin")
     async def stdin_writer(self, interaction: discord.Interaction, _: discord.ui.Button[ProcessHandler]):
-        await interaction_response(interaction, discord.InteractionResponseType.modal, StdinManager(self.process))
+        await interaction_response(
+            interaction,
+            discord.InteractionResponseType.modal,
+            StdinManager(self.process),
+        )
 
 
 class Process:
@@ -143,7 +141,7 @@ class Process:
         "queue",
         "stderr_task",
         "stdout_task",
-        "subprocess"
+        "subprocess",
     )
 
     def __init__(self, session: ShellSession, cwd: str, cmd: str, /) -> None:
@@ -156,17 +154,25 @@ class Process:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             stdin=subprocess.PIPE,
-            cwd=cwd
+            cwd=cwd,
         )
         self.queue: queue.Queue[str] = queue.Queue()
-        self.stdout_task: asyncio.Task[str | None] | None = self.start_reading(
-            self.subprocess.stdout,
-            lambda b: self.queue.put(b.decode("utf-8").replace("``", "`\u200b`").strip("\n"))
-        ) if self.subprocess.stdout else None
-        self.stderr_task: asyncio.Task[str | None] | None = self.start_reading(
-            self.subprocess.stderr,
-            lambda b: self.queue.put(b.decode("utf-8").replace("``", "`\u200b`").strip("\n"))
-        ) if self.subprocess.stderr else None
+        self.stdout_task: asyncio.Task[str | None] | None = (
+            self.start_reading(
+                self.subprocess.stdout,
+                lambda b: self.queue.put(b.decode("utf-8").replace("``", "`\u200b`").strip("\n")),
+            )
+            if self.subprocess.stdout
+            else None
+        )
+        self.stderr_task: asyncio.Task[str | None] | None = (
+            self.start_reading(
+                self.subprocess.stderr,
+                lambda b: self.queue.put(b.decode("utf-8").replace("``", "`\u200b`").strip("\n")),
+            )
+            if self.subprocess.stderr
+            else None
+        )
 
         self._initial_command: bool = False
         for a in cmd.split(";"):
@@ -177,11 +183,13 @@ class Process:
         self.close_code: int | None = None
 
     def __repr__(self) -> str:
-        return (f"<Process "
-                f"cmd={self.cmd!r} "
-                f"close_code={self.close_code} "
-                f"force_kill={self.force_kill} "
-                f"session={self.__session!r}>")
+        return (
+            f"<Process "
+            f"cmd={self.cmd!r} "
+            f"close_code={self.close_code} "
+            f"force_kill={self.force_kill} "
+            f"session={self.__session!r}>"
+        )
 
     def __enter__(self) -> Process:
         return self
@@ -194,6 +202,7 @@ class Process:
     def _get_view(self, author: types.User | int) -> ProcessHandler | None:
         if self.is_alive:
             return ProcessHandler(author, self)
+        return None
 
     @overload
     async def run_until_complete(self, context: Literal[None], /) -> str | None:
@@ -201,9 +210,7 @@ class Process:
 
     @overload
     async def run_until_complete(
-            self,
-            context: commands.Context[types.Bot],
-            /
+        self, context: commands.Context[types.Bot], /
     ) -> tuple[discord.Message, Paginator | None]:
         ...
 
@@ -235,9 +242,9 @@ class Process:
                     _, paginator = await send(  # type: ignore
                         context,
                         self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
-                        self._get_view(context.author),
+                        self._get_view(context.author),  # type: ignore
                         paginator=self.__session.paginator,
-                        forced_pagination=False
+                        forced_pagination=False,
                     )
                     if paginator is not None:
                         self.__session.paginator = paginator
@@ -249,7 +256,7 @@ class Process:
                     self.__session.raw,
                     view=None,
                     paginator=self.__session.paginator,  # type: ignore
-                    forced_pagination=False
+                    forced_pagination=False,
                 )
             try:
                 line = await self.in_executor(self.get_next_line)
@@ -261,7 +268,7 @@ class Process:
                     self.__session.set_exit_message("Timed out"),
                     forced_pagination=False,
                     paginator=self.__session.paginator,  # type: ignore
-                    view=None
+                    view=None,
                 )
             except InterruptedError:
                 if context is None:
@@ -271,7 +278,7 @@ class Process:
                     self.__session.raw,
                     forced_pagination=False,
                     paginator=self.__session.paginator,  # type: ignore
-                    view=None
+                    view=None,
                 )
                 if paginator is not None:
                     self.__session.paginator = paginator
@@ -286,7 +293,7 @@ class Process:
                     self.__session.add_line(line),
                     forced_pagination=False,
                     paginator=self.__session.paginator,  # type: ignore
-                    view=self._get_view(context.author)
+                    view=self._get_view(context.author),
                 )
             else:
                 if context is None:
@@ -297,18 +304,15 @@ class Process:
                     self.__session.raw,
                     forced_pagination=False,
                     paginator=self.__session.paginator,  # type: ignore
-                    view=self._get_view(context.author)
+                    view=self._get_view(context.author),
                 )
             if paginator is not None:
                 self.__session.paginator = paginator
-        else:
-            if context is None:
-                return str_msg
+        if context is None:
+            return str_msg
 
     def start_reading(self, stream: IO[bytes], callback: Callable[[bytes], Any]) -> asyncio.Task[str | None]:
-        return self.loop.create_task(
-            self.in_executor(self.reader, stream, callback)
-        )
+        return self.loop.create_task(self.in_executor(self.reader, stream, callback))
 
     async def in_executor(self, func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
         return await self.loop.run_in_executor(None, func, *args)
@@ -375,6 +379,7 @@ class Process:
             cwd = (maybe_path + " " + cwd).strip()
             if pathlib.Path(cwd).exists():
                 return cwd
+        return None
 
 
 class ShellSession:
@@ -415,12 +420,8 @@ class ShellSession:
         result = await process.run_until_complete()  # I do not recommend doing this!
         print(result)  # If on a unix system, it will print Desktop as your current working directory.
     """
-    __slots__ = (
-        "__terminate",
-        "_previous_processes",
-        "_paginator",
-        "cwd"
-    )
+
+    __slots__ = ("__terminate", "_previous_processes", "_paginator", "cwd")
 
     def __init__(self) -> None:
         self.cwd: str = os.getcwd()
@@ -429,12 +430,14 @@ class ShellSession:
         self.__terminate: bool = False
 
     def __repr__(self) -> str:
-        return (f"<ShellSession "
-                f"cwd={self.cwd!r} "
-                f"prefix={self.prefix!r} "
-                f"highlight={self.highlight!r} "
-                f"interface={self.interface!r} "
-                f"terminated={self.terminated}>")
+        return (
+            f"<ShellSession "
+            f"cwd={self.cwd!r} "
+            f"prefix={self.prefix!r} "
+            f"highlight={self.highlight!r} "
+            f"interface={self.interface!r} "
+            f"terminated={self.terminated}>"
+        )
 
     @property
     def paginator(self) -> Paginator | None:
@@ -530,7 +533,7 @@ class ShellSession:
         """
         if self.paginator is not None:
             return ""
-        return f"```{self.highlight}\n" + "\n".join(self._previous_processes) + f"```"
+        return f"```{self.highlight}\n" + "\n".join(self._previous_processes) + "```"
 
     @property
     def suffix(self) -> str:
@@ -547,8 +550,8 @@ class ShellSession:
         Gets the executable that will be used to process commands.
         """
         if POWERSHELL:
-            return "powershell",
-        elif WINDOWS:
+            return ("powershell",)
+        if WINDOWS:
             return "cmd", "/c"
         return f"{SHELL}", "-c"
 
@@ -559,7 +562,7 @@ class ShellSession:
         """
         if POWERSHELL:
             return "PS >"
-        elif WINDOWS:
+        if WINDOWS:
             return "cmd >"
         return "$"
 
@@ -570,7 +573,7 @@ class ShellSession:
         """
         if POWERSHELL:
             return "ps"
-        elif WINDOWS:
+        if WINDOWS:
             return "cmd"
         return "console"
 
@@ -604,12 +607,8 @@ class Execute:
         async for expr in Execute(code, GlobalLocals(), {}):
             print(expr)
     """
-    __slots__ = (
-        "args_name",
-        "args_value",
-        "code",
-        "vars"
-    )
+
+    __slots__ = ("args_name", "args_value", "code", "vars")
 
     def __init__(self, code: str, global_locals: GlobalLocals, args: dict[str, Any]) -> None:
         self.code: str = code
@@ -619,10 +618,17 @@ class Execute:
 
     @property
     def filename(self) -> str:
+        """:class:`str`
+        The filename that will be used in :meth:`exec`.
+        """
         return "<repl>"
 
     async def __aiter__(self) -> AsyncGenerator[Any, Any]:
-        exec(compile(self.wrapper(), "<repl>", "exec"), self.vars.globals, self.vars.locals)
+        exec(
+            compile(self.wrapper(), "<repl>", "exec"),
+            self.vars.globals,
+            self.vars.locals,
+        )
         func = self.vars.get("_executor")
         if inspect.isasyncgenfunction(func):
             async for result in func(*self.args_value):

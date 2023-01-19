@@ -23,14 +23,13 @@ from discord.ext import commands
 from discord.utils import MISSING
 
 from dev.converters import str_bool
-
 from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from discord.state import ConnectionState
     from discord.app_commands.transformers import CommandParameter
+    from discord.state import ConnectionState
 
     from dev import types
 
@@ -41,7 +40,7 @@ if TYPE_CHECKING:
         discord.ForumChannel,
         discord.CategoryChannel,
         discord.Thread,
-        discord.PartialMessageable
+        discord.PartialMessageable,
     ]
 
 else:
@@ -52,13 +51,10 @@ else:
         discord.ForumChannel,
         discord.CategoryChannel,
         discord.Thread,
-        discord.PartialMessageable
+        discord.PartialMessageable,
     )
 
-__all__ = (
-    "SyntheticInteraction",
-    "get_app_command"
-)
+__all__ = ("SyntheticInteraction", "get_app_command")
 
 
 IGNORABLE_TRANSFORMERS: list[type[transformers.Transformer]] = [
@@ -72,27 +68,24 @@ IGNORABLE_TRANSFORMERS: list[type[transformers.Transformer]] = [
     transformers.MemberTransformer,
     transformers.BaseChannelTransformer,
     transformers.RawChannelTransformer,
-    transformers.UnionChannelTransformer
+    transformers.UnionChannelTransformer,
 ]
 
 
 def get_app_command(
-        content: str,
-        app_command_list: list[app_commands.Command[Any, ..., Any]]
+    content: str, app_command_list: list[app_commands.Command[Any, ..., Any]]
 ) -> app_commands.Command[Any, ..., Any] | None:
     possible_subcommands = content.split()
     app_command_name = possible_subcommands[0]
     possible_subcommands = possible_subcommands[1:]
     app_command: app_commands.Command[Any, ..., Any] | app_commands.Group | None = discord.utils.get(
-        app_command_list,
-        name=app_command_name
+        app_command_list, name=app_command_name
     )
     while isinstance(app_command, discord.app_commands.Group):
         app_command_name = f"{app_command_name} {possible_subcommands[0]}"
         possible_subcommands = possible_subcommands[1:]
         app_command: app_commands.Command[Any, ..., Any] | app_commands.Group | None = discord.utils.get(
-            app_command.commands,
-            qualified_name=app_command_name
+            app_command.commands, qualified_name=app_command_name
         )
     return app_command
 
@@ -108,7 +101,7 @@ class InvalidChoice(app_commands.AppCommandError):
         self.argument: str = argument
         self.choices: list[app_commands.Choice[str | int | float]] = choices
         super().__init__(
-            f"Chosen value {argument!r} is not a valid choice ({', '.join([choice.name for choice in choices])})"
+            f"Chosen value {argument!r} is not a valid choice " f"({', '.join([choice.name for choice in choices])})"
         )
 
 
@@ -123,12 +116,18 @@ class MissingRequiredArgument(app_commands.AppCommandError):
 class MissingRequiredAttachment(app_commands.AppCommandError):
     def __init__(self, parameter: app_commands.Parameter, /) -> None:
         self.parameter: app_commands.Parameter = parameter
-        super().__init__(f"{parameter.display_name} ({parameter.name}) is an argument that is missing an attachment")
+        super().__init__(f"{parameter.display_name} ({parameter.name}) is an argument " "that is missing an attachment")
 
 
 #  Exact copy of commands.RangeError but as AppCommandError
 class RangeError(app_commands.AppCommandError):
-    def __init__(self, value: int | float | str, /, max_size: int | float | None, min_size: int | float | None) -> None:
+    def __init__(
+        self,
+        value: int | float | str,
+        /,
+        max_size: int | float | None,
+        min_size: int | float | None,
+    ) -> None:
         self.value: int | float | str = value
         self.max_size: int | float | None = max_size
         self.min_size: int | float | None = min_size
@@ -166,7 +165,11 @@ class BadChannel(app_commands.AppCommandError):
 
 
 class SyntheticInteraction:
-    def __init__(self, context: commands.Context[types.Bot], command: app_commands.Command[Any, ..., Any]) -> None:
+    def __init__(
+        self,
+        context: commands.Context[types.Bot],
+        command: app_commands.Command[Any, ..., Any],
+    ) -> None:
         self._context: commands.Context[types.Bot] = context
         self._command: app_commands.Command[Any, ..., Any] = command
         self._created_at: int = round(time.time())
@@ -184,7 +187,7 @@ class SyntheticInteraction:
         self.token: str = ""
         self.version: int = 1
         self.channel_id: int = context.channel.id
-        self.guild_id: int | None = context.guild.id if context.guild is not None else None
+        self.guild_id: int | None = getattr(context.guild, "id", None)
         self.application_id: int | None = self._context.bot.application_id
         self.locale: discord.Locale = discord.Locale(Settings.locale)
         self.guild_locale: discord.Locale | None = None
@@ -193,7 +196,8 @@ class SyntheticInteraction:
         self.extras: dict[str, Any] = {}
         self.command_failed: bool = False
 
-        # Protected attributes won't be defined, but we still need to keep track of the original response regardless
+        # Protected attributes won't be defined,
+        # but we still need to keep track of the original response regardless
         self._original_response: discord.Message | None = None
         self._state: ConnectionState = context._state  # type: ignore # Required for namespace
 
@@ -219,22 +223,34 @@ class SyntheticInteraction:
             try:
                 value = self.__attachments.pop()
             except IndexError as exc:
-                raise MissingRequiredAttachment(parameter)
+                raise MissingRequiredAttachment(parameter) from exc
         #  Check range
         if parameter.max_value is not None or parameter.min_value is not None:
             min_value = parameter.min_value if parameter.min_value is not None else 0
             if parameter.type is discord.AppCommandOptionType.string:
                 max_value = parameter.max_value if parameter.max_value is not None else len(argument)
                 if len(argument) > max_value or len(argument) < min_value:
-                    raise RangeError(argument, max_size=parameter.max_value, min_size=parameter.min_value)
+                    raise RangeError(
+                        argument,
+                        max_size=parameter.max_value,
+                        min_size=parameter.min_value,
+                    )
             elif parameter.type is discord.AppCommandOptionType.integer:
                 max_value = parameter.max_value if parameter.max_value is not None else int(argument)
                 if int(argument) > max_value or int(argument) < min_value:
-                    raise RangeError(argument, max_size=parameter.max_value, min_size=parameter.min_value)
+                    raise RangeError(
+                        argument,
+                        max_size=parameter.max_value,
+                        min_size=parameter.min_value,
+                    )
             elif parameter.type is discord.AppCommandOptionType.number:
                 max_value = parameter.max_value if parameter.max_value is not None else float(argument)
                 if float(argument) > max_value or float(argument) < min_value:
-                    raise RangeError(argument, max_size=parameter.max_value, min_size=parameter.min_value)
+                    raise RangeError(
+                        argument,
+                        max_size=parameter.max_value,
+                        min_size=parameter.min_value,
+                    )
         #  Check choices
         elif parameter.choices and argument not in [choice.name for choice in parameter.choices]:
             raise InvalidChoice(argument, parameter.choices)
@@ -242,54 +258,54 @@ class SyntheticInteraction:
         elif parameter.channel_types:
             try:
                 channel = await commands.GuildChannelConverter().convert(self._context, argument)
-            except commands.ChannelNotFound:
+            except commands.ChannelNotFound as exc:
                 try:
                     thread = await commands.ThreadConverter().convert(self._context, argument)
-                except commands.ThreadNotFound:
-                    raise BadArgument(argument, discord.abc.GuildChannel)
+                except commands.ThreadNotFound as exc1:
+                    raise BadArgument(argument, discord.abc.GuildChannel) from exc1
                 if thread.is_private() and discord.ChannelType.private_thread not in parameter.channel_types:
-                    raise BadChannel(argument, "private thread")
-                elif thread.is_news() and discord.ChannelType.news_thread not in parameter.channel_types:
-                    raise BadChannel(argument, "news thread")
-                elif not thread.is_private() and discord.ChannelType.public_thread not in parameter.channel_types:
-                    raise BadChannel(argument, "public thread")
+                    raise BadChannel(argument, "private thread") from exc
+                if thread.is_news() and discord.ChannelType.news_thread not in parameter.channel_types:
+                    raise BadChannel(argument, "news thread") from exc
+                if not thread.is_private() and discord.ChannelType.public_thread not in parameter.channel_types:
+                    raise BadChannel(argument, "public thread") from exc
                 value = thread
             else:
                 if isinstance(channel, discord.TextChannel) and discord.ChannelType.text not in parameter.channel_types:
                     raise BadChannel(argument, "text channel")
-                elif (
-                        isinstance(channel, discord.DMChannel)
-                        and discord.ChannelType.private not in parameter.channel_types
+                if (
+                    isinstance(channel, discord.DMChannel)
+                    and discord.ChannelType.private not in parameter.channel_types
                 ):
                     raise BadChannel(argument, "private channel")
-                elif (
-                        isinstance(channel, discord.GroupChannel)
-                        and discord.ChannelType.group not in parameter.channel_types
+                if (
+                    isinstance(channel, discord.GroupChannel)
+                    and discord.ChannelType.group not in parameter.channel_types
                 ):
                     raise BadChannel(argument, "group channel")
-                elif (
-                        isinstance(channel, discord.VoiceChannel)
-                        and discord.ChannelType.voice not in parameter.channel_types
+                if (
+                    isinstance(channel, discord.VoiceChannel)
+                    and discord.ChannelType.voice not in parameter.channel_types
                 ):
                     raise BadChannel(argument, "voice channel")
-                elif (
-                        isinstance(channel, discord.CategoryChannel)
-                        and discord.ChannelType.category not in parameter.channel_types
+                if (
+                    isinstance(channel, discord.CategoryChannel)
+                    and discord.ChannelType.category not in parameter.channel_types
                 ):
                     raise BadChannel(argument, "category channel")
-                elif (
-                        isinstance(channel, discord.StageChannel)
-                        and discord.ChannelType.stage_voice not in parameter.channel_types
+                if (
+                    isinstance(channel, discord.StageChannel)
+                    and discord.ChannelType.stage_voice not in parameter.channel_types
                 ):
                     raise BadChannel(argument, "stage channel")
-                elif (
-                        isinstance(channel, discord.ForumChannel)
-                        and discord.ChannelType.forum not in parameter.channel_types
+                if (
+                    isinstance(channel, discord.ForumChannel)
+                    and discord.ChannelType.forum not in parameter.channel_types
                 ):
                     raise BadChannel(argument, "forum channel")
                 value = channel
         command_param: CommandParameter = parameter._Parameter__parent  # type: ignore
-        ann = command_param._annotation  # pyright: ignore [reportPrivateUsage]
+        ann = command_param._annotation  # type: ignore
         if isinstance(ann, app_commands.Transformer) and type(ann) not in IGNORABLE_TRANSFORMERS:
             value = await command_param.transform(self, value)  # type: ignore
         return value
@@ -298,8 +314,9 @@ class SyntheticInteraction:
         required_arguments = [param for param in self._command.parameters if param.required]
         optional_arguments = [param for param in self._command.parameters if not param.required]
         parameters: dict[str, str] = {
-            (name := param.split(Settings.flag_delimiter, 1)[0].strip()):
-                param.removeprefix(f"{name}{Settings.flag_delimiter}")
+            (name := param.split(Settings.flag_delimiter, 1)[0].strip()): param.removeprefix(
+                f"{name}{Settings.flag_delimiter}"
+            )
             for param in initial_arguments
         }
         mapped: dict[app_commands.Parameter, Any] = {}
@@ -327,9 +344,7 @@ class SyntheticInteraction:
         return app_commands.Namespace(self, {}, options)  # type: ignore
 
     async def invoke(
-            self,
-            context: commands.Context[types.Bot],
-            /
+        self, context: commands.Context[types.Bot], /
     ) -> None:  # Match signature of commands.Command.invoke
         if not await self._command._check_can_run(self):  # type: ignore
             raise app_commands.CheckFailure(f"The check functions for command {self._command.qualified_name!r} failed.")
@@ -338,11 +353,7 @@ class SyntheticInteraction:
         await self.reinvoke(context)
 
     async def reinvoke(
-            self,
-            context: commands.Context[types.Bot],
-            /,
-            *,
-            call_hooks: bool = False
+        self, context: commands.Context[types.Bot], /, *, call_hooks: bool = False
     ) -> None:  # Match signature of commands.Command.reinvoke
         arguments: list[str]
         _, *arguments = self._context.message.content.split("\n")
@@ -356,8 +367,9 @@ class SyntheticInteraction:
 
     async def __wait_for_response(self) -> None:
         await asyncio.sleep(3)  # simulate maximum of 3 seconds for a response
-        if self._interaction_response._response_type is None:  # pyright: ignore [reportPrivateUsage]
-            # The bot did not respond to the interaction, so we have to somehow tell the user that it took too long.
+        if self._interaction_response._response_type is None:  # type: ignore
+            # The bot did not respond to the interaction, so we have to somehow tell the user that
+            # it took too long.
             # By this time, the interaction would become unknown, so we have to simulate that too
             self._unknown_interaction = True
             await self._context.message.add_reaction("\u2757")
@@ -367,7 +379,7 @@ class SyntheticInteraction:
         return discord.Interaction
 
     def __instancecheck__(self, instance: Any) -> bool:
-        return type(instance) is self.__class__
+        return isinstance(instance, self.__class__)
 
     def __subclasscheck__(self, subclass: Any) -> bool:
         return subclass == self.__class__
@@ -384,6 +396,7 @@ class SyntheticInteraction:
     def channel(self) -> InteractionChannel | None:
         if isinstance(self._context.channel, InteractionChannel):  # type: ignore
             return self._context.channel
+        return None
 
     @property
     def permissions(self) -> discord.Permissions:
@@ -398,7 +411,9 @@ class SyntheticInteraction:
         return self.__namespace  # type: ignore
 
     @discord.utils.cached_slot_property("_cs_command")
-    def command(self) -> app_commands.Command[Any, ..., Any] | app_commands.ContextMenu | None:
+    def command(
+        self,
+    ) -> app_commands.Command[Any, ..., Any] | app_commands.ContextMenu | None:
         return self._command
 
     @discord.utils.cached_slot_property("_cs_response")
@@ -432,17 +447,16 @@ class SyntheticInteraction:
         return await self._context.message.delete()
 
     async def translate(
-            self,
-            string: str | app_commands.locale_str,
-            **kwargs: Any
+        self, string: str | app_commands.locale_str, **kwargs: Any
     ) -> str | app_commands.locale_str:  # noqa
         return string
 
 
 class SyntheticWebhook:
-    # We can't really create a webhook, so I just resolved to creating a class that mimics common functionality
-    # of an actual webhook. Just like with SyntheticInteraction, there are a few attributes and methods that I cannot
-    # synthesize given the command invocation context, which is why most of these features do nothing.
+    # We can't really create a webhook, so I just resolved to creating a class that
+    # mimics common functionality of an actual webhook. Just like with SyntheticInteraction,
+    # there are a few attributes and methods that I cannot synthesize given the command
+    # invocation context, which is why most of these features do nothing.
     def __init__(self, ctx: commands.Context[types.Bot]) -> None:
         self.ctx: commands.Context[types.Bot] = ctx
 
@@ -450,13 +464,13 @@ class SyntheticWebhook:
     def url(self) -> str:
         return ""
 
-    async def fetch(self, **kwargs: Any) -> SyntheticWebhook:  # noqa
+    async def fetch(self, **kwargs: Any) -> SyntheticWebhook:
         return self
 
     async def delete(self, **kwargs: Any) -> None:
         return
 
-    async def edit(self, **kwargs: Any) -> SyntheticWebhook:  # noqa
+    async def edit(self, **kwargs: Any) -> SyntheticWebhook:
         return self
 
     async def send(self, *args: Any, **kwargs: Any) -> discord.Message:
@@ -470,8 +484,9 @@ class SyntheticWebhook:
     async def edit_message(self, message_id: int, **kwargs: Any) -> discord.Message:
         thread: discord.abc.Snowflake = kwargs.pop("thread", MISSING)
         if thread is not MISSING:
-            message = await self.ctx.guild.get_thread(thread.id).fetch_message(message_id)  # type: ignore
-            return await message.edit(**kwargs)
+            thread = self.ctx.guild.get_thread(thread.id)  # type: ignore
+            message = await thread.fetch_message(message_id)  # type: ignore
+            return await message.edit(**kwargs)  # type: ignore
         message = await self.ctx.channel.fetch_message(message_id)
         return await message.edit(**kwargs)
 
@@ -480,7 +495,10 @@ class SyntheticWebhook:
             return await self.ctx.guild.get_thread(thread.id).delete_messages(  # type: ignore
                 [discord.Object(id=message_id)]
             )
-        if not isinstance(self.ctx.channel, (discord.GroupChannel, discord.PartialMessageable, discord.DMChannel)):
+        if not isinstance(
+            self.ctx.channel,
+            (discord.GroupChannel, discord.PartialMessageable, discord.DMChannel),
+        ):
             return await self.ctx.channel.delete_messages([discord.Object(id=message_id)])
 
 
@@ -499,7 +517,7 @@ class InteractionResponse(discord.InteractionResponse):
     async def defer(self, *, ephemeral: bool = False, thinking: bool = False) -> None:
         if self._response_type is not None:
             raise discord.InteractionResponded(self.__parent)  # type: ignore
-        if self.__parent._unknown_interaction:  # pyright: ignore [reportPrivateUsage]
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
                 UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
             )
@@ -508,7 +526,7 @@ class InteractionResponse(discord.InteractionResponse):
     async def pong(self) -> None:
         if self._response_type is not None:
             raise discord.InteractionResponded(self.__parent)  # type: ignore
-        if self.__parent._unknown_interaction:  # pyright: ignore [reportPrivateUsage]
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
                 UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
             )
@@ -517,22 +535,19 @@ class InteractionResponse(discord.InteractionResponse):
     async def send_message(self, content: str | None = None, **kwargs: Any) -> None:
         if self._response_type is not None:
             raise discord.InteractionResponded(self.__parent)  # type: ignore
-        if self.__parent._unknown_interaction:  # pyright: ignore [reportPrivateUsage]
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
                 UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
             )
         kwargs.pop("ephemeral", None)
-        message = await self.__parent._context.send(  # type: ignore
-            content,
-            **kwargs
-        )
-        self.__parent._original_response = message  # pyright: ignore [reportPrivateUsage]
+        message = await self.__parent._context.send(content, **kwargs)  # type: ignore
+        self.__parent._original_response = message  # type: ignore
         self._response_type = discord.InteractionResponseType.channel_message
 
     async def edit_message(self, **kwargs: Any) -> None:
         if self._response_type is not None:
             raise discord.InteractionResponded(self.__parent)  # type: ignore
-        if self.__parent._unknown_interaction:  # pyright: ignore [reportPrivateUsage]
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
                 UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
             )
@@ -543,7 +558,7 @@ class InteractionResponse(discord.InteractionResponse):
     async def send_modal(self, modal: discord.ui.Modal, /) -> None:
         if self._response_type is not None:
             raise discord.InteractionResponded(self.__parent)  # type: ignore
-        if self.__parent._unknown_interaction:  # pyright: ignore [reportPrivateUsage]
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
                 UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
             )
@@ -552,7 +567,7 @@ class InteractionResponse(discord.InteractionResponse):
     async def autocomplete(self, choices: Sequence[app_commands.Choice]) -> None:  # type: ignore
         if self._response_type is not None:
             raise discord.InteractionResponded(self.__parent)  # type: ignore
-        if self.__parent._unknown_interaction:  # pyright: ignore [reportPrivateUsage]
+        if self.__parent._unknown_interaction:  # type: ignore
             raise discord.NotFound(
                 UnknownInteraction, {"code": 10062, "message": "Unknown interaction"}  # type: ignore
             )

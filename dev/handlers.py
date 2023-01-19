@@ -24,7 +24,6 @@ import discord
 from discord.ext import commands
 
 from dev import types
-
 from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
@@ -36,19 +35,19 @@ __all__ = (
     "RelativeStandard",
     "TimedInfo",
     "optional_raise",
-    "replace_vars"
+    "replace_vars",
 )
 
 
 class RelativeStandard(io.StringIO):
     def __init__(
-            self,
-            origin: TextIO = sys.__stdout__,
-            callback: Callable[[str], Any] | None = None,
-            *,
-            initial_value: str | None = None,
-            newline: str | None = None,
-            filename: str | None = None
+        self,
+        origin: TextIO = sys.__stdout__,
+        callback: Callable[[str], Any] | None = None,
+        *,
+        initial_value: str | None = None,
+        newline: str | None = None,
+        filename: str | None = None,
     ):
         super().__init__(initial_value, newline)
         self.origin: TextIO = origin
@@ -66,12 +65,18 @@ class RelativeStandard(io.StringIO):
 
 
 class TimedInfo:
+    """Helper class that deals with timing processes."""
+
     def __init__(self, *, timeout: float | None = None) -> None:
         self.timeout: float | None = timeout
         self.start: float | None = None
         self.end: float | None = None
 
     async def wait_for(self, message: discord.Message) -> None:
+        """Wait for the timeout to end. If timeout is reached and `end` is not set, react to the given message.
+
+        This function should be called as a task.
+        """
         timeout = self.timeout
         if timeout is None:
             raise ValueError("Timeout cannot be None")
@@ -98,10 +103,10 @@ class GlobalLocals:
     """
 
     def __init__(
-            self,
-            __globals: dict[str, Any] | None = None,
-            __locals: dict[str, Any] | None = None,
-            /
+        self,
+        __globals: dict[str, Any] | None = None,
+        __locals: dict[str, Any] | None = None,
+        /,
     ) -> None:
         self.globals: dict[str, Any] = __globals or {}
         self.locals: dict[str, Any] = __locals or {}
@@ -192,10 +197,10 @@ class GlobalLocals:
         return res
 
     def update(
-            self,
-            __new_globals: dict[str, Any] | None = None,
-            __new_locals: dict[str, Any] | None = None,
-            /
+        self,
+        __new_globals: dict[str, Any] | None = None,
+        __new_locals: dict[str, Any] | None = None,
+        /,
     ) -> None:
         """Update the current instance of variables with new ones.
 
@@ -235,15 +240,16 @@ class ExceptionHandler:
         Whether to save a traceback if an exception is raised.
         Defaults to `False`.
     """
+
     error: list[tuple[str, str]] = []
     debug: bool = False
 
     def __init__(
-            self,
-            message: discord.Message,
-            /,
-            on_error: Callable[[type[Exception] | None, Exception | None, TracebackType | None], Any] | None = None,
-            save_traceback: bool = False
+        self,
+        message: discord.Message,
+        /,
+        on_error: Callable[[type[Exception] | None, Exception | None, TracebackType | None], Any] | None = None,
+        save_traceback: bool = False,
     ) -> None:
         self.message: discord.Message = message
         self.on_error: Callable[[type[Exception] | None, Exception | None, TracebackType | None], Any] | None = on_error
@@ -254,10 +260,10 @@ class ExceptionHandler:
         return self
 
     async def __aexit__(
-            self,
-            exc_type: type[Exception] | None,
-            exc_val: Exception | None,
-            exc_tb: TracebackType | None
+        self,
+        exc_type: type[Exception] | None,
+        exc_val: Exception | None,
+        exc_tb: TracebackType | None,
     ) -> bool:
         if exc_val is None:
             if not self.debug:
@@ -274,14 +280,14 @@ class ExceptionHandler:
             elif isinstance(
                 exc_val,
                 (
-                        AttributeError,
-                        IndexError,
-                        KeyError,
-                        TypeError,
-                        UnicodeError,
-                        ValueError,
-                        commands.CommandInvokeError
-                )
+                    AttributeError,
+                    IndexError,
+                    KeyError,
+                    TypeError,
+                    UnicodeError,
+                    ValueError,
+                    commands.CommandInvokeError,
+                ),
             ):
                 if isinstance(exc_val, commands.CommandInvokeError):
                     exc_val = getattr(exc_val, "original", exc_val)
@@ -299,7 +305,10 @@ class ExceptionHandler:
 
         if self.debug:
             ExceptionHandler.error.append(
-                (type(exc_val).__name__, "".join(format_exception(exc_type, exc_val, exc_tb)))
+                (
+                    type(exc_val).__name__,
+                    "".join(format_exception(exc_type, exc_val, exc_tb)),
+                )
             )
         return True
 

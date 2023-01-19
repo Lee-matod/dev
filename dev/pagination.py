@@ -18,10 +18,7 @@ from discord.ext import commands
 
 from dev import types
 
-__all__ = (
-    "Interface",
-    "Paginator"
-)
+__all__ = ("Interface", "Paginator")
 
 
 class _PageSetter(discord.ui.Modal):
@@ -32,7 +29,7 @@ class _PageSetter(discord.ui.Modal):
         super().__init__(title="Skip to page...")
         self.view: Interface = view
 
-    async def on_submit(self, interaction: discord.Interaction) -> None:
+    async def on_submit(self, interaction: discord.Interaction, /) -> None:
         if not self.page_num.value.isnumeric():
             return await interaction.response.send_message("Input value should be numeric.", ephemeral=True)
         if int(self.page_num.value) not in range(1, len(self.view.paginator.pages) + 1):
@@ -54,12 +51,12 @@ class Paginator(commands.Paginator):
     """
 
     def __init__(
-            self,
-            prefix: str = "```",
-            suffix: str = "```",
-            max_size: int = 2000,
-            linesep: str = "\n",
-            force_last_page: bool = False
+        self,
+        prefix: str = "```",
+        suffix: str = "```",
+        max_size: int = 2000,
+        linesep: str = "\n",
+        force_last_page: bool = False,
     ):
         super().__init__(prefix, suffix, max_size, linesep)
         self.force_last_page: bool = force_last_page
@@ -92,7 +89,7 @@ class Paginator(commands.Paginator):
 
     def line_handler(self, line: str, /, max_page_size: int, *, empty: bool) -> None:
         if len(self.__pages) == 0 or len(line) + len(self.__pages[-1]) > max_page_size:
-            self.__pages.append(f"{self.prefix}\n{line}" + ("\n" if empty else ''))
+            self.__pages.append(f"{self.prefix}\n{line}" + ("\n" if empty else ""))
         else:
             self.__pages[-1] += f"\n{line}"
 
@@ -199,4 +196,3 @@ class Interface(discord.ui.View):
     async def remove(self, interaction: discord.Interaction, _) -> None:
         if interaction.message is not None:
             await interaction.message.delete()
-

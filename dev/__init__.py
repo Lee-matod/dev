@@ -11,17 +11,15 @@ A simple debugging, editing and testing extension for discord.py version 2.0.
 """
 from dev.__main__ import *
 from dev.components import *
+from dev.config import RootBot, RootManagement, RootOver, RootVariables
 from dev.converters import *
+from dev.experimental import RootHTTP, RootInvoke, RootPython, RootShell
 from dev.handlers import *
 from dev.interpreters import *
+from dev.misc import RootFlags, RootSearch
 from dev.pagination import *
 from dev.registrations import *
 from dev.types import *
-
-from dev.config import RootBot, RootManagement, RootOver, RootVariables
-from dev.experimental import RootHTTP, RootInvoke, RootPython, RootShell
-from dev.misc import RootFlags, RootSearch
-
 from dev.utils.baseclass import *
 from dev.utils.functs import *
 from dev.utils.startup import *
@@ -61,7 +59,7 @@ __all__ = (
     "send",
     "setup_logging",
     "str_bool",
-    "str_ints"
+    "str_ints",
 )
 
 __title__ = "dev"
@@ -81,7 +79,7 @@ class Dev(
     RootPython,
     RootSearch,
     RootShell,
-    RootVariables
+    RootVariables,
 ):
     """The frontend root cog of the dev extension that implements all features."""
 

@@ -23,7 +23,6 @@ from discord.ext import commands
 from discord.utils import MISSING
 
 from dev.pagination import Interface, Paginator
-
 from dev.utils.baseclass import Root
 from dev.utils.startup import Settings
 
@@ -39,7 +38,7 @@ __all__ = (
     "generate_ctx",
     "interaction_response",
     "send",
-    "table_creator"
+    "table_creator",
 )
 
 
@@ -87,8 +86,8 @@ def flag_parser(string: str, delimiter: str) -> dict[str, Any]:
         temp_string += char
     if temp_string:
         values.append(temp_string)
-    for i in range(len(values)):
-        values[i] = json.loads(str(values[i]).lower() if values[i] is not None else 'null')
+    for idx, value in enumerate(values):
+        values[idx] = json.loads(str(value).lower() if value is not None else "null")
     return dict(zip(keys, values))
 
 
@@ -97,7 +96,7 @@ def table_creator(rows: list[list[Any]], labels: list[str]) -> str:
     table_str = ""
     for label in labels:
         if label == labels[1]:
-            largest = max([row[1] for row in rows], key=lambda x: len(x))
+            largest = max((row[1] for row in rows), key=lambda x: len(x))
             if len(largest) < len(label):
                 for row in rows:
                     first, second = (len(label) - len(row[1])) // 2, math.ceil((len(label) - len(row[1])) / 2)
@@ -112,7 +111,11 @@ def table_creator(rows: list[list[Any]], labels: list[str]) -> str:
 
     for row in rows:
         num, _type, desc = row
-        id_lab, type_lab, desc_lab = list(table[0].keys())[0], list(table[1].keys())[0], list(table[2].keys())[0]
+        id_lab, type_lab, desc_lab = (
+            list(table[0].keys())[0],
+            list(table[1].keys())[0],
+            list(table[2].keys())[0],
+        )
         table[0][id_lab].append(num)
         table[1][type_lab].append(_type)
         table[2][desc_lab].append(desc)
@@ -133,36 +136,35 @@ def table_creator(rows: list[list[Any]], labels: list[str]) -> str:
 
 @overload
 async def send(
-        ctx: commands.Context[types.Bot],
-        *args: types.MessageContent,
-        paginator: Paginator | Literal[None],
-        **options: Any
+    ctx: commands.Context[types.Bot],
+    *args: types.MessageContent,
+    paginator: Paginator | Literal[None],
+    **options: Any,
 ) -> tuple[discord.Message, Paginator | None]:
     ...
 
 
 @overload
 async def send(  # type: ignore
-        ctx: commands.Context[types.Bot],
-        *args: types.MessageContent,
-        **options: Any
+    ctx: commands.Context[types.Bot], *args: types.MessageContent, **options: Any
 ) -> discord.Message:
     ...
 
 
 async def send(  # type: ignore
-        ctx: commands.Context[types.Bot],
-        *args: Any,
-        paginator: Any = MISSING,
-        **options: Any
+    ctx: commands.Context[types.Bot],
+    *args: Any,
+    paginator: Any = MISSING,
+    **options: Any,
 ) -> Any:
     """Evaluates how to safely send a Discord message.
 
-    `content`, `embed`, `embeds`, `file`, `files`, `stickers` and `view` are all positional arguments.
+    `content`, `embed`, `embeds`, `file`, `files`, `stickers` and `view` are all positional
+    arguments.
     Everything else that is available in :meth:`commands.Context.send` remain as keyword arguments.
 
-    This replaces the token of the bot with '[token]' and converts any instances of a virtual variable's
-    value back to its respective key.
+    This replaces the token of the bot with '[token]' and converts any instances of a virtual
+    variable's value back to its respective key.
 
     See Also
     --------
@@ -186,8 +188,8 @@ async def send(  # type: ignore
     Raises
     ------
     IndexError
-        `content` exceeded the 2000-character limit, and `view` did not permit pagination to work due to the amount of
-        components it included.
+        `content` exceeded the 2000-character limit, and `view` did not permit pagination to work
+        due to the amount of components it included.
     """
     replace_path_to_file: bool = options.pop("path_to_file", True)
     forced: bool = options.pop("forced", False)
@@ -250,13 +252,10 @@ async def send(  # type: ignore
     if not forced_pagination and pag_view is not None:
         if view is not None:
             if len(view.children) > 15:
-                raise IndexError(
-                    "Content exceeds character limit, but view attached does not permit pagination to work"
-                )
-            else:
-                for idx, child in enumerate(view.children):
-                    child.row = idx // 5 + 2  # move after 'Quit' and pagination buttons
-                    pag_view.add_item(child)
+                raise IndexError("Content exceeds character limit, but view attached does not permit pagination")
+            for idx, child in enumerate(view.children):
+                child.row = idx // 5 + 2  # move after 'Quit' and pagination buttons
+                pag_view.add_item(child)
         kwargs["content"] = pag_view.display_page
     if ctx.message.id in Root.cached_messages and not forced:
         edit: dict[str, Any] = {
@@ -266,7 +265,7 @@ async def send(  # type: ignore
             "suppress": kwargs.get("suppress_embeds", False),
             "delete_after": kwargs.get("delete_after"),
             "allowed_mentions": kwargs.get("allowed_mentions", MISSING),
-            "view": kwargs.get("view", None)
+            "view": kwargs.get("view", None),
         }
         if pag_view is not None and not forced_pagination:
             edit["view"] = pag_view
@@ -284,56 +283,57 @@ async def send(  # type: ignore
 
 @overload
 async def interaction_response(
-        interaction: discord.Interaction,
-        response_type: discord.InteractionResponseType,
-        *args: str | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | Sequence[Any],
-        paginator: Paginator | Literal[None],
-        **options: Any
+    interaction: discord.Interaction,
+    response_type: discord.InteractionResponseType,
+    *args: str | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | Sequence[Any],
+    paginator: Paginator | Literal[None],
+    **options: Any,
 ) -> Paginator | None:
     ...
 
 
 @overload
 async def interaction_response(  # type: ignore
-        interaction: discord.Interaction,
-        response_type: discord.InteractionResponseType,
-        *args: str | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | Sequence[Any],
-        **options: Any
+    interaction: discord.Interaction,
+    response_type: discord.InteractionResponseType,
+    *args: str | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | Sequence[Any],
+    **options: Any,
 ) -> None:
     ...
 
 
 async def interaction_response(  # type: ignore
-        interaction: Any,
-        response_type: Any,
-        *args: Any,
-        paginator: Any = MISSING,
-        **options: Any
+    interaction: Any,
+    response_type: Any,
+    *args: Any,
+    paginator: Any = MISSING,
+    **options: Any,
 ) -> Any:
     """Evaluates how to safely respond to a Discord interaction.
 
-    `content`, `embed`, `embeds`, `file`, `files`, `modal` and `view` can all be optionally passed as positional
-    arguments instead of keywords.
+    `content`, `embed`, `embeds`, `file`, `files`, `modal` and `view` can all be optionally
+    passed as positional arguments instead of keywords.
     Everything else that is available in :meth:`discord.InteractionResponse.send_message` and
     :meth:`discord.InteractionResponse.edit_message` remain as keyword arguments.
 
-    This replaces the token of the bot with '[token]' and converts any instances of a virtual variable's value back to
-    its respective key.
+    This replaces the token of the bot with '[token]' and converts any instances of a virtual
+    variable's value back to its respective key.
 
-    If the response type is set to :class:`InteractionResponseType.MODAL`, then the first argument passed to `args`
-    should be the modal that should be sent.
+    If the response type is set to :class:`InteractionResponseType.MODAL`, then the first argument
+    passed to `args` should be the modal that should be sent.
 
     See Also
     --------
-    :meth:`discord.InteractionResponse.send_message`, :meth:`discord.InteractionResponse.edit_message`
+    :meth:`discord.InteractionResponse.send_message`,
+    :meth:`discord.InteractionResponse.edit_message`
 
     Parameters
     ----------
     interaction: :class:`discord.Interaction`
         The interaction that should be responded to.
     response_type: :enum:`InteractionResponseType`
-        The type of response that will be used to respond to the interaction. :meth:`discord.InteractionResponse.defer`
-        isn't included.
+        The type of response that will be used to respond to the interaction.
+        :meth:`discord.InteractionResponse.defer` isn't included.
     args: Union[
         Sequence[Any],
         :class:`discord.Embed`,
@@ -352,8 +352,8 @@ async def interaction_response(  # type: ignore
     Returns
     -------
     Optional[:class:`Paginator`]
-        The paginator that is being used in the first message if `forced_paginator` was set to `False` and the function
-        decided to enable pagination for the response.
+        The paginator that is being used in the first message if `forced_paginator` was
+        set to `False` and the function decided to enable pagination for the response.
 
     Raises
     ------
@@ -362,8 +362,8 @@ async def interaction_response(  # type: ignore
     TypeError
         An invalid response type was passed.
     IndexError
-        `content` exceeded the 2000-character limit, and `view` did not permit pagination to work due to the amount of
-        components it included.
+        `content` exceeded the 2000-character limit, and `view` did not permit pagination to work
+        due to the amount of components it included.
     """
     if response_type is discord.InteractionResponseType.channel_message:
         method = interaction.response.send_message
@@ -427,18 +427,13 @@ async def interaction_response(  # type: ignore
 
     kwargs = _check_kwargs(kwargs)
     view: discord.ui.View | None = kwargs.get("view")
-    if (
-            view is not None
-            and len(view.children) <= 15
-            and not forced_pagination
-            and pag_view is not None
-    ):
+    if view is not None and len(view.children) <= 15 and not forced_pagination and pag_view is not None:
         child: discord.ui.Item[discord.ui.View]
         for idx, child in enumerate(view.children):
             child.row = idx // 5 + 2  # move after 'Quit' and pagination buttons
             pag_view.add_item(child)
     elif view is not None and len(view.children) < 15 and not forced_pagination and pag_view is not None:
-        raise IndexError("Content exceeds character limit, but view attached does not permit pagination to work")
+        raise IndexError("Content exceeds character limit, but view attached does not permit pagination")
 
     kwargs.update(allowed_mentions=options.get("allowed_mentions", discord.AllowedMentions.none()))
     if response_type is discord.InteractionResponseType.channel_message:
@@ -446,7 +441,7 @@ async def interaction_response(  # type: ignore
             ephemeral=options.get("ephemeral", False),
             tts=options.get("tts", False),
             suppress_embeds=options.get("suppress_embeds", False),
-            delete_after=options.get("delete_after")
+            delete_after=options.get("delete_after"),
         )
     await method(**kwargs)
     for pag in paginators:
@@ -467,7 +462,8 @@ async def generate_ctx(ctx: commands.Context[types.Bot], **kwargs: Any) -> comma
 
     Notes
     -----
-    When specifying a new guild, it may not always get updated. This is mainly controlled by the message's text channel.
+    When specifying a new guild, it may not always get updated. This is mainly controlled
+    by the message's text channel.
     There might be a few other really specific cases in which it may not get updated.
 
     Returns
@@ -504,7 +500,7 @@ def _check_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
         "stickers": kwargs.pop("stickers", MISSING),
         "embeds": kwargs.get("embeds", MISSING),
         "files": kwargs.get("files", MISSING),
-        "view": kwargs.get("view", MISSING)
+        "view": kwargs.get("view", MISSING),
     }
     return {k: v for k, v in _kwargs.items() if v is not MISSING}
 
@@ -518,12 +514,17 @@ def _try_add(key: str, value: T, dictionary: dict[str, list[T]]) -> None:
 
 def _check_file(file: discord.File, token: str, /, replace_path: bool) -> discord.File:
     try:
-        string = _revert_virtual_var_value(
-            _replace(file.fp.read().decode("utf-8"), token, path=replace_path)
-        ).encode("utf-8")
+        string = _revert_virtual_var_value(_replace(file.fp.read().decode("utf-8"), token, path=replace_path)).encode(
+            "utf-8"
+        )
     except UnicodeDecodeError:
         return file
-    return discord.File(io.BytesIO(string), file.filename, spoiler=file.spoiler, description=file.description)
+    return discord.File(
+        io.BytesIO(string),
+        file.filename,
+        spoiler=file.spoiler,
+        description=file.description,
+    )
 
 
 def _check_embed(embed: discord.Embed, token: str, /, replace_path: bool) -> discord.Embed:
@@ -562,7 +563,6 @@ def _check_length(content: str) -> Paginator | str:
 
 
 def _revert_virtual_var_value(string: str) -> str:
-    # For security reasons, when using await send(), this gets automatically called
     for (name, value) in Root.scope.items():
         string = string.replace(value, name)
     return string

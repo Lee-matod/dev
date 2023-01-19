@@ -22,7 +22,6 @@ import psutil
 from discord.ext import commands
 
 from dev.handlers import optional_raise
-
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
@@ -41,6 +40,8 @@ def _as_readable(percent: float, bytes_size: int) -> str:
 
 
 class RootCommand(Root):
+    """Cog containing the parent command of this extension"""
+
     def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
         self.load_time: str = str(round(time.time()))
@@ -50,7 +51,7 @@ class RootCommand(Root):
         global_use=True,
         ignore_extra=False,
         invoke_without_command=True,
-        usage="[--help|--man] [--source|-src] [--file|--f] [--inspect|-i] <command>"
+        usage="[--help|--man] [--source|-src] [--file|--f] [--inspect|-i] <command>",
     )
     async def root_(self, ctx: commands.Context[types.Bot]):
         """Root command for the `dev` extension.
@@ -69,7 +70,7 @@ class RootCommand(Root):
         brief = [
             f"dev {import_meta.version('dev')} was loaded {load_time} with a total of "
             f"{plural(len(self.commands), 'command')} which are unique to this extension.",
-            ""
+            "",
         ]
         with process.oneshot():
             process.cpu_percent()
@@ -108,7 +109,7 @@ class RootCommand(Root):
         This uses the :meth:`exit` method, so beware!
         """
         await ctx.message.add_reaction("\U0001f44b")
-        exit()
+        sys.exit(0)
 
     @root.command(name="visibility", parent="dev")
     async def root_visibility(self, ctx: commands.Context[types.Bot], toggle: bool | None = None):
@@ -137,8 +138,7 @@ class RootCommand(Root):
             assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(
                 ctx,
-                f"`{ctx.invoked_with}` has no subcommand "
-                f"`{parse_invoked_subcommand(ctx)}`."
+                f"`{ctx.invoked_with}` has no subcommand " f"`{parse_invoked_subcommand(ctx)}`.",
             )
         optional_raise(ctx, exception)
 

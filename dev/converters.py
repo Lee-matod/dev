@@ -30,18 +30,22 @@ __all__ = (
     "LiteralModes",
     "OverrideSettings",
     "str_bool",
-    "str_ints"
+    "str_ints",
 )
 
 T = TypeVar("T")
 
 
 class GlobalTextChannelConverter(commands.TextChannelConverter):
+    """Similar to :class:`discord.ext.commands.TextChannelConverter`, but convert channels client-wide instead of
+    guild-wide.
+    """
+
     async def convert(self, ctx: commands.Context[types.Bot], argument: str) -> discord.TextChannel:
         try:
             channel = await super().convert(ctx, argument)
         except commands.ChannelNotFound as exc:
-            match = re.match(r'<#([0-9]{15,20})>$', argument)
+            match = re.match(r"<#([0-9]{15,20})>$", argument)
             if argument.isnumeric():
                 channel = ctx.bot.get_channel(int(argument))
             elif match is not None:
@@ -86,10 +90,10 @@ class OverrideSettings(commands.Converter[None]):
             ctx,
             embed=discord.Embed(
                 title="Settings Changed" if self.default_settings else "Nothing Changed",
-                description="`" + '`\n`'.join(changed) + "`",
-                colour=discord.Color.green() if self.default_settings else discord.Color.red()
+                description="`" + "`\n`".join(changed) + "`",
+                colour=discord.Color.green() if self.default_settings else discord.Color.red(),
             ),
-            delete_after=5
+            delete_after=5,
         )
         argument = argument.strip()
         if argument.startswith("```") and argument.endswith("```"):
@@ -98,6 +102,7 @@ class OverrideSettings(commands.Converter[None]):
             self.command_string = argument
 
     def back_to_default(self, *_: Any) -> None:
+        """Revert to previous settings"""
         for module, value in self.default_settings.items():
             setattr(Settings, module, value)
 
@@ -173,7 +178,7 @@ class LiteralModes(commands.Converter[Union[str, None]]):
         item, case_sensitive = item
         item: Any
         case_sensitive: bool
-        if type(item) != type(Literal[...]):  # type: ignore # noqa: E721
+        if type(item) != type(Literal[...]):  # type: ignore
             raise TypeError(
                 f"LiteralModes[...[, bool]] expected a typing.Literal to be passed, "
                 f"not {item.__name__ if isinstance(item, type) else item.__class__.__name__}"
@@ -214,10 +219,10 @@ class CodeblockConverter(commands.Converter[tuple[Optional[str], Optional[str]]]
 
         start: int | None = False
 
-        for i in range(len(argument)):
+        for idx, value in enumerate(argument):
             try:
-                if "".join([argument[i], argument[i + 1], argument[i + 2]]) == "```":
-                    start = i
+                if "".join([value, argument[idx + 1], argument[idx + 2]]) == "```":
+                    start = idx
                     break
             except IndexError:
                 return argument, None
@@ -262,10 +267,11 @@ def str_ints(content: str) -> list[int]:
 
 
 def str_bool(
-        content: str,
-        default: bool | None = None, *,
-        additional_true: list[str] | None = None,
-        additional_false: list[str] | None = None
+    content: str,
+    default: bool | None = None,
+    *,
+    additional_true: list[str] | None = None,
+    additional_false: list[str] | None = None,
 ) -> bool:
     """Similar to the :class:`bool` type hint in commands, this converts a string to a boolean with the added
     functionality of optionally appending new true/false statements.
@@ -299,8 +305,8 @@ def str_bool(
         false.extend(additional_false)
     if str(content).lower() in true:
         return True
-    elif str(content).lower() in false:
+    if str(content).lower() in false:
         return False
-    elif default is not None:
+    if default is not None:
         return default
     raise commands.BadBoolArgument(content)

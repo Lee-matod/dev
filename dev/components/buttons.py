@@ -15,13 +15,10 @@ import discord
 
 from dev.components.modals import SettingEditor
 from dev.components.views import AuthoredView
-
 from dev.utils.functs import interaction_response
 from dev.utils.startup import Settings
 
-__all__ = (
-    "SettingsToggler",
-)
+__all__ = ("SettingsToggler",)
 
 
 class SettingsToggler(discord.ui.Button[AuthoredView]):
@@ -36,7 +33,7 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
 
     @classmethod
     def add_buttons(cls, view: AuthoredView, /) -> None:
-        for setting in [setting for setting in Settings.kwargs.keys()]:
+        for setting in Settings.kwargs:
             fmt = " ".join(word.lower() if len(word) <= 2 else word.title() for word in setting.split("_"))
             view.add_item(cls(setting, view.author, label=fmt))
 
@@ -44,14 +41,12 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
         if self.setting not in [sett for sett, ann in Settings.mapping.items() if ann == bool]:
             label = self.label
             if label is not None:
-                return await interaction.response.send_modal(
-                    SettingEditor(label.replace(" ", "_").lower())
-                )
+                return await interaction.response.send_modal(SettingEditor(label.replace(" ", "_").lower()))
             return await interaction_response(
                 interaction,
                 discord.InteractionResponseType.channel_message,
                 "Something broke, this should not have happened.",
-                ephemeral=True
+                ephemeral=True,
             )
         setting = self.setting.lower().replace(" ", "_")
         if self.style == discord.ButtonStyle.green:
@@ -62,8 +57,4 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
             self.style = discord.ButtonStyle.green
         view = AuthoredView(self.author)
         self.add_buttons(view)
-        await interaction_response(
-            interaction,
-            discord.InteractionResponseType.message_update,
-            view
-        )
+        await interaction_response(interaction, discord.InteractionResponseType.message_update, view)

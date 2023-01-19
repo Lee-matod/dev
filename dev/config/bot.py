@@ -17,9 +17,8 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from dev.handlers import optional_raise
 from dev.components import AuthoredView, PermissionsSelector
-
+from dev.handlers import optional_raise
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 from dev.utils.utils import escape, parse_invoked_subcommand, plural
@@ -29,6 +28,7 @@ if TYPE_CHECKING:
 
 
 class RootBot(Root):
+    """Information, statistics, and commands related to this bot's configuration"""
 
     @root.group(name="bot", parent="dev", global_use=True, invoke_without_command=True)
     async def root_bot(self, ctx: commands.Context[types.Bot]):
@@ -37,20 +37,20 @@ class RootBot(Root):
             return await send(ctx, "This is not a bot.")
         embed = discord.Embed(
             title=self.bot.user,
-            description=self.bot.description or '',
-            color=discord.Color.blurple()
+            description=self.bot.description or "",
+            color=discord.Color.blurple(),
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         mapping = {True: "enabled", False: "disabled", None: "unknown"}
         bot_field = ""
         visibility_field = (
-                f"This bot can see {plural(len(self.bot.guilds), 'guild')}, "
-                + plural(
-            len([c for c in self.bot.get_all_channels() if not isinstance(c, discord.CategoryChannel)]),
-            "channel"
-        )
-                + f" and {plural(len(self.bot.users), 'account')}, "
-                  f"{len([user for user in self.bot.users if not user.bot])} of which are users."
+            f"This bot can see {plural(len(self.bot.guilds), 'guild')}, "
+            + plural(
+                len([c for c in self.bot.get_all_channels() if not isinstance(c, discord.CategoryChannel)]),
+                "channel",
+            )
+            + f" and {plural(len(self.bot.users), 'account')}, "
+            f"{len([user for user in self.bot.users if not user.bot])} of which are users."
         )
         commands_field = (
             f"There is a total of {len(list(self.bot.walk_commands()))} commands "
@@ -58,39 +58,45 @@ class RootBot(Root):
             f"{plural(len(self.bot.extensions), 'extension', False)}."
         )
         information_field = (
-            f"This bot is running with an average websocket latency of {round(self.bot.latency * 1000, 2)}ms. "
+            f"Running with a websocket latency of {round(self.bot.latency * 1000, 2)}ms. "
             f"Members intent is {mapping.get(self.bot.intents.members)}, "
             f"message content intent is {mapping.get(self.bot.intents.message_content)} "
             f"and presences intent is {mapping.get(self.bot.intents.presences)}."
         )
         if self.bot.owner_ids:
             bot_field += (
-                f"<@!{'>, <@!'.join(f'{owner}' for owner in self.bot.owner_ids)}> are the owners of this bot. "
-                f"The prefix of this bot is `{escape(ctx.prefix or 'None')}` "
+                f"{', '.join(f'<@!{owner}>' for owner in self.bot.owner_ids)} own this bot. "
+                f"The prefix is `{escape(ctx.prefix or '')}` "
                 f"(case insensitive is {mapping.get(self.bot.case_insensitive)} "
                 f"and strip after prefix is {mapping.get(self.bot.strip_after_prefix)}) "
             )
         elif self.bot.owner_id:
             bot_field += (
                 f"<@!{self.bot.owner_id}> is the owner of this bot. "
-                f"The prefix of this bot is `{escape(ctx.prefix or 'None')}` "
+                f"The prefix of this bot is `{escape(ctx.prefix or '')}` "
                 f"(case insensitive is {mapping.get(self.bot.case_insensitive)} "
                 f"and strip after prefix is {mapping.get(self.bot.strip_after_prefix)}) "
             )
         if isinstance(self.bot, commands.AutoShardedBot):
-            bot_field += f"and it's automatically sharded: shards {self.bot.shard_id} of {self.bot.shard_count} "
-        elif self.bot.shard_count:
-            bot_field += f"and it's manually sharded: shards {self.bot.shard_id} of {self.bot.shard_count} "
+            bot_field += "and it's automatically sharded:"
+            if len(self.bot.shards) > 20:
+                bot_field += f"shards {len(self.bot.shards)} of {self.bot.shard_count}"
+            elif self.bot.shard_count:
+                bot_field += f"shards {self.bot.shard_ids} of {self.bot.shard_count} "
         else:
             bot_field += "and it's not sharded."
-        embed.add_field(name="Bot", value=bot_field, inline=False)
-        embed.add_field(name="Visibility", value=visibility_field, inline=False)
-        embed.add_field(name="Commands", value=commands_field, inline=False)
-        embed.add_field(name="Information", value=information_field, inline=False)
+        embed.add_field(name="Bot", value=bot_field.strip(), inline=False)
+        embed.add_field(name="Visibility", value=visibility_field.strip(), inline=False)
+        embed.add_field(name="Commands", value=commands_field.strip(), inline=False)
+        embed.add_field(name="Information", value=information_field.strip(), inline=False)
         await send(ctx, embed)
 
     @root.command(name="permissions", parent="dev bot", aliases=["perms"])
-    async def root_bot_permissions(self, ctx: commands.Context[types.Bot], channel: discord.TextChannel | None = None):
+    async def root_bot_permissions(
+        self,
+        ctx: commands.Context[types.Bot],
+        channel: discord.TextChannel | None = None,
+    ):
         """Show which permissions the bot has.
         A text channel may be optionally passed to check for permissions in the given channel.
         """
@@ -101,9 +107,9 @@ class RootBot(Root):
             ctx,
             discord.Embed(
                 description="\n".join(["```ansi", *select.sort_perms("general"), "```"]),
-                color=discord.Color.blurple()
+                color=discord.Color.blurple(),
             ),
-            AuthoredView(ctx.author, select)
+            AuthoredView(ctx.author, select),
         )
 
     @root.command(name="load", parent="dev bot", require_var_positional=True)
@@ -116,18 +122,17 @@ class RootBot(Root):
             try:
                 await self.bot.load_extension(ext)
             except commands.ExtensionError as exc:
-                unsuccessful.append(f"{ext} ‒ {exc}")
+                unsuccessful.append(f"{ext} \u2012 {exc}")
             else:
                 successful.append(ext)
         end = time.perf_counter()
-        loaded_extensions = (
-                ("\u2611 " + "\n\u2611 ".join(successful) if successful else "")
-                + ("\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else "")
+        loaded_extensions = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + (
+            "\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else ""
         )
         embed = discord.Embed(
             title=f"Loaded {plural(len(successful), 'Cog')}",
             description=loaded_extensions.strip("\n"),
-            color=discord.Color.green()
+            color=discord.Color.green(),
         )
         embed.set_footer(text=f"Loading took {end - start:.3f}s")
         await send(ctx, embed)
@@ -142,18 +147,17 @@ class RootBot(Root):
             try:
                 await self.bot.unload_extension(ext)
             except commands.ExtensionError as exc:
-                unsuccessful.append(f"{ext} ‒ {exc}")
+                unsuccessful.append(f"{ext} \u2012 {exc}")
             else:
                 successful.append(ext)
         end = time.perf_counter()
-        unloaded_extensions = (
-                ("\u2611 " + "\n\u2611 ".join(successful) if successful else "")
-                + ("\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else "")
+        unloaded_extensions = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + (
+            "\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else ""
         )
         embed = discord.Embed(
             title=f"Unloaded {plural(len(successful), 'Cog')}",
             description=unloaded_extensions.strip("\n"),
-            color=discord.Color.green()
+            color=discord.Color.green(),
         )
         embed.set_footer(text=f"Unloading took {end - start:.3f}s")
         await send(ctx, embed)
@@ -171,18 +175,17 @@ class RootBot(Root):
                 try:
                     await self.bot.reload_extension(ext)
                 except commands.ExtensionError as exc:
-                    unsuccessful.append(f"{ext} ‒ {exc}")
+                    unsuccessful.append(f"{ext} \u2012 {exc}")
                 else:
                     successful.append(ext)
             end = time.perf_counter()
-            reloaded_extensions = (
-                    ("\u2611 " + "\n\u2611 ".join(successful) if successful else "")
-                    + ("\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else "")
+            reloaded_extensions = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + (
+                "\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else ""
             )
             embed = discord.Embed(
                 title=f"Reloaded {plural(len(successful), 'Cog')}",
                 description=reloaded_extensions.strip("\n"),
-                color=discord.Color.blurple()
+                color=discord.Color.blurple(),
             )
             embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
             return await send(ctx, embed)
@@ -193,19 +196,18 @@ class RootBot(Root):
         for ext in extensions:
             try:
                 await self.bot.reload_extension(ext)
-            except commands.ExtensionError as e:
-                unsuccessful.append(f"{ext} ‒ {e}")
+            except commands.ExtensionError as exc:
+                unsuccessful.append(f"{ext} \u2012 {exc}")
             else:
                 successful.append(ext)
         end = time.perf_counter()
-        reloaded_extensions = (
-                ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") +
-                ("\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else '')
+        reloaded_extensions = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + (
+            "\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else ""
         )
         embed = discord.Embed(
             title=f"Reloaded {plural(len(successful), 'Cog')}",
             description=reloaded_extensions,
-            color=discord.Color.blurple()
+            color=discord.Color.blurple(),
         )
         embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
         await send(ctx, embed)
@@ -231,9 +233,9 @@ class RootBot(Root):
         command = self.bot.get_command(command_name)
         if not command:
             return await send(ctx, f"Command `{command_name}` not found.")
-        elif command.name.startswith("dev"):
+        if command.name.startswith("dev"):
             return await send(ctx, "Cannot disable dev commands.")
-        elif not command.enabled:
+        if not command.enabled:
             return await send(ctx, f"Command `{command_name}` is already disabled.")
         command.enabled = False
         await ctx.message.add_reaction("\u2611")
@@ -250,7 +252,6 @@ class RootBot(Root):
             assert ctx.prefix is not None and ctx.invoked_with is not None
             return await send(
                 ctx,
-                f"`dev {ctx.invoked_with}` has no subcommand "
-                f"`{parse_invoked_subcommand(ctx)}`."
+                f"`dev {ctx.invoked_with}` has no subcommand " f"`{parse_invoked_subcommand(ctx)}`.",
             )
         optional_raise(ctx, exception)

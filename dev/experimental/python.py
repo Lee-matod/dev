@@ -22,7 +22,6 @@ from discord.ext import commands
 
 from dev.handlers import ExceptionHandler, GlobalLocals, RelativeStandard, replace_vars
 from dev.interpreters import Execute
-
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
@@ -37,18 +36,20 @@ if TYPE_CHECKING:
 def _maybe_raw_send(item: Any, /) -> bool:
     if isinstance(item, (discord.Embed, discord.File, discord.ui.View)):
         return True
-    elif isinstance(item, Sequence) and item:
+    if isinstance(item, Sequence) and item:
         if len(item[:11]) > 10:  # type: ignore # Early return check
             return False
         same_type = all(isinstance(i, type(item[0])) for i in item)  # type: ignore
         if not same_type:
             return False
-        elif type(item[0]) in (discord.Embed, discord.File):  # type: ignore
+        if type(item[0]) in (discord.Embed, discord.File):  # type: ignore
             return True
     return False
 
 
 class RootPython(Root):
+    """Python evaluation commands"""
+
     def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
         self.retain: bool = False
@@ -56,33 +57,34 @@ class RootPython(Root):
         self.last_output: Any = None
 
     @property
-    def inst(self) -> GlobalLocals:
+    def repl(self) -> GlobalLocals:
+        """Get the scope that a REPL session will use"""
         if self.retain and self._vars is not None:
             return self._vars
-        elif self.retain and self._vars is None:
+        if self.retain and self._vars is None:
             self._vars = GlobalLocals()
             return self._vars
-        elif not self.retain and self._vars is not None:
+        if not self.retain and self._vars is not None:
             self._vars = None
             return GlobalLocals()
-        else:
-            return GlobalLocals()
+        return GlobalLocals()
 
     @root.command(name="retain", parent="dev")
     async def root_retain(self, ctx: commands.Context[types.Bot], toggle: bool | None = None):
+        """Toggle whether variables from REPL sessions should be kept for any future ones."""
         if toggle is None:
             translate_dict = {True: "enabled", False: "disabled"}
             await send(ctx, f"Retention is currently {translate_dict[self.retain]}.")
         elif toggle:
             if self.retain is True:
-                return await send(ctx, f"Retention is already enabled.")
+                return await send(ctx, "Retention is already enabled.")
             self.retain = True
-            await send(ctx, f"Retention has been enabled.")
+            await send(ctx, "Retention has been enabled.")
         else:
             if self.retain is False:
-                return await send(ctx, f"Retention is already disabled.")
+                return await send(ctx, "Retention is already disabled.")
             self.retain = False
-            await send(ctx, f"Retention has been disabled.")
+            await send(ctx, "Retention has been disabled.")
 
     @root.command(
         name="python",
@@ -93,10 +95,9 @@ class RootPython(Root):
         require_var_positional=False,
     )
     async def root_python(self, ctx: commands.Context[types.Bot], *, code: str | None = None):
-        """
-        Evaluate or execute Python code.
-        You may specify `__previous__` in the code, and it'll get replaced with the previous script that was executed.
-        The bot will search through the history of the channel with a limit of 25 messages.
+        """Evaluate or execute Python code.
+        Just like in any REPL session, you can use the '_' to gain access to the
+        last value outputed by the previous session.
         """
         assert ctx.command is not None
         if code is None and ctx.message.attachments:
@@ -104,37 +105,40 @@ class RootPython(Root):
             try:
                 code = filed_code.decode("utf-8")
             except UnicodeDecodeError:
-                return await send(ctx, "Unable to decode attachment. Make sure it is UTF-8 compatible.")
+                return await send(
+                    ctx,
+                    "Unable to decode attachment. Make sure it is UTF-8 compatible.",
+                )
         elif code is None and not ctx.message.attachments:
-            raise commands.MissingRequiredArgument(ctx.command.clean_params.get("code"))  # type: ignore
+            raise commands.MissingRequiredArgument(ctx.command.clean_params["code"])
         assert code is not None
 
-        args: dict[str, Any] = {
-            "bot": self.bot,
-            "ctx": ctx
-        }
+        args: dict[str, Any] = {"bot": self.bot, "ctx": ctx}
         if self.last_output is not None:
             args["_"] = self.last_output
         code = clean_code(replace_vars(code.replace("|root|", Settings.root_folder), Root.scope))
         output: list[str] = []
 
         async def on_error(
-                exc_type: type[Exception] | None,
-                exc_val: Exception | None,
-                exc_tb: TracebackType | None
+            exc_type: type[Exception] | None,
+            exc_val: Exception | None,
+            exc_tb: TracebackType | None,
         ) -> None:
             if handler.debug or exc_type is None or exc_val is None or exc_tb is None:
                 return
-            elif isinstance(exc_val, (SyntaxError, ImportError, NameError, AttributeError)):
+            if isinstance(exc_val, (SyntaxError, ImportError, NameError, AttributeError)):
                 await send(ctx, codeblock_wrapper(f"{exc_type.__name__}: {exc_val}", "py"))
 
         reader_task: asyncio.Task[None] = self.bot.loop.create_task(self._on_update(ctx, output))
-        executor = Execute(code, self.inst, args)
-        stdout = RelativeStandard(callback=lambda s: output.append(s), filename=executor.filename)
+        executor = Execute(code, self.repl, args)
+        stdout = RelativeStandard(
+            callback=lambda s: output.append(s),
+            filename=executor.filename,
+        )
         stderr = RelativeStandard(
             sys.__stderr__,
             lambda s: output.append(s),
-            filename=executor.filename
+            filename=executor.filename,
         )
         try:
             async with ExceptionHandler(ctx.message, on_error=on_error) as handler:
@@ -142,7 +146,7 @@ class RootPython(Root):
                     async for expr in executor:
                         if expr is None:
                             continue
-                        elif _maybe_raw_send(expr):
+                        if _maybe_raw_send(expr):
                             await send(ctx, expr, forced=True)
                         else:
                             await send(ctx, codeblock_wrapper(repr(expr), "py"), forced=True)
@@ -157,8 +161,14 @@ class RootPython(Root):
     async def _on_update(self, ctx: commands.Context[types.Bot], view: list[str], /) -> None:
         current = len(view)
         if view:
-            await send(ctx, "[stdout/stderr]\n" + codeblock_wrapper("".join(view).strip("\n"), "py"))
+            await send(
+                ctx,
+                "[stdout/stderr]\n" + codeblock_wrapper("".join(view).strip("\n"), "py"),
+            )
         while True:
             if current != len(view):
-                await send(ctx, "[stdout/stderr]\n" + codeblock_wrapper("".join(view).strip("\n"), "py"))
+                await send(
+                    ctx,
+                    "[stdout/stderr]\n" + codeblock_wrapper("".join(view).strip("\n"), "py"),
+                )
             await asyncio.sleep(0)

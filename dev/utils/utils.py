@@ -12,6 +12,7 @@ Basic utilities used within the dev extension.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+
 from discord.utils import escape_markdown, escape_mentions
 
 if TYPE_CHECKING:
@@ -19,20 +20,14 @@ if TYPE_CHECKING:
 
     from dev import types
 
-__all__ = (
-    "clean_code",
-    "codeblock_wrapper",
-    "escape",
-    "plural",
-    "responses"
-)
+__all__ = ("clean_code", "codeblock_wrapper", "escape", "plural", "responses")
 
 responses: dict[str, str] = {
     "1": "Informational response",
     "2": "Successful response",
     "3": "Redirection response",
     "4": "Client error response",
-    "5": "Server error response"
+    "5": "Server error response",
 }
 
 
@@ -60,7 +55,7 @@ def clean_code(content: str) -> str:
     """
     if content.startswith("```") and content.endswith("```"):
         content = "\n".join(content.split("\n")[1:])
-        return "\n".join(content.split("\n")[:-1]) if content.split("\n")[-1] == "```" else content[:-3]
+        return "\n".join(content.split("\n")[:-1]) if content.rsplit("\n", maxsplit=1)[-1] == "```" else content[:-3]
     return content
 
 
@@ -110,7 +105,7 @@ def escape(content: str) -> str:
 
 
 def plural(amount: int, singular: str, include_amount: bool = True) -> str:
-    """A helper function that returns a plural form of the word given if the amount isn't 1 (one).
+    """A helper function that returns a plural form of the word given if the amount isn't 1.
 
     Parameters
     ----------
@@ -129,5 +124,8 @@ def plural(amount: int, singular: str, include_amount: bool = True) -> str:
     _plural = singular + ("s" if not singular.endswith("s") else "'")
     if singular == "is":
         _plural = "are"
-    return f"{amount if include_amount else ''} {singular}".strip() if amount == 1 else \
-        f"{amount if include_amount else ''} {_plural}".strip()
+    return (
+        f"{amount if include_amount else ''} {singular}".strip()
+        if amount == 1
+        else f"{amount if include_amount else ''} {_plural}".strip()
+    )

@@ -23,11 +23,7 @@ from discord.utils import MISSING, stream_supports_colour
 if TYPE_CHECKING:
     from dev import types
 
-__all__ = (
-    "Settings",
-    "enforce_owner",
-    "setup_logging"
-)
+__all__ = ("Settings", "enforce_owner", "setup_logging")
 
 
 def strtoints(val: str) -> list[int]:
@@ -46,7 +42,10 @@ def strtoints(val: str) -> list[int]:
 
 class _DefaultFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
-        fmt = logging.Formatter("[%(asctime)s] [%(levelname)s] BLANK%(name)s: %(message)s", "%Y/%m/%d %H:%M:%S")
+        fmt = logging.Formatter(
+            "[%(asctime)s] [%(levelname)s] BLANK%(name)s: %(message)s",
+            "%Y/%m/%d %H:%M:%S",
+        )
         output = fmt.format(record)
         return output.replace("BLANK", " " * (8 - len(record.levelname)), 1)
 
@@ -64,8 +63,9 @@ class _ColoredFormatter(logging.Formatter):
         level: logging.Formatter(
             f"\x1b[30m%(asctime)s\x1b[0m {color}[%(levelname)s]\x1b[0m BLANK"
             f"\x1b[35m%(name)s:\x1b[0m \x1b[97;1m%(message)s\x1b[0m",
-            "%Y/%m/%d %H:%M:%S"
-        ) for level, color in LEVELS
+            "%Y/%m/%d %H:%M:%S",
+        )
+        for level, color in LEVELS
     }
 
     def format(self, record: logging.LogRecord) -> str:
@@ -90,7 +90,7 @@ class _SettingsSentinel:
         "__root_folder",
         "__virtual_vars",
         "mapping",
-        "kwargs"
+        "kwargs",
     )
 
     def __init__(self, **kwargs: Any):
@@ -111,7 +111,7 @@ class _SettingsSentinel:
             "owners": set,
             "path_to_file": str,
             "root_folder": str,
-            "virtual_vars": str
+            "virtual_vars": str,
         }
 
         for setting, set_type in self.mapping.items():
@@ -132,7 +132,8 @@ class _SettingsSentinel:
     @property
     def allow_global_uses(self) -> bool:
         """:class:`bool`:
-        Commands that have their `global_use` property set True are allowed to be invoked by any user.
+        Commands that have their `global_use` property set True are allowed to be
+        invoked by any user.
         Defaults to `False`.
         """
         return self.__allow_global_uses
@@ -146,7 +147,8 @@ class _SettingsSentinel:
     @property
     def flag_delimiter(self) -> str:
         """:class:`str`:
-        The characters that determines when to separate a key from its value when parsing strings to dictionaries.
+        The characters that determines when to separate a key from its value when parsing
+        strings to dictionaries.
         Defaults to `=`.
         """
         return self.__flag_delimiter
@@ -163,7 +165,8 @@ class _SettingsSentinel:
     @property
     def invoke_on_edit(self) -> bool:
         """:class:`bool`:
-        Whenever a message that invoked a command is edited to another command, the bot will try to invoke the new
+        Whenever a message that invoked a command is edited to another command, the bot will try to
+        invoke the new
         command.
         Defaults to `False`.
         """
@@ -198,7 +201,8 @@ class _SettingsSentinel:
     @property
     def owners(self) -> set[int]:
         """Set[:class:`int`]:
-        A set of user IDs that override bot ownership IDs. If specified, users that are only found in the ownership ID
+        A set of user IDs that override bot ownership IDs. If specified, users that are only
+        found in the ownership ID
         list will not be able to use this extension.
         """
         return self.__owners
@@ -214,7 +218,8 @@ class _SettingsSentinel:
     @property
     def path_to_file(self) -> str:
         """:class:`str`:
-        A path directory that will be removed if found inside a message. This will typically be used in tracebacks.
+        A path directory that will be removed if found inside a message. This will typically
+        be used in tracebacks.
         Defaults to the current working directory. This must be a valid path.
         """
         return self.__path_to_file
@@ -251,8 +256,8 @@ class _SettingsSentinel:
     @property
     def virtual_vars(self) -> str:
         """:class:`str`
-        The format in which virtual variables are expected to be formatted. The actual place where the variable's name
-        will be should be defined as `%s`.
+        The format in which virtual variables are expected to be formatted. The actual place where
+        the variable's name will be should be defined as `%s`.
         Defaults to `|%s|`.
         """
         return self.__virtual_vars
@@ -262,7 +267,7 @@ class _SettingsSentinel:
         if not isinstance(value, str):
             raise ValueError(f"Expected type str, got {type(value)!r}")
         if value.count("%s") != 1:
-            raise ValueError(f"Got 0 or more than 1 instance of '%s', exactly 1 expected")
+            raise ValueError("Got 0 or more than 1 instance of '%s', exactly 1 expected")
         self.__virtual_vars = value
         self.kwargs["virtual_vars"] = os.environ["DEV_ROOT_FOLDER"] = value
 
@@ -270,17 +275,17 @@ class _SettingsSentinel:
         return _SettingsSentinel(**self.kwargs)
 
     def exists(self, setting_name: str, /) -> bool:
-        return setting_name in self.mapping.keys()
+        return setting_name in self.mapping
 
 
 Settings = _SettingsSentinel()
 
 
 def setup_logging(
-        *,
-        level: int = logging.INFO,
-        handler: logging.Handler = MISSING,
-        formatter: logging.Formatter = MISSING
+    *,
+    level: int = logging.INFO,
+    handler: logging.Handler = MISSING,
+    formatter: logging.Formatter = MISSING,
 ) -> logging.Logger:
     if handler is MISSING:
         handler = logging.StreamHandler()
@@ -302,7 +307,9 @@ def setup_logging(
     return logger
 
 
-async def enforce_owner(bot: types.Bot) -> logging.Logger:
+async def enforce_owner(
+    bot: types.Bot,
+) -> logging.Logger:
     _log = setup_logging()
     if not any((Settings.owners, bot.owner_ids, bot.owner_id)):
         #  Try to set the owner as the application's owner or its team members
@@ -316,9 +323,10 @@ async def enforce_owner(bot: types.Bot) -> logging.Logger:
         else:
             _log.warning(
                 "No owners were set. Falling back to the owner of the application (%s).",
-                ", ".join(map(str, Settings.owners))
+                ", ".join(map(str, Settings.owners)),
             )
     if not any((Settings.owners, bot.owner_ids, bot.owner_id)):
-        #  The application was not logged in when we tried to get the info, and no other owner IDs were set
+        #  The application was not logged in when we tried to get the info,
+        #  and no other owner IDs were set
         raise RuntimeError("For security reasons, an owner ID must be set")
     return _log

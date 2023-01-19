@@ -22,7 +22,6 @@ import discord
 from dev.converters import str_ints
 from dev.handlers import ExceptionHandler
 from dev.registrations import CommandRegistration, Over
-
 from dev.utils.baseclass import Root
 from dev.utils.functs import interaction_response
 from dev.utils.startup import Settings
@@ -33,18 +32,11 @@ if TYPE_CHECKING:
     from dev import types
     from dev.components.views import ModalSender
 
-__all__ = (
-    "CodeEditor",
-    "SettingEditor",
-    "VariableValueSubmitter"
-)
+__all__ = ("CodeEditor", "SettingEditor", "VariableValueSubmitter")
 
 
 class VariableValueSubmitter(discord.ui.Modal):
-    value: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(
-        label="Value",
-        style=discord.TextStyle.paragraph
-    )
+    value: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(label="Value", style=discord.TextStyle.paragraph)
 
     def __init__(self, name: str, new: bool, default: str | None = None) -> None:
         self.value.default = default
@@ -52,18 +44,18 @@ class VariableValueSubmitter(discord.ui.Modal):
         self.name: str = name
         self.new: bool = new
 
-    async def on_submit(self, interaction: discord.Interaction) -> None:
+    async def on_submit(self, interaction: discord.Interaction, /) -> None:
         Root.scope.update({self.name: self.value.value})
+        fmt = "created new variable" if self.new else "edited"
         await interaction.response.edit_message(
-            content=f"Successfully {'created a new variable called' if self.new else 'edited'} `{self.name}`",
-            view=None
+            content=f"Successfully {fmt} `{self.name}`",
+            view=None,
         )
 
 
 class CodeEditor(discord.ui.Modal):
     code: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(
-        label="Code inspection for 'command'",
-        style=discord.TextStyle.long
+        label="Code inspection for 'command'", style=discord.TextStyle.long
     )
 
     def __init__(self, ctx: commands.Context[types.Bot], command: types.Command, root: Root) -> None:
@@ -77,13 +69,20 @@ class CodeEditor(discord.ui.Modal):
         self.ctx: commands.Context[types.Bot] = ctx
         self.root: Root = root
 
-    async def on_submit(self, interaction: discord.Interaction) -> None:
+    async def on_submit(self, interaction: discord.Interaction, /) -> None:
         self.ctx.bot.remove_command(self.command.qualified_name)
-        lcls: dict[str, Any] = {"discord": discord, "commands": commands, "bot": self.ctx.bot}
-        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        lcls: dict[str, Any] = {
+            "discord": discord,
+            "commands": commands,
+            "bot": self.ctx.bot,
+        }
+        with (
+            contextlib.redirect_stdout(io.StringIO()),
+            contextlib.redirect_stderr(io.StringIO()),
+        ):
             async with ExceptionHandler(
                 self.ctx.message,
-                lambda *_: self.ctx.bot.add_command(self.command)  # type: ignore
+                lambda *_: self.ctx.bot.add_command(self.command),  # type: ignore
             ):
                 # make sure everything is parsed correctly
                 parsed = ast.parse(self.code.value)
@@ -92,18 +91,25 @@ class CodeEditor(discord.ui.Modal):
                     return await interaction_response(
                         interaction,
                         discord.InteractionResponseType.message_update,
-                        "The entire parent body should only consist of a single asynchronous function definition.",
-                        view=None
+                        "Top-level code should consist of a single asynchronous function.",
+                        view=None,
                     )
                 # prepare variables for script wrapping
                 func: ast.AsyncFunctionDef = parsed.body[-1]  # type: ignore
-                body = textwrap.indent("\n".join(self.code.value.split("\n")[len(func.decorator_list) + 1:]), "\t")
-                parameters = self.code.value.split("\n")[func.lineno - 1][len(f"async def {func.name}("):]
-                upper = "\n".join(self.code.value.split("\n")[:func.lineno - 1])
+                body = textwrap.indent(
+                    "\n".join(self.code.value.split("\n")[len(func.decorator_list) + 1 :]),
+                    "\t",
+                )
+                parameters = self.code.value.split("\n")[func.lineno - 1][len(f"async def {func.name}(") :]
+                upper = "\n".join(self.code.value.split("\n")[: func.lineno - 1])
 
                 exec(
-                    f"async def func():\n\t{upper}\n\tasync def {func.name}({parameters}\n{body}\n\treturn {func.name}",
-                    lcls
+                    f"async def func():\n"
+                    f"\t{upper}\n"
+                    "\tasync def {func.name}({parameters}\n"
+                    "{body}\n"
+                    "\treturn {func.name}",
+                    lcls,
                 )
                 obj: commands.Command[Any, ..., Any] | commands.Group[Any, ..., Any] = await lcls["func"]()
                 # check after execution
@@ -112,8 +118,8 @@ class CodeEditor(discord.ui.Modal):
                     return await interaction_response(
                         interaction,
                         discord.InteractionResponseType.message_update,
-                        "The asynchronous function should return an instance of `commands.Command`.",
-                        view=None
+                        "Top-level function should be a command-like object.",
+                        view=None,
                     )
                 if obj.qualified_name != self.command.qualified_name:
                     self.ctx.bot.remove_command(obj.qualified_name)
@@ -122,20 +128,21 @@ class CodeEditor(discord.ui.Modal):
                         interaction,
                         discord.InteractionResponseType.message_update,
                         "The command's name cannot be changed.",
-                        view=None
+                        view=None,
                     )
                 self.root.update_register(
                     CommandRegistration(
                         obj,
                         Over.OVERRIDE,
-                        source=f"{upper.lstrip()}\nasync def {func.name}({parameters}\n{body}"),
-                    Over.ADD
+                        source=f"{upper.lstrip()}\nasync def {func.name}({parameters}\n{body}",
+                    ),
+                    Over.ADD,
                 )
         await interaction_response(
             interaction,
             discord.InteractionResponseType.message_update,
             "New script has been submitted.",
-            view=None
+            view=None,
         )
 
 
@@ -145,18 +152,15 @@ class SettingEditor(discord.ui.Modal):
         self.setting_obj: set[int] | str = getattr(Settings, setting)
         self.item: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(
             label=setting.replace("_", " ").title(),
-            default=(", ".join(map(str, self.setting_obj)) if isinstance(self.setting_obj, set) else self.setting_obj)
+            default=(", ".join(map(str, self.setting_obj)) if isinstance(self.setting_obj, set) else self.setting_obj),
         )
         super().__init__(title=f"{setting.replace('_', ' ').title()} Editor")
         self.add_item(self.item)
 
-    async def on_submit(self, interaction: discord.Interaction) -> None:
+    async def on_submit(self, interaction: discord.Interaction, /) -> None:
         if isinstance(self.setting_obj, set):
             setattr(Settings, self.setting, set(str_ints(self.item.value)))
         #  bool instances are toggleable buttons
         else:
             setattr(Settings, self.setting, self.item.value)
-        await interaction_response(
-            interaction,
-            discord.InteractionResponseType.message_update
-        )
+        await interaction_response(interaction, discord.InteractionResponseType.message_update)

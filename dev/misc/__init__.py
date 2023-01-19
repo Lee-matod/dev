@@ -12,7 +12,4 @@ Miscellaneous commands.
 from dev.misc.flags import *
 from dev.misc.search import *
 
-__all__ = (
-    "RootFlags",
-    "RootSearch"
-)
+__all__ = ("RootFlags", "RootSearch")
