@@ -150,7 +150,7 @@ class RootOver(Root):
             # Prepare variables for script wrapping
             func: ast.AsyncFunctionDef = parsed.body[-1]  # type: ignore
             body = textwrap.indent("\n".join(script.split("\n")[len(func.decorator_list) + 1 :]), "\t")
-            parameters = script.split("\n")[func.lineno - 1][len(f"async def {func.name}(") :-2]
+            parameters = script.split("\n")[func.lineno - 1][len(f"async def {func.name}(") : -2]
             upper = "\n".join(script.split("\n")[: func.lineno - 1])
 
             exec(
@@ -159,7 +159,7 @@ class RootOver(Root):
                 f"\tasync def {func.name}({parameters}):\n"
                 f"{body}\n"
                 f"\treturn {func.name}",
-                scope
+                scope,
             )
             obj = await scope["__command_getter__"]()
             # check after execution
@@ -176,8 +176,7 @@ class RootOver(Root):
         if isinstance(command, commands.Group):
             if not isinstance(obj, commands.Group):
                 await send(
-                    ctx,
-                    "The command provided was initially a group, but override did not make this attribute persist."
+                    ctx, "The command provided was initially a group, but override did not make this attribute persist."
                 )
             for child in command.commands:
                 obj.add_command(child)  # type: ignore

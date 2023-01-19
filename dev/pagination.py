@@ -33,11 +33,23 @@ class _PageSetter(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction, /) -> None:
         if not self.page_num.value.isnumeric():
-            return await interaction_response(interaction, discord.InteractionResponseType.channel_message, "Input value should be numeric.", ephemeral=True)
+            return await interaction_response(
+                interaction,
+                discord.InteractionResponseType.channel_message,
+                "Input value should be numeric.",
+                ephemeral=True,
+            )
         if int(self.page_num.value) not in range(1, len(self.view.paginator.pages) + 1):
-            return await interaction_response(interaction, discord.InteractionResponseType.channel_message, "Page number does not exist.", ephemeral=True)
+            return await interaction_response(
+                interaction,
+                discord.InteractionResponseType.channel_message,
+                "Page number does not exist.",
+                ephemeral=True,
+            )
         self.view.current_page = int(self.page_num.value)
-        await interaction_response(interaction, discord.InteractionResponseType.modal, content=self.view.display_page, view=self.view)
+        await interaction_response(
+            interaction, discord.InteractionResponseType.modal, content=self.view.display_page, view=self.view
+        )
 
 
 class Paginator(commands.Paginator):
