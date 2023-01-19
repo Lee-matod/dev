@@ -61,26 +61,14 @@ POWERSHELL = pathlib.Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershel
 SHELL = os.getenv("SHELL") or "/bin/bash"
 
 
-class StdinManager(discord.ui.Modal):
-    stdin: discord.ui.TextInput[AuthoredView] = discord.ui.TextInput(label="To stdin:")
-
-    def __init__(self, process: Process, /):
-        super().__init__(title="Write to stdin")
-        self.process: Process = process
-
-    async def on_submit(self, interaction: discord.Interaction, /) -> None:
-        self.process.subprocess.communicate(f"{self.stdin.value}\n".encode("utf-8"))
-        await interaction_response(interaction, discord.InteractionResponseType.message_update)
-
-
-class ProcessHandler(AuthoredView):
+class _SigKill(AuthoredView):
     def __init__(self, author: types.User | int, process: Process, /):
         super().__init__(author)
         self.session: ShellSession = process._Process__session  # type: ignore
         self.process: Process = process
 
     @discord.ui.button(label="Kill", emoji="\u26D4", style=discord.ButtonStyle.danger)
-    async def sigkill(self, interaction: discord.Interaction, _: discord.ui.Button[ProcessHandler]):
+    async def sigkill(self, interaction: discord.Interaction, _: discord.ui.Button[_SigKill]):
         self.process.subprocess.kill()
         self.process.subprocess.terminate()
         self.process.force_kill = True
@@ -90,14 +78,6 @@ class ProcessHandler(AuthoredView):
             self.session.raw,
             view=None,
             paginator=self.session.paginator,
-        )
-
-    @discord.ui.button(label="Write to stdin")
-    async def stdin_writer(self, interaction: discord.Interaction, _: discord.ui.Button[ProcessHandler]):
-        await interaction_response(
-            interaction,
-            discord.InteractionResponseType.modal,
-            StdinManager(self.process),
         )
 
 
@@ -199,9 +179,9 @@ class Process:
         self.subprocess.terminate()
         self.close_code = self.subprocess.wait(timeout=0.5)
 
-    def _get_view(self, author: types.User | int) -> ProcessHandler | None:
+    def _get_view(self, author: types.User | int) -> _SigKill | None:
         if self.is_alive:
-            return ProcessHandler(author, self)
+            return _SigKill(author, self)
         return None
 
     @overload
