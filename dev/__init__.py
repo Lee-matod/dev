@@ -40,7 +40,6 @@ __all__ = (
     "ManagementRegistration",
     "ModalSender",
     "Over",
-    "OverrideSettings",
     "OverType",
     "Process",
     "Root",

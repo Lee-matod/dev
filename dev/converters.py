@@ -11,15 +11,11 @@ Custom converters used within the dev extension.
 """
 from __future__ import annotations
 
-import json
 import re
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union
 
 import discord
 from discord.ext import commands
-
-from dev.utils.functs import flag_parser, send
-from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
     from dev import types
@@ -28,7 +24,6 @@ __all__ = (
     "CodeblockConverter",
     "GlobalTextChannelConverter",
     "LiteralModes",
-    "OverrideSettings",
     "str_bool",
     "str_ints",
 )
@@ -55,56 +50,6 @@ class GlobalTextChannelConverter(commands.TextChannelConverter):
         if channel is None:
             raise commands.ChannelNotFound(argument)
         return channel  # type: ignore
-
-
-class OverrideSettings(commands.Converter[None]):
-    default_settings: dict[str, Any] = {}
-    script: str = ""
-    command_string: str = ""
-
-    async def convert(self, ctx: commands.Context[types.Bot], argument: str) -> None:
-        changed: list[str] = []
-        try:
-            new_settings = flag_parser(argument, "=")
-        except json.JSONDecodeError:
-            return
-        assert isinstance(new_settings, dict)
-        for key, value in new_settings.items():
-            if key.startswith("__") and key.endswith("__"):
-                continue
-            key = key.lower()
-            if not Settings.exists(key):
-                return await ctx.message.add_reaction("❗")
-            setting = getattr(Settings, key)
-            if isinstance(setting, bool):
-                self.default_settings[key] = str_bool(value)
-                setattr(Settings, key, str_bool(value))
-            elif isinstance(setting, set):
-                self.default_settings[key] = set(str_ints(value))
-                setattr(Settings, key, set(str_ints(value)))
-            else:
-                self.default_settings[key] = value
-                setattr(Settings, key, value)
-            changed.append(f"Settings.{key}={value}")
-        await send(
-            ctx,
-            embed=discord.Embed(
-                title="Settings Changed" if self.default_settings else "Nothing Changed",
-                description="`" + "`\n`".join(changed) + "`",
-                colour=discord.Color.green() if self.default_settings else discord.Color.red(),
-            ),
-            delete_after=5,
-        )
-        argument = argument.strip()
-        if argument.startswith("```") and argument.endswith("```"):
-            self.script = argument
-        else:
-            self.command_string = argument
-
-    def back_to_default(self, *_: Any) -> None:
-        """Revert to previous settings"""
-        for module, value in self.default_settings.items():
-            setattr(Settings, module, value)
 
 
 class LiteralModes(commands.Converter[Union[str, None]]):
