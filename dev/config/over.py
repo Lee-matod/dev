@@ -102,7 +102,8 @@ class RootOver(Root):
     )
     async def root_override_command(self, ctx: commands.Context[types.Bot], *, command_code: CodeblockConverter):
         r"""Temporarily override a command.
-        All changes will be undone once the bot is restarted or the cog is reloaded.
+        All changes will be undone once the bot is restarted.
+        If the command belongs to a cog, its first argument in the callback should be the instance of the binding.
         This differentiates from its counterpart `dev overwrite` which permanently changes a file.
         The script that will be used as override should be specified in a codeblock.
         """
@@ -114,8 +115,7 @@ class RootOver(Root):
         command: types.Command = self.bot.get_command(command_string)  # type: ignore
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
-        impl = self.get_last_implementation(command_string)
-        assert impl is not None, "Should not have reached this code"
+        impl: CommandRegistration = self.get_last_implementation(command_string)  # type: ignore
         # modals have a maximum of 4000 characters
         if not script and len(impl.source) > 4000:
             return await send(
@@ -134,77 +134,67 @@ class RootOver(Root):
             )
         self.bot.remove_command(command_string)
 
-        # Get file imports, functions and any other top-level expression,
-        # so you don't have to rewrite everything yourself
         base_command = self.get_base_command(command.qualified_name)
-        additional_attrs = {}
+        scope: dict[str, Any] = {}
         if base_command is not None:
-            file = inspect.getsourcefile(base_command.callback)
-            if file is None:
-                return await send(ctx, "Could not find source.")
-            with open(file, "r", encoding="utf-8") as fp:
-                file = fp.read().replace(base_command.source, "")
-            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
-                io.StringIO()
-            ), contextlib.suppress(BaseException):
-                exec(compile(file, "<exec>", "exec"), additional_attrs)
+            scope.update(base_command.callback.__globals__)
 
         script = clean_code(replace_vars(script, Root.scope))
-        scope: dict[str, Any] = {
-            "discord": discord,
-            "commands": commands,
-            "bot": self.bot,
-            **additional_attrs,
-        }
-        with (
-            contextlib.redirect_stdout(io.StringIO()),
-            contextlib.redirect_stderr(io.StringIO()),
-        ):
-            async with ExceptionHandler(ctx.message, lambda *_: self.bot.add_command(command)):  # type: ignore
-                # Make sure everything is parsed correctly
-                parsed = ast.parse(script)
-                if [ast.AsyncFunctionDef] != [type(expr) for expr in parsed.body]:
-                    self.bot.add_command(command)
-                    return await send(
-                        ctx,
-                        "Top-level code should consist of a single asynchronous function.",
-                    )
-                # Prepare variables for script wrapping
-                func: ast.AsyncFunctionDef = parsed.body[-1]  # type: ignore
-                body = textwrap.indent("\n".join(script.split("\n")[len(func.decorator_list) + 1 :]), "\t")
-                parameters = script.split("\n")[func.lineno - 1][len(f"async def {func.name}(") :]
-                upper = "\n".join(script.split("\n")[: func.lineno - 1])
+        async with ExceptionHandler(ctx.message, lambda *_: self.bot.add_command(command)):  # type: ignore
+            # Make sure everything is parsed correctly
+            parsed = ast.parse(script)
+            if [ast.AsyncFunctionDef] != [type(expr) for expr in parsed.body]:
+                self.bot.add_command(command)
+                return await send(
+                    ctx,
+                    "Top-level code should consist of a single asynchronous function.",
+                )
+            # Prepare variables for script wrapping
+            func: ast.AsyncFunctionDef = parsed.body[-1]  # type: ignore
+            body = textwrap.indent("\n".join(script.split("\n")[len(func.decorator_list) + 1 :]), "\t")
+            parameters = script.split("\n")[func.lineno - 1][len(f"async def {func.name}(") :-2]
+            upper = "\n".join(script.split("\n")[: func.lineno - 1])
 
-                exec(
-                    f"async def __command_getter__():\n"
-                    f"\t{upper}\n"
-                    f"\tasync def {func.name}({parameters}\n"
-                    f"{body}\n"
-                    f"\treturn {func.name}",
-                    scope,
+            exec(
+                f"async def __command_getter__():\n"
+                f"\t{upper}\n"
+                f"\tasync def {func.name}({parameters}):\n"
+                f"{body}\n"
+                f"\treturn {func.name}",
+                scope
+            )
+            obj = await scope["__command_getter__"]()
+            # check after execution
+        if not isinstance(obj, (commands.Command, commands.Group)):
+            self.bot.add_command(command)
+            return await send(
+                ctx,
+                "Top-level function should be a command-like object.",
+            )
+        if obj.qualified_name != command_string:
+            self.bot.remove_command(obj.qualified_name)
+            self.bot.add_command(command)
+            return await send(ctx, "Command name cannot be changed.")
+        if isinstance(command, commands.Group):
+            if not isinstance(obj, commands.Group):
+                await send(
+                    ctx,
+                    "The command provided was initially a group, but override did not make this attribute persist."
                 )
-                obj = await scope[f"{'__command_getter__'}"]()
-                # check after execution
-                if not isinstance(obj, (commands.Command, commands.Group)):
-                    self.bot.add_command(command)
-                    return await send(
-                        ctx,
-                        "Top-level function should be a command-like object.",
-                    )
-                if obj.qualified_name != command_string:
-                    self.bot.remove_command(obj.qualified_name)
-                    self.bot.add_command(command)
-                    return await send(ctx, "The command's name cannot be changed.")
-                if obj.parent is None and obj not in self.bot.commands:
-                    self.bot.add_command(obj)  # type: ignore
-                self.update_register(
-                    CommandRegistration(
-                        obj,  # type: ignore
-                        Over.OVERRIDE,
-                        source=f"{upper.lstrip()}\nasync def {func.name}({parameters}\n{body}\n",
-                    ),
-                    Over.ADD,
-                )
+            for child in command.commands:
+                obj.add_command(child)  # type: ignore
+        if command.parent is not None:
+            command.parent.add_command(obj)  # type: ignore
+        elif obj not in self.bot.commands:
+            self.bot.add_command(obj)  # type: ignore
+        self.update_register(
+            CommandRegistration(
+                obj,  # type: ignore
+                Over.OVERRIDE,
+                source=f"{upper.lstrip()}\nasync def {func.name}({parameters}):\n{body}\n",
+            ),
+            Over.ADD,
+        )
 
     @root.command(
         name="setting",
