@@ -12,9 +12,7 @@ Override or overwrite certain aspects and functions of the bot.
 from __future__ import annotations
 
 import ast
-import contextlib
 import inspect
-import io
 import textwrap
 from typing import TYPE_CHECKING, Any
 
@@ -22,12 +20,12 @@ import discord
 from discord.ext import commands
 
 from dev.components import AuthoredView, CodeEditor, ModalSender, SettingsToggler
-from dev.converters import CodeblockConverter, OverrideSettings, str_bool, str_ints
+from dev.converters import CodeblockConverter, str_bool, str_ints
 from dev.handlers import ExceptionHandler, optional_raise, replace_vars
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 from dev.types import Over, OverType
 from dev.utils.baseclass import Root, root
-from dev.utils.functs import flag_parser, generate_ctx, send, table_creator
+from dev.utils.functs import flag_parser, send, table_creator
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper, escape, parse_invoked_subcommand, plural
 
@@ -195,48 +193,6 @@ class RootOver(Root):
             ),
             Over.ADD,
         )
-
-    @root.command(
-        name="setting",
-        parent="dev override",
-        virtual_vars=True,
-        aliases=["settings"],
-        require_var_positional=True,
-        usage="<setting>... <command_name|script>",
-    )
-    async def root_override_setting(self, ctx: commands.Context[types.Bot], *, greedy: OverrideSettings):
-        """Temporarily override a (some) setting(s).
-        All changes will be undone once the command or script have finished executing.
-        This differentiates from `dev overwrite`, which does not switch back once the command has
-        been terminated.
-        Multiple settings can be specified and should be specified as follows: `setting=attr`.
-        Adding single or double quotes in between the different parameters is also a valid option.
-        """
-        if greedy.script:
-            code = clean_code(replace_vars(greedy.script, Root.scope))
-            lcls: dict[str, Any] = {
-                "discord": discord,
-                "commands": commands,
-                "bot": self.bot,
-                "ctx": ctx,
-            }
-            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                async with ExceptionHandler(ctx.message, greedy.back_to_default):
-                    exec(f"async def func():\n{textwrap.indent(code, '    ')}", lcls)
-                    await lcls["func"]()
-                greedy.back_to_default()
-        elif greedy.command_string:
-            context = await generate_ctx(
-                ctx,
-                content=f"{ctx.prefix}{greedy.command_string}",
-                author=ctx.author,
-                channel=ctx.channel,
-            )
-            if not context.command:
-                greedy.back_to_default()
-                return await send(ctx, f"Command `{context.invoked_with}` not found.")
-            await context.command.invoke(context)
-            greedy.back_to_default()
 
     @root.group(name="overwrite", parent="dev", ignore_extra=False, invoke_without_command=True)
     async def root_overwrite(self, ctx: commands.Context[types.Bot]):
