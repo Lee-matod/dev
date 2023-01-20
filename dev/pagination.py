@@ -18,8 +18,6 @@ from discord.ext import commands
 
 from dev import types
 
-from dev.utils.functs import interaction_response
-
 __all__ = ("Interface", "Paginator")
 
 
@@ -33,23 +31,11 @@ class _PageSetter(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction, /) -> None:
         if not self.page_num.value.isnumeric():
-            return await interaction_response(
-                interaction,
-                discord.InteractionResponseType.channel_message,
-                "Input value should be numeric.",
-                ephemeral=True,
-            )
+            return await interaction.response.send_message("Input value should be numeric.", ephemeral=True)
         if int(self.page_num.value) not in range(1, len(self.view.paginator.pages) + 1):
-            return await interaction_response(
-                interaction,
-                discord.InteractionResponseType.channel_message,
-                "Page number does not exist.",
-                ephemeral=True,
-            )
+            return await interaction.response.send_message("Page number does not exist.", ephemeral=True)
         self.view.current_page = int(self.page_num.value)
-        await interaction_response(
-            interaction, discord.InteractionResponseType.modal, content=self.view.display_page, view=self.view
-        )
+        await interaction.response.edit_message(content=self.view.display_page, view=self.view)
 
 
 class Paginator(commands.Paginator):
@@ -185,26 +171,26 @@ class Interface(discord.ui.View):
     @discord.ui.button(label="\u226a")
     async def first_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page = 1
-        await interaction_response(interaction, discord.InteractionResponseType.message_update, self.display_page, self)
+        await interaction.response.edit_message(content=self.display_page, view=self)
 
     @discord.ui.button(label="\u25c0", style=discord.ButtonStyle.blurple)
     async def previous_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page -= 1
-        await interaction_response(interaction, discord.InteractionResponseType.message_update, self.display_page, self)
+        await interaction.response.edit_message(content=self.display_page, view=self)
 
     @discord.ui.button(label="0", style=discord.ButtonStyle.green)
     async def current(self, interaction: discord.Interaction, _) -> None:
-        await interaction_response(interaction, discord.InteractionResponseType.modal, _PageSetter(self))
+        await interaction.response.send_modal(_PageSetter(self))
 
     @discord.ui.button(label="\u25b6", style=discord.ButtonStyle.blurple)
     async def next_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page += 1
-        await interaction_response(interaction, discord.InteractionResponseType.message_update, self.display_page, self)
+        await interaction.response.edit_message(content=self.display_page, view=self)
 
     @discord.ui.button(label="\u226b")
     async def last_page(self, interaction: discord.Interaction, _) -> None:
         self.current_page = len(self.paginator.pages)
-        await interaction_response(interaction, discord.InteractionResponseType.message_update, self.display_page, self)
+        await interaction.response.edit_message(content=self.display_page, view=self)
 
     @discord.ui.button(label="Quit", style=discord.ButtonStyle.danger)
     async def remove(self, interaction: discord.Interaction, _) -> None:
