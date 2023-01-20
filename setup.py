@@ -55,13 +55,14 @@ with open("README.md", "r") as file:
     readme = file.read()
 
 extras_require = {"test": ["pytest", "pytest-asyncio"]}
+packages = ["dev", "dev.components", "dev.config", "dev.experimental", "dev.misc", "dev.utils"]
 
 setup(
     name="dev",
     author="Lee-matod",
     url="https://github.com/Lee-matod/dev",
     version=version,
-    packages=["dev", "dev.components", "dev.config", "dev.experimental", "dev.misc", "dev.utils"],
+    packages=packages,
     license="MIT",
     description="A debugging, testing and editing cog for discord.py",
     long_description=readme,
@@ -70,4 +71,19 @@ setup(
     install_requires=requirements,
     python_requires=">=3.8.0",
     extras_require={"test": ["pytest", "pytest-asyncio"]},
+    classifiers=[
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Topic :: Communications :: Chat",
+        "Topic :: Internet",
+        "Topic :: Software Development",
+        "Topic :: Software Development :: Debuggers",
+        "Topic :: Software Development :: Testing",
+        "Topic :: Utilities",
+        "Typing :: Typed",
+    ],
 )
