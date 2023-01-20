@@ -22,7 +22,6 @@ import discord
 from discord.ext import commands
 from discord.utils import MISSING
 
-from dev.pagination import Interface, Paginator
 from dev.utils.baseclass import Root
 from dev.utils.startup import Settings
 
@@ -30,6 +29,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from dev import types
+    from dev.pagination import Interface, Paginator
 
 T = TypeVar("T")
 
@@ -191,6 +191,8 @@ async def send(  # type: ignore
         `content` exceeded the 2000-character limit, and `view` did not permit pagination to work
         due to the amount of components it included.
     """
+    from dev.pagination import Interface, Paginator  # circular import
+
     replace_path_to_file: bool = options.pop("path_to_file", True)
     forced: bool = options.pop("forced", False)
     forced_pagination: bool = options.pop("forced_pagination", True)
@@ -365,6 +367,8 @@ async def interaction_response(  # type: ignore
         `content` exceeded the 2000-character limit, and `view` did not permit pagination to work
         due to the amount of components it included.
     """
+    from dev.pagination import Interface, Paginator  # circular import
+
     if response_type is discord.InteractionResponseType.channel_message:
         method = interaction.response.send_message
     elif response_type is discord.InteractionResponseType.message_update:
@@ -550,6 +554,8 @@ def _replace(string: str, token: str, /, *, path: bool) -> str:
 
 def _check_length(content: str) -> Paginator | str:
     if len(content) > 2000:
+        from dev.pagination import Paginator  # circular import
+
         highlight_lang = ""
         string = content
         if content.startswith("```") and content.endswith("```"):
