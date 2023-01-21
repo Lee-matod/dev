@@ -16,7 +16,7 @@ from dev.converters import *
 from dev.experimental import RootHTTP, RootInvoke, RootPython, RootShell
 from dev.handlers import *
 from dev.interpreters import *
-from dev.misc import RootFlags, RootSearch
+from dev.misc import RootFlags, RootInformation, RootSearch
 from dev.pagination import *
 from dev.registrations import *
 from dev.types import *
@@ -71,6 +71,7 @@ class Dev(
     RootCommand,
     RootFlags,
     RootHTTP,
+    RootInformation,
     RootInvoke,
     RootManagement,
     RootOver,

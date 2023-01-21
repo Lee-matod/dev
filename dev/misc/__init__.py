@@ -10,6 +10,7 @@ Miscellaneous commands.
 :license: MIT, see LICENSE for more details.
 """
 from dev.misc.flags import *
+from dev.misc.info import *
 from dev.misc.search import *
 
-__all__ = ("RootFlags", "RootSearch")
+__all__ = ("RootFlags", "RootInformation", "RootSearch")
