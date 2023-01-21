@@ -12,7 +12,7 @@ Direct bot reconfiguration and attributes manager.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import discord
 from discord.ext import commands
@@ -111,104 +111,21 @@ class RootBot(Root):
             AuthoredView(ctx.author, select),
         )
 
-    @root.command(name="load", parent="dev bot", require_var_positional=True)
+    @root.command(name="load", parent="dev bot", aliases=["reload", "unload"], require_var_positional=True)
     async def root_bot_load(self, ctx: commands.Context[types.Bot], *extensions: str):
-        """Load a set of extensions"""
-        successful: list[str] = []
-        unsuccessful: list[str] = []
-        start = time.perf_counter()
-        for ext in extensions:
-            try:
-                await self.bot.load_extension(ext)
-            except commands.ExtensionError as exc:
-                unsuccessful.append(f"{ext} \u2012 {exc}")
-            else:
-                successful.append(ext)
-        end = time.perf_counter()
-        loaded_extensions = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + (
-            "\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else ""
-        )
-        embed = discord.Embed(
-            title=f"Loaded {plural(len(successful), 'Cog')}",
-            description=loaded_extensions.strip("\n"),
-            color=discord.Color.green(),
-        )
-        embed.set_footer(text=f"Loading took {end - start:.3f}s")
-        await send(ctx, embed)
-
-    @root.command(name="unload", parent="dev bot", require_var_positional=True)
-    async def root_bot_unload(self, ctx: commands.Context[types.Bot], *extensions: str):
-        """Unload a set of extensions"""
-        successful: list[str] = []
-        unsuccessful: list[str] = []
-        start = time.perf_counter()
-        for ext in extensions:
-            try:
-                await self.bot.unload_extension(ext)
-            except commands.ExtensionError as exc:
-                unsuccessful.append(f"{ext} \u2012 {exc}")
-            else:
-                successful.append(ext)
-        end = time.perf_counter()
-        unloaded_extensions = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + (
-            "\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else ""
-        )
-        embed = discord.Embed(
-            title=f"Unloaded {plural(len(successful), 'Cog')}",
-            description=unloaded_extensions.strip("\n"),
-            color=discord.Color.green(),
-        )
-        embed.set_footer(text=f"Unloading took {end - start:.3f}s")
-        await send(ctx, embed)
-
-    @root.command(name="reload", parent="dev bot")
-    async def root_bot_reload(self, ctx: commands.Context[types.Bot], *extensions: str):
-        """Reload all or a specific set of bot extension(s).
-        When adding specific extensions, each one must be separated but a blank space.
+        """Load, reload, or unload a set of extensions.
+        Use '~' to reference all currently loaded cogs.
+        This extension is skipped when loading or unloading.
         """
-        if not extensions:
-            successful: list[str] = []
-            unsuccessful: list[str] = []
-            start = time.perf_counter()
-            for ext in list(self.bot.extensions):
-                try:
-                    await self.bot.reload_extension(ext)
-                except commands.ExtensionError as exc:
-                    unsuccessful.append(f"{ext} \u2012 {exc}")
-                else:
-                    successful.append(ext)
-            end = time.perf_counter()
-            reloaded_extensions = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + (
-                "\n\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else ""
-            )
-            embed = discord.Embed(
-                title=f"Reloaded {plural(len(successful), 'Cog')}",
-                description=reloaded_extensions.strip("\n"),
-                color=discord.Color.blurple(),
-            )
-            embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
-            return await send(ctx, embed)
+        assert ctx.invoked_with is not None
 
-        successful = []
-        unsuccessful = []
-        start = time.perf_counter()
-        for ext in extensions:
-            try:
-                await self.bot.reload_extension(ext)
-            except commands.ExtensionError as exc:
-                unsuccessful.append(f"{ext} \u2012 {exc}")
-            else:
-                successful.append(ext)
-        end = time.perf_counter()
-        reloaded_extensions = ("\u2611 " + "\n\u2611 ".join(successful) if successful else "") + (
-            "\u274c " + "\n\u274c ".join(unsuccessful) if unsuccessful else ""
-        )
+        successful, output, perf = await self._manage_extension(ctx.invoked_with, extensions)  # type: ignore
         embed = discord.Embed(
-            title=f"Reloaded {plural(len(successful), 'Cog')}",
-            description=reloaded_extensions,
+            title=f"{ctx.invoked_with.title()} {plural(successful, 'Cog')}",
+            description=output,
             color=discord.Color.blurple(),
         )
-        embed.set_footer(text=f"Reloading took {end - start:.3f}s.")
+        embed.set_footer(text=f"Loading took {perf:.3f}s")
         await send(ctx, embed)
 
     @root.command(name="enable", parent="dev bot", require_var_positional=True)
@@ -232,8 +149,6 @@ class RootBot(Root):
         command = self.bot.get_command(command_name)
         if not command:
             return await send(ctx, f"Command `{command_name}` not found.")
-        if command.name.startswith("dev"):
-            return await send(ctx, "Cannot disable dev commands.")
         if not command.enabled:
             return await send(ctx, f"Command `{command_name}` is already disabled.")
         command.enabled = False
@@ -244,3 +159,25 @@ class RootBot(Root):
         """Close the bot."""
         await ctx.message.add_reaction("\U0001f44b")
         await self.bot.close()
+
+    async def _manage_extension(
+        self, action: Literal["load", "reload", "unload"], extensions: tuple[str, ...]
+    ) -> tuple[int, str, float]:
+        if "~" in extensions:
+            extensions = tuple(self.bot.extensions)
+        successful: int = 0
+        output: list[str] = []
+        start = time.perf_counter()
+        method = getattr(self.bot, f"{action}_extension")
+        for ext in extensions:
+            if ext == "dev" and action in ["load", "unload"]:
+                continue
+            try:
+                await method(ext)
+            except commands.ExtensionError as exc:
+                output.append(f"\u26a0 {ext}: {exc}")
+            else:
+                successful += 1
+                output.append(f"\U0001f4e5 {ext}")
+        end = time.perf_counter()
+        return successful, "\n".join(output), end - start
