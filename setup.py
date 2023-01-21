@@ -63,7 +63,6 @@ setup(
     url="https://github.com/Lee-matod/dev",
     version=version,
     packages=packages,
-    package_data={"dev": ["py.typed"]},
     license="MIT",
     description="A debugging, testing and editing cog for discord.py",
     long_description=readme,
