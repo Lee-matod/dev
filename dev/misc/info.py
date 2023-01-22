@@ -19,7 +19,7 @@ from discord.ext import commands
 
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import send
-from dev.utils.utils import codeblock_wrapper
+from dev.utils.utils import codeblock_wrapper, escape
 
 if TYPE_CHECKING:
     from dev import types
@@ -43,17 +43,17 @@ class RootInformation(Root):
         for name, param in command.clean_params.items():
             fmt = ""
             if param.kind is inspect.Parameter.KEYWORD_ONLY:
-                fmt += "*, `"
+                fmt += r"\*, `"
             elif param.kind is inspect.Parameter.VAR_POSITIONAL:
-                fmt += "`*"
+                fmt += r"`\*"
             else:
                 fmt += "`"
             fmt += f"{name}"
             if param.required:
-                fmt += "*`"
-            fmt += f": {getattr(param.converter, '__name__', param.converter)}"
+                fmt += "*"
+            fmt += f"`: {escape(repr(param.converter))}"
             if param.default is not inspect.Parameter.empty:
-                fmt += f" = {getattr(param.default, '__name__', param.default)}"
+                fmt += f" = {escape(str(getattr(param.default, '__name__', param.default)))}"
             params.append(fmt)
 
         embed = discord.Embed(
@@ -72,7 +72,7 @@ class RootInformation(Root):
         if command.extras:
             embed.add_field(name="Extras", value=", ".join(command.extras))
         if params:
-            embed.add_field(name="Signature", value="\n".join(params), inline=False)
+            embed.add_field(name="Signature", value=", ".join(params), inline=False)
         embed.set_footer(text=f"{hex(id(command))}")
         await send(ctx, embed)
 
