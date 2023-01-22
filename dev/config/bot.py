@@ -125,7 +125,7 @@ class RootBot(Root):
             description=output,
             color=discord.Color.blurple(),
         )
-        embed.set_footer(text=f"Loading took {perf:.3f}s")
+        embed.set_footer(text=f"{ctx.invoked_with.title()}ing took {perf:.3f}s")
         await send(ctx, embed)
 
     @root.command(name="enable", parent="dev bot", require_var_positional=True)
@@ -163,6 +163,13 @@ class RootBot(Root):
     async def _manage_extension(
         self, action: Literal["load", "reload", "unload"], extensions: tuple[str, ...]
     ) -> tuple[int, str, float]:
+        if action == "load":
+            emoji: str = "\U0001f4e5"
+        elif action == "unload":
+            emoji: str = "\U0001f4e4"
+        else:
+            emoji: str = "\U0001f504"
+
         if "~" in extensions:
             extensions = tuple(self.bot.extensions)
         successful: int = 0
@@ -178,6 +185,6 @@ class RootBot(Root):
                 output.append(f"\u26a0 {ext}: {exc}")
             else:
                 successful += 1
-                output.append(f"\U0001f4e5 {ext}")
+                output.append(f"{emoji} {ext}")
         end = time.perf_counter()
         return successful, "\n".join(output), end - start
