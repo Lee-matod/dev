@@ -199,8 +199,8 @@ class RootManagement(Root):
             if not path.is_dir():
                 return await send(ctx, "Path is not a directory.")
             tree = [
-                "\U0001f4c2" + (escape(directory) or '/'),
-                *[f"{' ' * 4}├─" + ("\U0001f4c4" if sub.is_file() else "\U0001f4c1") + escape(sub.name) for sub in path.iterdir()]
+                "\U0001f4c2" + (escape(directory) or '~/'),
+                *[f"{' ' * 4}├─" + ("\U0001f4c4" if sub.is_file() else "\U0001f4c1") + escape(str(sub.absolute())) for sub in path.iterdir()]
             ]
             if len(tree) == 1:
                 return await send(ctx, "Directory is empty.")
