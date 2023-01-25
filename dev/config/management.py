@@ -199,10 +199,10 @@ class RootManagement(Root):
             if not path.is_dir():
                 return await send(ctx, "Path is not a directory.")
             tree = [
-                "\U0001f4c2" + (escape(str(path.absolute())) or "/"),
+                "\U0001f4c2 " + (escape(str(path.absolute())) or "/"),
                 *[
                     f"{' ' * 4}├─"
-                    + ("\U0001f4c4" if sub.is_file() else "\U0001f4c1")
+                    + ("\U0001f4c4 " if sub.is_file() else "\U0001f4c1 ")
                     + escape(str(sub.absolute()).lstrip("/"))
                     for sub in path.iterdir()
                 ],
