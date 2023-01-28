@@ -93,7 +93,7 @@ class RootInformation(Root):
         over = self.get_last_implementation(command.qualified_name)
         if over is None or not over.source:
             try:
-                source, _ = inspect.getsource(command.callback)
+                source = inspect.getsource(command.callback)
             except OSError:
                 return await send(
                     ctx,
