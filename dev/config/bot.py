@@ -115,13 +115,13 @@ class RootBot(Root):
     async def root_bot_load(self, ctx: commands.Context[types.Bot], *extensions: str):
         """Load, reload, or unload a set of extensions.
         Use '~' to reference all currently loaded cogs.
-        This extension is skipped when loading or unloading.
+        This extension is skipped when loading.
         """
         assert ctx.invoked_with is not None
 
         successful, output, perf = await self._manage_extension(ctx.invoked_with, extensions)  # type: ignore
         embed = discord.Embed(
-            title=f"{ctx.invoked_with.title()} {plural(successful, 'Cog')}",
+            title=f"{ctx.invoked_with.title()}ed {plural(successful, 'Cog')}",
             description=output,
             color=discord.Color.blurple(),
         )
@@ -177,7 +177,7 @@ class RootBot(Root):
         start = time.perf_counter()
         method = getattr(self.bot, f"{action}_extension")
         for ext in extensions:
-            if ext == "dev" and action in ["load", "unload"]:
+            if ext == "dev" and action == "load":
                 continue
             try:
                 await method(ext)
