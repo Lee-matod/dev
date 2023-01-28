@@ -43,23 +43,18 @@ class RootCommand(Root):
 
     def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
-        self.load_time: str = str(round(time.time()))
+        self.load_time: int = int(time.time())
 
     @root.group(
         name="dev",
         global_use=True,
         ignore_extra=True,
-        invoke_without_command=True,
-        usage="[--help|--man] [--source|-src] [--file|--f] [--inspect|-i] <command>",
+        invoke_without_command=True
     )
     async def root_(self, ctx: commands.Context[types.Bot]):
         """Root command for the `dev` extension.
         Gives a briefing of the dev extension, as well as process statistics.
         Execute `dev --help [command]` for more information on a subcommand.
-        `--help`|`--man` [command] = Shows a custom made help command.
-        `--source`|`-src` <command> = Shows the source code of a command.
-        `--file`|`-f` <command> = Shows the source file of a command.
-        `--inspect`|`-i` <command> = Get the signature of a command as well as some information of it.
         """
         process = psutil.Process()
         version = sys.version.replace("\n", "")
