@@ -39,6 +39,9 @@ if TYPE_CHECKING:
         discord.CategoryChannel,
         discord.StageChannel,
         discord.ForumChannel,
+        discord.Thread,
+        discord.DMChannel,
+        discord.GroupChannel,
     ]
     Command = Union[commands.Command[Any, ..., Any], commands.Group[Any, ..., Any]]
     MessageContent = Union[
