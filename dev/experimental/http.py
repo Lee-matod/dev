@@ -71,7 +71,7 @@ class RootHTTP(Root):
         `read` = Read the response and return it.
         `status` = Return the status code of the website.
         """
-        if mode is None:
+        if mode is None:  # type: ignore
             return
         #  Perhaps '>' is a needed literal in a parameter, so we shouldn't remove it
         #  if not necessary

@@ -19,8 +19,8 @@ from discord import app_commands
 from discord.ext import commands
 from discord.utils import MISSING
 
-from dev.utils import to_dict
 from dev.converters import str_bool
+from dev.utils import to_dict
 from dev.utils.startup import Settings
 
 if TYPE_CHECKING:

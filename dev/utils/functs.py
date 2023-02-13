@@ -87,7 +87,7 @@ def flag_parser(string: str, delimiter: str) -> dict[str, Any]:
     if temp_string:
         values.append(temp_string)
     for idx, value in enumerate(values):
-        values[idx] = json.loads(str(value).lower() if value is not None else "null")
+        values[idx] = json.loads(str(value).lower())
     return dict(zip(keys, values))
 
 

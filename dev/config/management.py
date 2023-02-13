@@ -84,7 +84,7 @@ class RootManagement(Root):
         Use `!` at the beginning of the directory to ignore the current working directory.
         """
         attachments = ctx.message.attachments
-        if folder is None and not attachments:
+        if not folder and not attachments:
             raise commands.MissingRequiredArgument(ctx.command.clean_params["folder"])  # type: ignore
         directory = self.format_path(folder) or self.cwd
         if attachments:  # upload files
