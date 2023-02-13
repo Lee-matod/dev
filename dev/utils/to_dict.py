@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
-dev.to_dict
-~~~~~~~~~~~
+dev.utils.to_dict
+~~~~~~~~~~~~~~~~~
 
 Discord objects and their respective payload types.
 

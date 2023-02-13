@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
-dev.utils.interaction
-~~~~~~~~~~~~~~~~~~~~~
+dev.interaction
+~~~~~~~~~~~~~~~
 
 Discord interaction wrappers.
 
