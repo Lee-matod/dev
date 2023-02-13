@@ -22,16 +22,7 @@ from dev.handlers import ExceptionHandler, TimedInfo
 from dev.types import Invokeable
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import generate_ctx, send
-from dev.utils.interaction import (
-    BadArgument,
-    BadChannel,
-    InvalidChoice,
-    MissingRequiredArgument,
-    MissingRequiredAttachment,
-    RangeError,
-    SyntheticInteraction,
-    get_app_command,
-)
+from dev.utils.interactions import SyntheticInteraction, get_app_command, get_parameters
 
 if TYPE_CHECKING:
     from dev import types
@@ -46,7 +37,7 @@ _DiscordObjects = Union[
 
 
 class RootInvoke(Root):
-    """Invoke commands with some additional diagnostics and debugging abilities"""
+    """Invoke commands with some additional diagnostics and debugging abilities."""
 
     @root.command(name="timeit", parent="dev", require_var_positional=True)
     async def root_timeit(
@@ -133,7 +124,7 @@ class RootInvoke(Root):
         These will override the current context, thus executing the
         command in a different virtual environment.
         Command checks can be optionally disabled by adding an exclamation
-        mark at the end of the `execute` command.
+        mark at the end of the  command.
         """
         kwargs: dict[str, Any] = {"content": f"{ctx.prefix}{command_name}"}
         for attr in attrs:
@@ -164,22 +155,7 @@ class RootInvoke(Root):
         ctx: commands.Context[types.Bot],
         action: Literal["invoke", "reinvoke"] = "invoke",
     ) -> None:
-        try:
-            await (getattr(command, action)(ctx))
-        except BadArgument as exc:
-            await send(
-                ctx,
-                f"Failed to convert argument {exc.argument!r} to {exc.type.__name__}.",
-            )
-        except BadChannel as exc:
-            await send(ctx, f"{exc.argument!r} is not a {exc.channel_type}.")
-        except (
-            InvalidChoice,
-            MissingRequiredArgument,
-            MissingRequiredAttachment,
-            RangeError,
-        ) as exc:
-            await send(ctx, f"{exc}.")
+        await (getattr(command, action)(ctx))
 
     async def _get_invokable(
         self, ctx: commands.Context[types.Bot], content: str, kwargs: dict[str, Any]
@@ -191,7 +167,7 @@ class RootInvoke(Root):
                 return
             kwargs["content"] = kwargs["content"].removeprefix(ctx.prefix)
             context = await generate_ctx(ctx, **kwargs)
-            return SyntheticInteraction(context, app_command), context
+            return SyntheticInteraction(context, app_command, await get_parameters(context, app_command)), context
         context = await generate_ctx(ctx, **kwargs)
         if context.command is not None:
             return context.command, context
