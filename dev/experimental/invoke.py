@@ -19,10 +19,10 @@ from discord.ext import commands
 
 from dev.converters import GlobalTextChannelConverter
 from dev.handlers import ExceptionHandler, TimedInfo
+from dev.interactions import SyntheticInteraction, get_app_command, get_parameters
 from dev.types import Invokeable
 from dev.utils.baseclass import Root, root
 from dev.utils.functs import generate_ctx, send
-from dev.utils.interactions import SyntheticInteraction, get_app_command, get_parameters
 
 if TYPE_CHECKING:
     from dev import types
