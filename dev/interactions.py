@@ -206,16 +206,17 @@ class SyntheticInteraction(discord.Interaction):
             "locale": Settings.locale,
             "id": 0,
             "guild_locale": Settings.locale,
-            "entitlement_sku_ids": [],
-            "channel_id": getattr(context.channel, "id", None),
+            "channel_id": str(getattr(context.channel, "id", None)),
             "application_id": context.bot.user.id,  # type: ignore
-            "app_permissions": 0,
+            "app_permissions": str(getattr(context.me, "guild_permissions", 0)),
         }
         if context.guild is not None:
             payload["guild_id"] = context.guild.id
             payload["member"] = to_dict.member(context.author)  # type: ignore
+            payload["app_permissions"] = str(context.me.guild_permissions.value)  # type: ignore
         else:
             payload["user"] = to_dict.user(context.author)  # type: ignore
+            payload["app_permissions"] = "0"
 
         #  Application command synthetic payload
         data: ApplicationCommandData = {
