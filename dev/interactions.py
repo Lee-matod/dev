@@ -208,7 +208,6 @@ class SyntheticInteraction(discord.Interaction):
             "guild_locale": Settings.locale,
             "channel_id": str(getattr(context.channel, "id", None)),
             "application_id": context.bot.user.id,  # type: ignore
-            "app_permissions": str(getattr(context.me, "guild_permissions", 0)),
         }
         if context.guild is not None:
             payload["guild_id"] = context.guild.id
