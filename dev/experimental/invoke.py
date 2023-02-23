@@ -12,7 +12,7 @@ Command invocation or reinvocation with changeable execution attributes.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Union
 
 import discord
 from discord.ext import commands
@@ -27,13 +27,13 @@ from dev.utils.functs import generate_ctx, send
 if TYPE_CHECKING:
     from dev import types
 
-_DiscordObjects = Union[
-    GlobalTextChannelConverter,
-    discord.Guild,
-    discord.Member,
-    discord.Thread,
-    discord.User,
-]
+    _DiscordObjects = Union[
+        GlobalTextChannelConverter,
+        discord.Guild,
+        discord.Member,
+        discord.Thread,
+        discord.User,
+    ]
 
 
 class RootInvoke(Root):
@@ -114,7 +114,7 @@ class RootInvoke(Root):
     async def root_execute(
         self,
         ctx: commands.Context[types.Bot],
-        attrs: commands.Greedy[_DiscordObjects],
+        attrs: Annotated[list[_DiscordObjects], commands.Greedy[_DiscordObjects]],
         *,
         command_name: str,
     ):

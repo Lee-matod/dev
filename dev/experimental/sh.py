@@ -12,7 +12,7 @@ Shell interpreter commands.
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
 import discord
 from discord.ext import commands
@@ -34,7 +34,7 @@ class RootShell(Root):
         self.active_shell_sessions: list[int] = []
 
     @root.command(name="shell", parent="dev", aliases=["sh", "cmd", "bash", "ps"])
-    async def root_shell(self, ctx: commands.Context[types.Bot], *, script: clean_code):  # type: ignore
+    async def root_shell(self, ctx: commands.Context[types.Bot], *, script: Annotated[str, clean_code]):
         """Invoke and evaluate shell commands.
         After initiating a new session, all new commands must be prefixed with the interface's
         prefix (e.g `$` for bash/shell, `PS>` for powershell, etc).
@@ -48,7 +48,7 @@ class RootShell(Root):
         self.active_shell_sessions.append(ctx.author.id)
         shell = ShellSession()
         try:
-            with shell(script) as process:  # type: ignore
+            with shell(script) as process:
                 await process.run_until_complete(ctx)
 
             def check(msg: discord.Message) -> bool:

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import io
 import json
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 import aiohttp
 import discord
@@ -59,7 +59,7 @@ class RootHTTP(Root):
         self,
         ctx: commands.Context[types.Bot],
         url: str,
-        mode: LiteralModes[Literal["json", "read", "status"]],
+        mode: Annotated[str | None, LiteralModes[Literal["json", "read", "status"]]],
         allow_redirects: bool = False,
         *,
         options: str | None = None,
@@ -71,7 +71,7 @@ class RootHTTP(Root):
         `read` = Read the response and return it.
         `status` = Return the status code of the website.
         """
-        if mode is None:  # type: ignore
+        if mode is None:
             return
         #  Perhaps '>' is a needed literal in a parameter, so we shouldn't remove it
         #  if not necessary
@@ -92,7 +92,7 @@ class RootHTTP(Root):
                 return await send(ctx, "Invalid URL link.")
             except aiohttp.ClientConnectorError:
                 return await send(ctx, "Cannot connect to host. Name or service not known.")
-            if mode == "status":  # type: ignore
+            if mode == "status":
                 status = str(request.status)
                 status_type = responses[status[0]]
                 colors = {
@@ -111,7 +111,7 @@ class RootHTTP(Root):
                         url=f"https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{status}",
                     ),
                 )
-            elif mode == "json":  # type: ignore
+            elif mode == "json":
                 try:
                     js = await request.json()
                 except (json.JSONDecodeError, aiohttp.ContentTypeError):
@@ -120,7 +120,7 @@ class RootHTTP(Root):
                     binary_file.write(json.dumps(js, indent=2).encode("utf-8"))
                     binary_file.seek(0)
                     await send(ctx, discord.File(filename="response.json", fp=binary_file))
-            elif mode == "read":  # type: ignore
+            elif mode == "read":
                 data = await request.read()
                 if not data:
                     return await send(ctx, "Response was empty.")

@@ -11,7 +11,7 @@ A virtual variable manager directly implemented to the dev extension.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from discord.ext import commands
 
@@ -31,20 +31,23 @@ class RootVariables(Root):
     async def root_variable(
         self,
         ctx: commands.Context[types.Bot],
-        mode: LiteralModes[
-            Literal[
-                "~",
-                "all",
-                "content",
-                "create",
-                "del",
-                "delete",
-                "edit",
-                "exists",
-                "new",
-                "replace",
-                "value",
-            ]
+        mode: Annotated[
+            str | None,
+            LiteralModes[
+                Literal[
+                    "~",
+                    "all",
+                    "content",
+                    "create",
+                    "del",
+                    "delete",
+                    "edit",
+                    "exists",
+                    "new",
+                    "replace",
+                    "value",
+                ]
+            ],
         ],
         *,
         name: str | None = None,
@@ -62,7 +65,7 @@ class RootVariables(Root):
         """
         if mode is None:
             return
-        if mode in ["new", "create"]:  # type: ignore
+        if mode in ["new", "create"]:
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
             if name in Root.scope.keys():
@@ -76,7 +79,7 @@ class RootVariables(Root):
                 ),
             )
 
-        elif mode in ["delete", "del"]:  # type: ignore
+        elif mode in ["delete", "del"]:
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
             if Root.scope.get(name, False):
@@ -84,7 +87,7 @@ class RootVariables(Root):
                 return await send(ctx, f"Successfully deleted the variable `{name}`.")
             await send(ctx, f"No variable called `{name}` found.")
 
-        elif mode in ["edit", "replace"]:  # type: ignore
+        elif mode in ["edit", "replace"]:
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
             if name not in Root.scope.keys():
@@ -98,11 +101,11 @@ class RootVariables(Root):
                 ),
             )
 
-        elif mode in ["all", "~"]:  # pyright: ignore [reportUnnecessaryContains]
+        elif mode in ["all", "~"]:
             variables = "\n".join(f"+ {var}" for var in Root.scope.keys()) if Root.scope else "- No variables found."
             await send(ctx, f"```diff\n{variables}\n```")
 
-        elif mode == "exists":  # pyright: ignore [reportUnnecessaryComparison]
+        elif mode == "exists":
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
             if name not in Root.scope.keys():
@@ -112,7 +115,7 @@ class RootVariables(Root):
         elif mode in [
             "content",
             "value",
-        ]:  # pyright: ignore [reportUnnecessaryContains]
+        ]:
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
             if name not in Root.scope.keys():

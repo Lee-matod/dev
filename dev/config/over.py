@@ -14,7 +14,7 @@ from __future__ import annotations
 import ast
 import inspect
 import textwrap
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import discord
 from discord.ext import commands
@@ -98,14 +98,19 @@ class RootOver(Root):
         require_var_positional=True,
         usage="<command_name> <script>",
     )
-    async def root_override_command(self, ctx: commands.Context[types.Bot], *, command_code: CodeblockConverter):
+    async def root_override_command(
+        self,
+        ctx: commands.Context[types.Bot],
+        *,
+        command_code: Annotated[tuple[str | None, str | None], CodeblockConverter],
+    ):
         r"""Temporarily override a command.
         All changes will be undone once the bot is restarted.
         If the command belongs to a cog, its first argument in the callback should be the instance of the binding.
         This differentiates from its counterpart `dev overwrite` which permanently changes a file.
         The script that will be used as override should be specified in a codeblock.
         """
-        command_string, script = command_code  # type: ignore
+        command_string, script = command_code
         command_string: str | None
         script: str | None
         if not command_string:
@@ -324,13 +329,18 @@ class RootOver(Root):
         require_var_positional=True,
         usage="<command_name> <script>",
     )
-    async def root_overwrite_command(self, ctx: commands.Context[types.Bot], *, command_code: CodeblockConverter):
+    async def root_overwrite_command(
+        self,
+        ctx: commands.Context[types.Bot],
+        *,
+        command_code: Annotated[tuple[str | None, str | None], CodeblockConverter],
+    ):
         r"""Completely change a command's execution script to be permanently overwritten.
         The script that will be used as the command overwrite should be specified inside a codeblock
         (or in between \`\`\`).
         This command edits the command's file with the new script.
         """
-        command_string, script = command_code  # type: ignore
+        command_string, script = command_code
         command_string: str | None
         script: str | None
         if not all([command_string, script]):
