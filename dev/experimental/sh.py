@@ -19,12 +19,11 @@ from discord.ext import commands
 
 from dev import root
 from dev.interpreters import ShellSession
+from dev.types import Annotated
 from dev.utils.functs import send
 from dev.utils.utils import clean_code
 
 if TYPE_CHECKING:
-    from typing_extensions import Annotated
-
     from dev import types
 
 

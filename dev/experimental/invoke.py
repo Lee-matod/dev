@@ -21,12 +21,10 @@ from dev import root
 from dev.converters import GlobalTextChannelConverter
 from dev.handlers import ExceptionHandler, TimedInfo
 from dev.interactions import SyntheticInteraction, get_app_command, get_parameters
-from dev.types import Invokeable
+from dev.types import Annotated, Invokeable
 from dev.utils.functs import generate_ctx, send
 
 if TYPE_CHECKING:
-    from typing_extensions import Annotated
-
     from dev import types
 
 _DiscordObjects = Union[

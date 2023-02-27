@@ -18,11 +18,10 @@ from discord.ext import commands
 from dev import root
 from dev.components import ModalSender, VariableValueSubmitter
 from dev.converters import LiteralModes
+from dev.types import Annotated
 from dev.utils.functs import send
 
 if TYPE_CHECKING:
-    from typing_extensions import Annotated
-
     from dev import types
 
 

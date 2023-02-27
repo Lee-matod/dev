@@ -34,8 +34,8 @@ if TYPE_CHECKING:
     from typing_extensions import ParamSpec
 
     from dev import types
-    from dev.types import Coro
     from dev.handlers import GlobalLocals
+    from dev.types import Coro
 
     P = ParamSpec("P")
 

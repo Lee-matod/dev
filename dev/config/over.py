@@ -24,14 +24,12 @@ from dev.components import AuthoredView, CodeEditor, ModalSender, SettingsToggle
 from dev.converters import CodeblockConverter, str_bool, str_ints
 from dev.handlers import ExceptionHandler, replace_vars
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
-from dev.types import Over, OverType
+from dev.types import Annotated, Over, OverType
 from dev.utils.functs import flag_parser, send, table_creator
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper, escape, plural
 
 if TYPE_CHECKING:
-    from typing_extensions import Annotated
-
     from dev import types
 
 

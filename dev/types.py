@@ -32,6 +32,8 @@ __all__ = (
 if TYPE_CHECKING:
     from typing import Sequence
 
+    from typing_extensions import Annotated  # type: ignore
+
     from dev.root import Container
 
     Bot = Union[commands.Bot, commands.AutoShardedBot]
@@ -80,6 +82,11 @@ else:
         discord.ui.View,
     )
     User = (discord.ClientUser, discord.Member, discord.User)
+
+    class Annotated:
+        def __class_getitem__(self, key):
+            assert len(key) > 1
+            return key
 
 T = TypeVar("T")
 Coro = Coroutine[Any, Any, T]

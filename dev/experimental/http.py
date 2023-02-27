@@ -21,13 +21,12 @@ import discord
 from dev import root
 from dev.converters import LiteralModes
 from dev.handlers import replace_vars
+from dev.types import Annotated
 from dev.utils.functs import flag_parser, send
 from dev.utils.startup import Settings
 from dev.utils.utils import responses
 
 if TYPE_CHECKING:
-    from typing_extensions import Annotated
-
     from discord.ext import commands
 
     from dev import types
