@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from typing_extensions import Concatenate, ParamSpec
 
     from dev import types
-    from dev.root import Container
     from dev.types import Coro
 
     P = ParamSpec("P")
@@ -35,54 +34,54 @@ __all__ = ("Command", "DiscordCommand", "DiscordGroup", "Group")
 
 
 class _DiscordMixin:
-    def __init__(
-        self,
-        func: Callable[
-            Concatenate[Container, commands.Context[types.Bot], P],
-            Coro[Any],
-        ],
-        **kwargs: Any,
-    ) -> None:
-        self.__global_use: bool | None = kwargs.pop("global_use", None)
-        self.__virtual_vars: bool = kwargs.pop("virtual_vars", False)
-        self.__root_placeholder: bool = kwargs.pop("root_placeholder", False)
+    __global_use__: bool | None
+    __virtual_vars__: bool
+    __root_placeholder__: bool
 
     @property
     def global_use(self) -> bool | None:
         """:class:`bool`:
         Check whether this command is allowed to be invoked by any user.
         """
-        return self.__global_use
+        return self.__global_use__
 
     @global_use.setter
     def global_use(self, value: bool) -> None:
-        if self.__global_use is None:
+        if self.__global_use__ is None:
             raise TypeError("Cannot toggle global use value for a command that didn't have it enabled")
         if not isinstance(value, bool):
             raise TypeError(f"Expected type bool but received {type(value).__name__}")
-        self.__global_use = value
+        self.__global_use__ = value
 
     @property
     def virtual_vars(self) -> bool:
         """:class:`bool`:
         Check whether this command is compatible with the use of out-of-scope variables.
         """
-        return self.__virtual_vars
+        return self.__virtual_vars__
 
     @property
     def root_placeholder(self) -> bool:
         """:class:`bool`:
         Check whether this command is compatible with the `|root|` placeholder text.
         """
-        return self.__root_placeholder
+        return self.__root_placeholder__
 
 
 class DiscordCommand(commands.Command[CogT, ..., Any], _DiscordMixin):
-    pass
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.__global_use__: bool | None = kwargs.pop("global_use", None)
+        self.__virtual_vars__: bool = kwargs.pop("virtual_vars", False)
+        self.__root_placeholder__: bool = kwargs.pop("root_placeholder", False)
+        super().__init__(*args, **kwargs)
 
 
 class DiscordGroup(commands.Group[CogT, ..., Any], _DiscordMixin):
-    pass
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.__global_use__: bool | None = kwargs.pop("global_use", None)
+        self.__virtual_vars__: bool = kwargs.pop("virtual_vars", False)
+        self.__root_placeholder__: bool = kwargs.pop("root_placeholder", False)
+        super().__init__(*args, **kwargs)
 
 
 class BaseCommand(Generic[CogT, P, T]):
