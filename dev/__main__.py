@@ -21,7 +21,7 @@ import discord
 import psutil
 from discord.ext import commands
 
-from dev.utils import root
+from dev import root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
 from dev.utils.utils import plural

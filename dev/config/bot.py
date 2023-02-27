@@ -17,8 +17,8 @@ from typing import TYPE_CHECKING, Literal
 import discord
 from discord.ext import commands
 
+from dev import root
 from dev.components import AuthoredView, PermissionsSelector
-from dev.utils import root
 from dev.utils.functs import send
 from dev.utils.utils import escape, plural
 

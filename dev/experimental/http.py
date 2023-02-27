@@ -18,9 +18,9 @@ from typing import TYPE_CHECKING, Annotated, Literal
 import aiohttp
 import discord
 
+from dev import root
 from dev.converters import LiteralModes
 from dev.handlers import replace_vars
-from dev.utils import root
 from dev.utils.functs import flag_parser, send
 from dev.utils.startup import Settings
 from dev.utils.utils import responses

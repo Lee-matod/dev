@@ -20,7 +20,6 @@ from dev.misc import RootFlags, RootInformation, RootSearch
 from dev.pagination import *
 from dev.registrations import *
 from dev.types import *
-from dev.utils.root import *
 from dev.utils.baseclass import *
 from dev.utils.functs import *
 from dev.utils.startup import *
@@ -32,7 +31,6 @@ __all__ = (
     "BoolInput",
     "CodeblockConverter",
     "CommandRegistration",
-    "Container",
     "ExceptionHandler",
     "Execute",
     "GlobalLocals",
@@ -54,7 +52,6 @@ __all__ = (
     "interaction_response",
     "plural",
     "replace_vars",
-    "root",
     "send",
     "setup_logging",
     "str_bool",

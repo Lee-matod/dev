@@ -16,12 +16,14 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from discord.ext import commands
 
+from dev.types import CogT
+
 if TYPE_CHECKING:
     from typing_extensions import Concatenate, ParamSpec
 
     from dev import types
-    from dev.types import CogT, Coro
-    from dev.utils.root import Container
+    from dev.root import Container
+    from dev.types import Coro
 
     P = ParamSpec("P")
 else:

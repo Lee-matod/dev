@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from dev.utils import root
+from dev import root
 from dev.utils.functs import send
 from dev.utils.utils import codeblock_wrapper, escape
 

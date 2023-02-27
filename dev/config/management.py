@@ -18,10 +18,10 @@ from typing import TYPE_CHECKING
 
 import discord
 
+from dev import root
 from dev.components import BoolInput
 from dev.registrations import ManagementRegistration
 from dev.types import ManagementOperation
-from dev.utils import root
 from dev.utils.functs import send, table_creator
 from dev.utils.startup import Settings
 from dev.utils.utils import escape, plural

@@ -15,9 +15,9 @@ from typing import TYPE_CHECKING, Annotated, Literal
 
 from discord.ext import commands
 
+from dev import root
 from dev.components import ModalSender, VariableValueSubmitter
 from dev.converters import LiteralModes
-from dev.utils import root
 from dev.utils.functs import send
 
 if TYPE_CHECKING:

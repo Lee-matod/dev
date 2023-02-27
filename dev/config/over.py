@@ -19,12 +19,12 @@ from typing import TYPE_CHECKING, Annotated, Any
 import discord
 from discord.ext import commands
 
+from dev import root
 from dev.components import AuthoredView, CodeEditor, ModalSender, SettingsToggler
 from dev.converters import CodeblockConverter, str_bool, str_ints
 from dev.handlers import ExceptionHandler, replace_vars
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 from dev.types import Over, OverType
-from dev.utils import root
 from dev.utils.functs import flag_parser, send, table_creator
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper, escape, plural

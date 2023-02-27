@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from typing_extensions import Concatenate, ParamSpec
 
     from dev import types
-    from dev.utils.root import Container
+    from dev.root import Container
 
     P = ParamSpec("P")
 

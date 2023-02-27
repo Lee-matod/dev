@@ -32,7 +32,7 @@ __all__ = (
 if TYPE_CHECKING:
     from typing import Sequence
 
-    from dev.utils.root import Container
+    from dev.root import Container
 
     Bot = Union[commands.Bot, commands.AutoShardedBot]
     Channel = Union[

@@ -22,8 +22,8 @@ import discord
 from dev.converters import str_ints
 from dev.handlers import ExceptionHandler
 from dev.registrations import CommandRegistration, Over
+from dev.root import Container
 from dev.utils.functs import interaction_response
-from dev.utils.root import Container
 from dev.utils.startup import Settings
 
 if TYPE_CHECKING:

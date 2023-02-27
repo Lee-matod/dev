@@ -17,23 +17,23 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, Union
 import discord
 from discord.ext import commands
 
+from dev import root
 from dev.converters import GlobalTextChannelConverter
 from dev.handlers import ExceptionHandler, TimedInfo
 from dev.interactions import SyntheticInteraction, get_app_command, get_parameters
 from dev.types import Invokeable
-from dev.utils import root
 from dev.utils.functs import generate_ctx, send
 
 if TYPE_CHECKING:
     from dev import types
 
-    _DiscordObjects = Union[
-        GlobalTextChannelConverter,
-        discord.Guild,
-        discord.Member,
-        discord.Thread,
-        discord.User,
-    ]
+_DiscordObjects = Union[
+    GlobalTextChannelConverter,
+    discord.Guild,
+    discord.Member,
+    discord.Thread,
+    discord.User,
+]
 
 
 class RootInvoke(root.Container):

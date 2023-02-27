@@ -20,9 +20,9 @@ from typing import TYPE_CHECKING, Any
 import discord
 from discord.ext import commands
 
+from dev import root
 from dev.handlers import ExceptionHandler, GlobalLocals, RelativeStandard, replace_vars
 from dev.interpreters import Execute
-from dev.utils import root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper

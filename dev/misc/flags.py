@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from dev.utils import root
+from dev import root
 from dev.utils.functs import send
 
 if TYPE_CHECKING:

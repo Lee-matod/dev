@@ -17,8 +17,8 @@ from typing import TYPE_CHECKING, Annotated
 import discord
 from discord.ext import commands
 
+from dev import root
 from dev.interpreters import ShellSession
-from dev.utils import root
 from dev.utils.functs import send
 from dev.utils.utils import clean_code
 
