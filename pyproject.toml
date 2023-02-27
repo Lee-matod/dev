@@ -3,7 +3,7 @@ line-length = 120
 
 [tool.pyright]
 exclude = ["**/tests/test_*.py", "**/__pycache__", ".venv/"]
-pythonVersion = "3.9"
+pythonVersion = "3.8"
 typeCheckingMode = "strict"
 
 reportImportCycles = false

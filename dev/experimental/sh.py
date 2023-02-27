@@ -12,7 +12,7 @@ Shell interpreter commands.
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -23,6 +23,8 @@ from dev.utils.functs import send
 from dev.utils.utils import clean_code
 
 if TYPE_CHECKING:
+    from typing_extensions import Annotated
+
     from dev import types
 
 

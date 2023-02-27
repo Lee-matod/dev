@@ -76,10 +76,7 @@ class CodeEditor(discord.ui.Modal):
             "commands": commands,
             "bot": self.ctx.bot,
         }
-        with (
-            contextlib.redirect_stdout(io.StringIO()),
-            contextlib.redirect_stderr(io.StringIO()),
-        ):
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             async with ExceptionHandler(
                 self.ctx.message,
                 lambda *_: self.ctx.bot.add_command(self.command),  # type: ignore

@@ -12,7 +12,7 @@ Custom converters used within the dev extension.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Tuple, TypeVar, Union
 
 import discord
 from discord.ext import commands
@@ -138,7 +138,7 @@ class LiteralModes(commands.Converter[Union[str, None]]):
         return cls(item, case_sensitive)
 
 
-class CodeblockConverter(commands.Converter[tuple[Optional[str], Optional[str]]]):
+class CodeblockConverter(commands.Converter[Tuple[Optional[str], Optional[str]]]):
     """A custom converter that identifies and separates normal string arguments from codeblocks.
 
     Codeblock cleaning should be done later on as this does not automatically return the clean code.

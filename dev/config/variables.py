@@ -11,7 +11,7 @@ A virtual variable manager directly implemented to the dev extension.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Literal
+from typing import TYPE_CHECKING, Literal
 
 from discord.ext import commands
 
@@ -21,6 +21,8 @@ from dev.converters import LiteralModes
 from dev.utils.functs import send
 
 if TYPE_CHECKING:
+    from typing_extensions import Annotated
+
     from dev import types
 
 

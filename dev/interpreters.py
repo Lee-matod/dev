@@ -343,7 +343,9 @@ class Process:
                 actual_cwd = self._determine_cwd(maybe_cwd)
                 if actual_cwd:
                     self.__session.cwd = actual_cwd
-                    content.append(maybe_cwd.removesuffix(actual_cwd).strip())
+                    if maybe_cwd.endswith(actual_cwd):
+                        maybe_cwd = maybe_cwd[: -len(actual_cwd)]
+                    content.append(maybe_cwd.strip())
             else:
                 self.__session.cwd = maybe_cwd
         return "\n".join(content).strip().strip("\n")
@@ -469,7 +471,9 @@ class ShellSession:
         """
         if self.terminated:
             raise ConnectionRefusedError("Shell has been terminated. Initiate another shell session")
-        return Process(self, self.cwd, script.removesuffix(";"))
+        if script.endswith(";"):
+            script = script[:-1]
+        return Process(self, self.cwd, script)
 
     def add_line(self, line: str) -> str:
         """Appends a new line to the current session's interface.
@@ -630,10 +634,9 @@ class Execute:
                 len(self.code),
                 None,
                 [f"{line}\n" for line in self.code.splitlines()],
-                self.filename
+                self.filename,
             )
             raise
-
 
     def wrapper(self) -> ast.Module:
         code = ast.parse(self.code)

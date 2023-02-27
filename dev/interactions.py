@@ -69,9 +69,7 @@ async def get_parameters(
     optional_arguments = [param for param in command.parameters if not param.required]
     _, *arguments = context.message.content.split("\n")
     parameters: dict[str, str] = {
-        (name := param.split(Settings.flag_delimiter, 1)[0].strip()): param.removeprefix(
-            f"{name}{Settings.flag_delimiter}"
-        )
+        (name := param.split(Settings.flag_delimiter, 1)[0].strip()): param[len(f"{name}{Settings.flag_delimiter}") :]
         for param in arguments
     }
     mapped: dict[app_commands.Parameter, Any] = {}

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import io
 import json
-from typing import TYPE_CHECKING, Annotated, Literal
+from typing import TYPE_CHECKING, Literal
 
 import aiohttp
 import discord
@@ -26,6 +26,8 @@ from dev.utils.startup import Settings
 from dev.utils.utils import responses
 
 if TYPE_CHECKING:
+    from typing_extensions import Annotated
+
     from discord.ext import commands
 
     from dev import types

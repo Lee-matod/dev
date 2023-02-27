@@ -12,7 +12,7 @@ Command invocation or reinvocation with changeable execution attributes.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Annotated, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import discord
 from discord.ext import commands
@@ -25,6 +25,8 @@ from dev.types import Invokeable
 from dev.utils.functs import generate_ctx, send
 
 if TYPE_CHECKING:
+    from typing_extensions import Annotated
+
     from dev import types
 
 _DiscordObjects = Union[

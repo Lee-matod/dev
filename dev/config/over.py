@@ -14,7 +14,7 @@ from __future__ import annotations
 import ast
 import inspect
 import textwrap
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Any
 
 import discord
 from discord.ext import commands
@@ -30,6 +30,8 @@ from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper, escape, plural
 
 if TYPE_CHECKING:
+    from typing_extensions import Annotated
+
     from dev import types
 
 

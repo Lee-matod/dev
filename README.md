@@ -5,13 +5,12 @@ dev is a debugging, testing and editing extension for discord.py.
 discord.py github: https://github.com/Rapptz/discord.py  
 discord.py docs: https://discordpy.readthedocs.io/en/latest/index.html
 
-This cog is still under development, thus, certain aspects may be a bit unstable.  
 You can find the official documentation for this extension [here](https://github.com/Lee-matod/dev/wiki).
 ****
 
 # installation
 
-Python 3.9 or higher is required. To install the extension, simply execute the following command depending on what
+Python 3.8 or higher is required. To install the extension, simply execute the following command depending on what
 operating system you use.
 
 **Windows**
@@ -47,9 +46,6 @@ If you're subclassing
 from discord.ext import commands
 
 class Bot(commands.Bot):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(command_prefix=..., intents=...)
-    
     async def setup_hook(self) -> None:
         await self.load_extension("dev")
 

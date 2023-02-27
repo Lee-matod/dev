@@ -487,7 +487,7 @@ async def generate_ctx(ctx: commands.Context[types.Bot], **kwargs: Any) -> comma
 def _get_highlight_lang(content: str) -> tuple[str | None, str]:
     if content.startswith("```") and content.endswith("```"):
         lines = content.split("\n")
-        highlight = lines[0].removeprefix("```")
+        highlight = lines[0][3:]
         if lines[-1] == "```":
             return highlight, "\n".join(lines[1:-1])
         return highlight, "\n".join(lines[1:])[:-3]
@@ -553,8 +553,8 @@ def _check_length(content: str) -> Paginator | str:
         highlight_lang = ""
         string = content
         if content.startswith("```") and content.endswith("```"):
-            highlight_lang = content.split("\n")[0].removeprefix("```")
-            string = "\n".join(content.split("\n")[1:]).removesuffix("```")
+            highlight_lang = content.split("\n")[0][3:]
+            string = "\n".join(content.split("\n")[1:])[:-3]
         paginator = Paginator(prefix=f"```{highlight_lang}")
         for line in string.split("\n"):
             paginator.add_line(line.replace("``", "`\u200b`"))
