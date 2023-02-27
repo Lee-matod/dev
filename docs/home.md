@@ -70,9 +70,9 @@ sure to report any bugs in the [issue tracker](https://github.com/Lee-matod/dev/
 ### Can I add my own commands?
 
 Yes! This extension is fully extendable. To create your own cogs, you must
-use [Root](https://github.com/Lee-matod/dev/wiki/commands#class-devutilsbaseclassrootbot) instead
+use [Container](https://github.com/Lee-matod/dev/wiki/commands#class-devutilsbaseclassrootbot) instead
 of [discord.ext.commands.Cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Cog)
-as the cog's parent class, and use [root](https://github.com/Lee-matod/dev/wiki/commands#class-devutilsbaseclassroot) to
+as the cog's parent class, and use [commands](https://github.com/Lee-matod/dev/wiki/commands#class-devutilsbaseclassroot) to
 register your commands. Apart from that, it is as simple as creating any other extension.  
 **Note:** When creating subcommands, do not do `@parent_command.command()` (like with normal commands) as this decorator
 does not exist. Instead, use `@root.command(...)` and set the `parent` key word argument to the fully qualified name of
@@ -80,11 +80,11 @@ the parent command.
 
 ```python
 #  cog.py
-from dev import Root, root
+from dev import root
 from discord.ext import commands
 
 
-class MyDevCog(Root):
+class MyDevCog(root.Container):
     #  The 'parent' keyword argument is optional. If you don't set it, 
     #  it will mean that the cog loader should treat the command as if 
     #  it is part of the 'Dev' cog, but it is not a subcommand of 'dev'.
@@ -149,11 +149,11 @@ To override a command, you just have to copy the qualified name and use it as yo
 
 ```python
 #  override.py
-from dev import Root, root
+from dev import root
 from discord.ext import commands
 
 
-class MyDevCog(Root):
+class MyDevCog(root.Container):
     #  Be careful what type of command you use when overriding commands.
     #  If you use `root.command` with an expected group command, you will
     #  get an error!

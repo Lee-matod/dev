@@ -4,4 +4,4 @@
   commands to
   a [commands.Bot](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Bot) instance.
 - [cogs](https://github.com/Lee-matod/dev/wiki/cogs) –
-  The [Root](https://github.com/Lee-matod/dev/wiki/cogs#class-devutilsbaseclassrootbot) cog documentation.
+  The [Container](https://github.com/Lee-matod/dev/wiki/cogs#class-devutilsrootcontainerbot) cog documentation.
