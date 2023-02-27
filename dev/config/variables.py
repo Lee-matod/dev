@@ -17,14 +17,14 @@ from discord.ext import commands
 
 from dev.components import ModalSender, VariableValueSubmitter
 from dev.converters import LiteralModes
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import send
 
 if TYPE_CHECKING:
     from dev import types
 
 
-class RootVariables(Root):
+class RootVariables(root.Container):
     """Virtual variables manager"""
 
     @root.command(name="variable", parent="dev", aliases=["variables", "vars", "var"])
@@ -68,7 +68,7 @@ class RootVariables(Root):
         if mode in ["new", "create"]:
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
-            if name in Root.scope.keys():
+            if name in self.scope:
                 return await send(ctx, f"A variable called `{name}` already exists.")
             await send(
                 ctx,
@@ -82,33 +82,33 @@ class RootVariables(Root):
         elif mode in ["delete", "del"]:
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
-            if Root.scope.get(name, False):
-                del Root.scope[name]
+            if self.scope.get(name, False):
+                del self.scope[name]
                 return await send(ctx, f"Successfully deleted the variable `{name}`.")
             await send(ctx, f"No variable called `{name}` found.")
 
         elif mode in ["edit", "replace"]:
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
-            if name not in Root.scope.keys():
+            if name not in self.scope:
                 return await send(ctx, f"No variable called `{name}` found.")
             await send(
                 ctx,
                 ModalSender(
-                    VariableValueSubmitter(name, False, Root.scope[name]),
+                    VariableValueSubmitter(name, False, self.scope[name]),
                     ctx.author,
                     label="Submit Variable Value",
                 ),
             )
 
         elif mode in ["all", "~"]:
-            variables = "\n".join(f"+ {var}" for var in Root.scope.keys()) if Root.scope else "- No variables found."
+            variables = "\n".join(f"+ {var}" for var in self.scope.keys()) if self.scope else "- No variables found."
             await send(ctx, f"```diff\n{variables}\n```")
 
         elif mode == "exists":
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
-            if name not in Root.scope.keys():
+            if name not in self.scope:
                 return await ctx.message.add_reaction("\u274c")
             await ctx.message.add_reaction("\u2611")
 
@@ -118,6 +118,6 @@ class RootVariables(Root):
         ]:
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
-            if name not in Root.scope.keys():
+            if name not in self.scope:
                 return await send(ctx, f"No variable called `{name}` found.")
-            await ctx.author.send(f"**{name}:** {Root.scope[name]}")
+            await ctx.author.send(f"**{name}:** {self.scope[name]}")

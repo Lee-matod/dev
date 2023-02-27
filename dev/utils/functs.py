@@ -2,7 +2,7 @@
 
 """
 dev.utils.functs
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Basic functions used within the dev extension.
 
@@ -23,7 +23,7 @@ from discord.ext import commands
 from discord.utils import MISSING
 
 from dev.pagination import Interface, Paginator
-from dev.utils.baseclass import Root
+from dev.utils.root import Container
 from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
@@ -257,7 +257,7 @@ async def send(  # type: ignore
                 child.row = idx // 5 + 2  # move after 'Quit' and pagination buttons
                 pag_view.add_item(child)
         kwargs["content"] = pag_view.display_page
-    if ctx.message.id in Root.cached_messages and not forced:
+    if ctx.message.id in Container.cached_messages and not forced:
         edit: dict[str, Any] = {
             "content": kwargs.get("content", None),
             "embeds": kwargs.get("embeds", []),
@@ -270,12 +270,12 @@ async def send(  # type: ignore
         if pag_view is not None and not forced_pagination:
             edit["view"] = pag_view
         try:
-            message = await Root.cached_messages[ctx.message.id].edit(**edit)
+            message = await Container.cached_messages[ctx.message.id].edit(**edit)
         except discord.HTTPException:
             message = await ctx.send(**kwargs)
     else:
         message = await ctx.send(**kwargs)
-    Root.cached_messages[ctx.message.id] = message
+    Container.cached_messages[ctx.message.id] = message
     if paginator is not MISSING:
         return message, ret_paginator
     return message
@@ -563,6 +563,6 @@ def _check_length(content: str) -> Paginator | str:
 
 
 def _revert_virtual_var_value(string: str) -> str:
-    for (name, value) in Root.scope.items():
+    for (name, value) in Container.scope.items():
         string = string.replace(value, name)
     return string

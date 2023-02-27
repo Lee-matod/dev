@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 import discord
 
 from dev.components import AuthoredView, SearchCategory
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import send
 
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from dev import types
 
 
-class RootSearch(Root):
+class RootSearch(root.Container):
     """Search for different attributes that fuzzy match the given query"""
 
     @root.command(name="search", parent="dev", require_var_positional=True, global_use=True)

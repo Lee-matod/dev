@@ -18,7 +18,7 @@ import discord
 from discord.ext import commands
 
 from dev.interpreters import ShellSession
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import send
 from dev.utils.utils import clean_code
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from dev import types
 
 
-class RootShell(Root):
+class RootShell(root.Container):
     """Shell interpreter commands"""
 
     def __init__(self, bot: types.Bot) -> None:

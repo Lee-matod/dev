@@ -21,7 +21,7 @@ import discord
 from dev.components import BoolInput
 from dev.registrations import ManagementRegistration
 from dev.types import ManagementOperation
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import send, table_creator
 from dev.utils.startup import Settings
 from dev.utils.utils import escape, plural
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from dev import types
 
 
-class RootManagement(Root):
+class RootManagement(root.Container):
     """Files, folders, and directory managing commands"""
 
     def __init__(self, bot: types.Bot) -> None:

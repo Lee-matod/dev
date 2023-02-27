@@ -24,7 +24,7 @@ from dev.converters import CodeblockConverter, str_bool, str_ints
 from dev.handlers import ExceptionHandler, replace_vars
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 from dev.types import Over, OverType
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import flag_parser, send, table_creator
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper, escape, plural
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from dev import types
 
 
-class RootOver(Root):
+class RootOver(root.Container):
     """Override and overwrite different attributes"""
 
     @root.group(name="override", parent="dev", ignore_extra=True, invoke_without_command=True)
@@ -142,7 +142,7 @@ class RootOver(Root):
         if base_command is not None:
             scope.update(base_command.callback.__globals__)
 
-        script = clean_code(replace_vars(script, Root.scope))
+        script = clean_code(replace_vars(script, self.scope))
         async with ExceptionHandler(ctx.message, lambda *_: self.bot.add_command(command)):  # type: ignore
             # Make sure everything is parsed correctly
             parsed = ast.parse(script)

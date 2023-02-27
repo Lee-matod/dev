@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from typing_extensions import Concatenate, ParamSpec
 
     from dev import types
-    from dev.utils.baseclass import Root
+    from dev.utils.root import Container
 
     P = ParamSpec("P")
 
@@ -109,7 +109,7 @@ class ManagementRegistration(BaseRegistration):
 class CommandRegistration(BaseRegistration):
     def __init__(self, __command: types.Command, register_type: Over, /, *, source: str = "") -> None:
         super().__init__()
-        self.command: commands.Command[Root, ..., Any] | commands.Group[Root, ..., Any] = __command
+        self.command: commands.Command[Container, ..., Any] | commands.Group[Container, ..., Any] = __command
         self.register_type: Over = register_type
         self.over_type: OverType = OverType.COMMAND
         self.callback: Callable[

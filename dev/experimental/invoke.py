@@ -21,7 +21,7 @@ from dev.converters import GlobalTextChannelConverter
 from dev.handlers import ExceptionHandler, TimedInfo
 from dev.interactions import SyntheticInteraction, get_app_command, get_parameters
 from dev.types import Invokeable
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import generate_ctx, send
 
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     ]
 
 
-class RootInvoke(Root):
+class RootInvoke(root.Container):
     """Invoke commands with some additional diagnostics and debugging abilities."""
 
     @root.command(name="timeit", parent="dev", require_var_positional=True)

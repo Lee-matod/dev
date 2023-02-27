@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import send
 from dev.utils.utils import codeblock_wrapper, escape
 
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from dev import types
 
 
-class RootInformation(Root):
+class RootInformation(root.Container):
     @root.command(
         name="inspect",
         parent="dev",

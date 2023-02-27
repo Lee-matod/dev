@@ -16,16 +16,15 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import send
 
 if TYPE_CHECKING:
     from dev import types
-    from dev.utils.baseclass import _DiscordCommand  # type: ignore
-    from dev.utils.baseclass import _DiscordGroup  # type: ignore
+    from dev.utils.baseclass import DiscordCommand, DiscordGroup
 
 
-class RootFlags(Root):
+class RootFlags(root.Container):
     """Root command flags"""
 
     @root.command(name="--help", parent="dev", global_use=True, aliases=["--man"], hidden=True)
@@ -33,7 +32,7 @@ class RootFlags(Root):
         """Help command made exclusively made for the `dev` extensions.
         Flags are hidden, but they can still be accessed and attributes can still be viewed.
         """
-        command: _DiscordCommand | _DiscordGroup = self.bot.get_command(f"dev {command_string}".strip())  # type: ignore
+        command: DiscordCommand[root.Container] | DiscordGroup[root.Container] = self.bot.get_command(f"dev {command_string}".strip())  # type: ignore
         if not command:
             return await send(ctx, f"Command `dev {command_string}` not found.")
         docs = "\n".join((command.help or "").split("\n")[1:]) or "No docs available."

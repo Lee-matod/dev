@@ -22,7 +22,7 @@ from discord.ext import commands
 
 from dev.handlers import ExceptionHandler, GlobalLocals, RelativeStandard, replace_vars
 from dev.interpreters import Execute
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper
@@ -47,7 +47,7 @@ def _maybe_raw_send(item: Any, /) -> bool:
     return False
 
 
-class RootPython(Root):
+class RootPython(root.Container):
     """Python evaluation commands"""
 
     def __init__(self, bot: types.Bot) -> None:
@@ -116,7 +116,7 @@ class RootPython(Root):
         args: dict[str, Any] = {"bot": self.bot, "ctx": ctx}
         if self.last_output is not None:
             args["_"] = self.last_output
-        code = clean_code(replace_vars(code.replace("|root|", Settings.root_folder), Root.scope))
+        code = clean_code(replace_vars(code.replace("|root|", Settings.root_folder), self.scope))
         output: list[str] = []
 
         async def on_error(

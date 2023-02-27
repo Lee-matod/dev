@@ -20,7 +20,7 @@ import discord
 
 from dev.converters import LiteralModes
 from dev.handlers import replace_vars
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import flag_parser, send
 from dev.utils.startup import Settings
 from dev.utils.utils import responses
@@ -51,7 +51,7 @@ CONTENT_TYPES: dict[str, str] = {
 }
 
 
-class RootHTTP(Root):
+class RootHTTP(root.Container):
     """HTTP request commands"""
 
     @root.group(name="http", parent="dev", virtual_vars=True)
@@ -78,13 +78,13 @@ class RootHTTP(Root):
         if url.startswith("<") and url.endswith(">"):
             url = url[1:-1]
         try:
-            kwargs = flag_parser(replace_vars(options or "", Root.scope), Settings.flag_delimiter.strip())
+            kwargs = flag_parser(replace_vars(options or "", self.scope), Settings.flag_delimiter.strip())
         except json.JSONDecodeError as exc:
             return await send(ctx, f"Parsing options failed. {exc}")
         async with aiohttp.ClientSession() as session:
             try:
                 request = await session.get(
-                    replace_vars(url, Root.scope),
+                    replace_vars(url, self.scope),
                     allow_redirects=allow_redirects,
                     **kwargs,
                 )

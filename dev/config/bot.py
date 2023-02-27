@@ -18,7 +18,7 @@ import discord
 from discord.ext import commands
 
 from dev.components import AuthoredView, PermissionsSelector
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import send
 from dev.utils.utils import escape, plural
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from dev import types
 
 
-class RootBot(Root):
+class RootBot(root.Container):
     """Information, statistics, and commands related to this bot's configuration"""
 
     @root.group(name="bot", parent="dev", global_use=True, invoke_without_command=True)

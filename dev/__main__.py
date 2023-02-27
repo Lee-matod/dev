@@ -21,7 +21,7 @@ import discord
 import psutil
 from discord.ext import commands
 
-from dev.utils.baseclass import Root, root
+from dev.utils import root
 from dev.utils.functs import send
 from dev.utils.startup import Settings
 from dev.utils.utils import plural
@@ -38,19 +38,14 @@ def _as_readable(percent: float, bytes_size: int) -> str:
     return f"{round(bytes_size / (1024 ** power), 2)} {units[power]} ({percent * 100:.2f}%)"
 
 
-class RootCommand(Root):
+class RootCommand(root.Container):
     """Cog containing the parent command of this extension"""
 
     def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
         self.load_time: int = int(time.time())
 
-    @root.group(
-        name="dev",
-        global_use=True,
-        ignore_extra=True,
-        invoke_without_command=True
-    )
+    @root.group(name="dev", global_use=True, ignore_extra=True, invoke_without_command=True)
     async def root_(self, ctx: commands.Context[types.Bot]):
         """Root command for the `dev` extension.
         Gives a briefing of the dev extension, as well as process statistics.
@@ -139,8 +134,8 @@ class RootCommand(Root):
             if isinstance(prefix, list):
                 prefix = tuple(prefix)
             if before.content.startswith(prefix) and after.content.startswith(prefix):
-                if before.id in Root.cached_messages:
-                    message = Root.cached_messages.pop(before.id)
-                    Root.cached_messages[after.id] = message
+                if before.id in self.cached_messages:
+                    message = self.cached_messages.pop(before.id)
+                    self.cached_messages[after.id] = message
                 await after.clear_reactions()
                 await self.bot.process_commands(after)
