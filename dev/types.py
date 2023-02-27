@@ -12,7 +12,7 @@ Type shortcuts used for type hinting and type checking as well as enums.
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Protocol, Union
+from typing import TYPE_CHECKING, Any, Coroutine, Protocol, TypeVar, Union
 
 import discord
 from discord.ext import commands
@@ -78,6 +78,9 @@ else:
         discord.ui.View,
     )
     User = (discord.ClientUser, discord.Member, discord.User)
+
+T = TypeVar("T")
+Coro = Coroutine[Any, Any, T]
 
 
 class Invokeable(Protocol):
