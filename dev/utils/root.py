@@ -21,6 +21,7 @@ from discord.utils import MISSING
 from dev.handlers import GlobalLocals
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 from dev.types import Over
+from dev.utils.baseclass import Command, DiscordCommand, DiscordGroup, Group
 from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
@@ -28,7 +29,6 @@ if TYPE_CHECKING:
 
     from dev import types
     from dev.types import CogT, Coro
-    from dev.utils.baseclass import Command, DiscordCommand, DiscordGroup, Group
 
     P = ParamSpec("P")
 
