@@ -14,6 +14,7 @@ from __future__ import annotations
 import ast
 import asyncio
 import inspect
+import linecache
 import os
 import pathlib
 import queue
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
     from typing_extensions import ParamSpec
 
     from dev import types
+    from dev.types import Coro
     from dev.handlers import GlobalLocals
 
     P = ParamSpec("P")
@@ -588,13 +590,26 @@ class Execute:
             print(expr)
     """
 
-    __slots__ = ("args_name", "args_value", "code", "vars")
+    __slots__ = ("args_name", "args_value", "code", "vars", "_executor")
 
     def __init__(self, code: str, global_locals: GlobalLocals, args: dict[str, Any]) -> None:
         self.code: str = code
         self.vars: GlobalLocals = global_locals
         self.args_name: list[str] = ["_self_variables", *args.keys()]
         self.args_value: list[Any] = [global_locals, *args.values()]
+        self._executor: Callable[..., AsyncGenerator[Any, Any] | Coro[Any]] | None = None
+
+    @property
+    def function(self) -> Callable[..., AsyncGenerator[Any, Any] | Coro[Any]]:
+        if self._executor is not None:
+            return self._executor
+        exec(
+            compile(self.wrapper(), "<repl>", "exec"),
+            self.vars.globals,
+            self.vars.locals,
+        )
+        self._executor = self.vars.get("_executor")
+        return self._executor
 
     @property
     def filename(self) -> str:
@@ -604,17 +619,21 @@ class Execute:
         return "<repl>"
 
     async def __aiter__(self) -> AsyncGenerator[Any, Any]:
-        exec(
-            compile(self.wrapper(), "<repl>", "exec"),
-            self.vars.globals,
-            self.vars.locals,
-        )
-        func = self.vars.get("_executor")
-        if inspect.isasyncgenfunction(func):
-            async for result in func(*self.args_value):
-                yield result
-        else:
-            yield await func(*self.args_value)
+        try:
+            if inspect.isasyncgenfunction(self.function):
+                async for result in self.function(*self.args_value):
+                    yield result
+            else:
+                yield await self.function(*self.args_value)  # type: ignore
+        except BaseException:
+            linecache.cache[self.filename] = (
+                len(self.code),
+                None,
+                [f"{line}\n" for line in self.code.splitlines()],
+                self.filename
+            )
+            raise
+
 
     def wrapper(self) -> ast.Module:
         code = ast.parse(self.code)
