@@ -84,9 +84,9 @@ else:
     User = (discord.ClientUser, discord.Member, discord.User)
 
     class Annotated:
-        def __class_getitem__(self, key):
-            assert len(key) > 1
-            return key
+        def __class_getitem__(self, key: tuple[Any, Any]):
+            assert len(key) == 2
+            return key[1]
 
 T = TypeVar("T")
 Coro = Coroutine[Any, Any, T]
