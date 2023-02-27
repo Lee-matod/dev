@@ -1,6 +1,6 @@
 # cogs
 
-### `class` dev.utils.root.Container(bot)
+### `class` dev.root.Container(bot)
 
 A cog subclass that implements a global check and some default functionality that the dev extension should have.
 

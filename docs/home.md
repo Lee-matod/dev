@@ -70,9 +70,9 @@ sure to report any bugs in the [issue tracker](https://github.com/Lee-matod/dev/
 ### Can I add my own commands?
 
 Yes! This extension is fully extendable. To create your own cogs, you must
-use [Container](https://github.com/Lee-matod/dev/wiki/cogs#class-devutilsrootcontainerbot) instead
+use [Container](https://github.com/Lee-matod/dev/wiki/cogs#class-devrootcontainerbot) instead
 of [discord.ext.commands.Cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Cog)
-as the cog's parent class, and use [commands](https://github.com/Lee-matod/dev/wiki/registrations#devutilsrootcommandnamemissing-kwargs) to
+as the cog's parent class, and use [commands](https://github.com/Lee-matod/dev/wiki/registrations#devrootcommandnamemissing-kwargs) to
 register your commands. Apart from that, it is as simple as creating any other extension.  
 **Note:** When creating subcommands, do not do `@parent_command.command()` (like with normal commands) as this decorator
 does not exist. Instead, use `@root.command(...)` and set the `parent` key word argument to the fully qualified name of

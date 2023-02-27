@@ -1,6 +1,6 @@
 # command registration
 
-## @dev.utils.root.command(name=MISSING, **kwargs)
+## @dev.root.command(name=MISSING, **kwargs)
 A decorator that converts the given function to a
 temporary [Command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclasscommand) class.
 #### Parameters
@@ -9,7 +9,7 @@ temporary [Command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#
 - kwargs – Keyword arguments that will be forwarded to
   the [Command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclasscommand) class.
 
-## @dev.utils.root.group(name=MISSING, **kwargs)
+## @dev.root.group(name=MISSING, **kwargs)
 A decorator that converts the given function to a
 temporary [Group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup) class.
 #### Parameters
