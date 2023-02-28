@@ -30,11 +30,13 @@ class _PageSetter(discord.ui.Modal):
         self.view: Interface = view
 
     async def on_submit(self, interaction: discord.Interaction, /) -> None:
-        if not self.page_num.value.isnumeric():
+        try:
+            page_num = int(self.page_num.value)
+        except ValueError:
             return await interaction.response.send_message("Input value should be numeric.", ephemeral=True)
-        if int(self.page_num.value) not in range(1, len(self.view.paginator.pages) + 1):
+        if page_num not in range(1, len(self.view.paginator.pages) + 1):
             return await interaction.response.send_message("Page number does not exist.", ephemeral=True)
-        self.view.current_page = int(self.page_num.value)
+        self.view.page_num = page_num
         await interaction.response.edit_message(content=self.view.display_page, view=self.view)
 
 
@@ -50,23 +52,6 @@ class Paginator(commands.Paginator):
     :class:`discord.ext.commands.Paginator`
     """
 
-    def __init__(
-        self,
-        prefix: str = "```",
-        suffix: str = "```",
-        max_size: int = 2000,
-        linesep: str = "\n",
-        force_last_page: bool = False,
-    ):
-        super().__init__(prefix, suffix, max_size, linesep)
-        self.force_last_page: bool = force_last_page
-        self.__pages: list[str] = []
-
-    @property
-    def pages(self) -> list[str]:
-        assert self.suffix is not None
-        return [page.strip("\n") + self.suffix for page in self.__pages]
-
     def add_line(self, line: str = "", *, empty: bool = False) -> None:
         """A wrapper to the default :meth:`discord.ext.commands.Paginator.add_line`.
 
@@ -79,19 +64,20 @@ class Paginator(commands.Paginator):
         empty: :class:`bool`
             From :meth:`discord.ext.commands.Paginator.add_line`. Whether an empty line should be added too.
         """
+
+        def line_handler(line: str, /, max_page_size: int, *, empty: bool) -> None:
+            if len(self.pages) == 0 or len(line) + len(self.pages[-1]) > max_page_size:
+                self.pages.append(f"{self.prefix}\n{line}" + (self.linesep if empty else ""))
+            else:
+                self.pages[-1] += f"\n{line}"
+
         max_page_size = self.max_size - self._prefix_len - self._suffix_len - 2 * self._linesep_len
         if len(line) > max_page_size:
             lines: list[str] = wrap(line, max_page_size)
-            for l in lines:  # noqa: E741
-                self.line_handler(l, max_page_size, empty=empty)
+            for l in lines:
+                line_handler(l, max_page_size, empty=empty)
         else:
-            self.line_handler(line, max_page_size, empty=empty)
-
-    def line_handler(self, line: str, /, max_page_size: int, *, empty: bool) -> None:
-        if len(self.__pages) == 0 or len(line) + len(self.__pages[-1]) > max_page_size:
-            self.__pages.append(f"{self.prefix}\n{line}" + ("\n" if empty else ""))
-        else:
-            self.__pages[-1] += f"\n{line}"
+            line_handler(line, max_page_size, empty=empty)
 
 
 class Interface(discord.ui.View):
@@ -117,44 +103,40 @@ class Interface(discord.ui.View):
 
     def __init__(self, paginator: commands.Paginator, author: types.User | int) -> None:
         super().__init__()
-        self.author: int = author.id if isinstance(author, types.User) else author  # type: ignore
+        self.author: int = getattr(author, "id", author)  # type: ignore
         self.paginator: commands.Paginator = paginator
-        if hasattr(paginator, "force_last_page") and paginator.force_last_page:  # type: ignore
-            self.last_page.disabled = True
-            self.next_page.disabled = True
-            if len(paginator.pages) <= 1:
-                self.first_page.disabled = True
-                self.previous_page.disabled = True
-            self._display_page: int = len(paginator.pages)
-            self._real_page: int = self._display_page - 1
-        else:
-            self.first_page.disabled = True
-            self.previous_page.disabled = True
-            if len(paginator.pages) <= 1:
-                self.last_page.disabled = True
-                self.next_page.disabled = True
-            self._display_page: int = 1
-            self._real_page: int = 0
-        self.current.label = str(self._display_page)
+
+        self.reset()
 
     async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
         return interaction.user.id == self.author
 
+    def reset(self) -> None:
+        """Resets the entire interface, setting the current page to the last one."""
+        if len(self.paginator.pages) <= 1:
+            self.first_page.disabled = True
+            self.previous_page.disabled = True
+        self.last_page.disabled = True
+        self.next_page.disabled = True
+
+        self._display_page_count: int = len(self.paginator.pages)
+        self._page_count: int = self._display_page_count - 1
+        self.current.label = f"{self._display_page_count}/{self._display_page_count}"
+
     @property
     def display_page(self) -> str:
         """:class:`str`: Returns the current page of the paginator."""
-        return self.paginator.pages[self._real_page]
+        return self.paginator.pages[self._page_count]
 
     @property
-    def current_page(self) -> int:
+    def page_num(self) -> int:
         """:class:`int`: Returns the current page number of the paginator."""
-        return self._display_page
+        return self._display_page_count
 
-    @current_page.setter
-    def current_page(self, item: int) -> None:
-        self._display_page = item
-        self._real_page = item - 1
-        self.current.label = str(item)
+    @page_num.setter
+    def page_num(self, item: int) -> None:
+        self._display_page_count = item
+        self._page_count = item - 1
         if item == len(self.paginator.pages):
             self.last_page.disabled = True
             self.next_page.disabled = True
@@ -167,29 +149,30 @@ class Interface(discord.ui.View):
         if item < len(self.paginator.pages):
             self.last_page.disabled = False
             self.next_page.disabled = False
+        self.current.label = f"{item}/{len(self.paginator.pages)}"
 
     @discord.ui.button(label="\u226a")
     async def first_page(self, interaction: discord.Interaction, _) -> None:
-        self.current_page = 1
+        self.page_num = 1
         await interaction.response.edit_message(content=self.display_page, view=self)
 
     @discord.ui.button(label="\u25c0", style=discord.ButtonStyle.blurple)
     async def previous_page(self, interaction: discord.Interaction, _) -> None:
-        self.current_page -= 1
+        self.page_num -= 1
         await interaction.response.edit_message(content=self.display_page, view=self)
 
     @discord.ui.button(label="0", style=discord.ButtonStyle.green)
     async def current(self, interaction: discord.Interaction, _) -> None:
         await interaction.response.send_modal(_PageSetter(self))
 
-    @discord.ui.button(label="\u25b6", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="\u25b6", style=discord.ButtonStyle.blurple, disabled=True)
     async def next_page(self, interaction: discord.Interaction, _) -> None:
-        self.current_page += 1
+        self.page_num += 1
         await interaction.response.edit_message(content=self.display_page, view=self)
 
-    @discord.ui.button(label="\u226b")
+    @discord.ui.button(label="\u226b", disabled=True)
     async def last_page(self, interaction: discord.Interaction, _) -> None:
-        self.current_page = len(self.paginator.pages)
+        self.page_num = len(self.paginator.pages)
         await interaction.response.edit_message(content=self.display_page, view=self)
 
     @discord.ui.button(label="Quit", style=discord.ButtonStyle.danger)

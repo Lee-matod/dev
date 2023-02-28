@@ -377,6 +377,8 @@ class ShellSession:
     ----------
     cwd: :class:`str`
         The current working directory of this session. Defaults to the current working directory of the program.
+    paginator: Optional[:class:`Paginator`]
+        The current paginator instance that is being used for this session, if any.
 
     Notes
     -----
@@ -405,11 +407,11 @@ class ShellSession:
         print(result)  # If on a unix system, it will print Desktop as your current working directory.
     """
 
-    __slots__ = ("__terminate", "_previous_processes", "_paginator", "cwd")
+    __slots__ = ("__terminate", "_previous_processes", "cwd", "paginator")
 
     def __init__(self) -> None:
         self.cwd: str = os.getcwd()
-        self._paginator: Paginator | None = None
+        self.paginator: Paginator | None = None
         self._previous_processes: list[str] = []
         self.__terminate: bool = False
 
@@ -422,19 +424,6 @@ class ShellSession:
             f"interface={self.interface!r} "
             f"terminated={self.terminated}>"
         )
-
-    @property
-    def paginator(self) -> Paginator | None:
-        """Optional[:class:`Paginator`]
-        The current paginator instance that is being used for this session, if any.
-        """
-        return self._paginator
-
-    @paginator.setter
-    def paginator(self, value: Paginator | None) -> None:
-        if value is not None:
-            value.force_last_page = True
-        self._paginator = value
 
     @property
     def terminated(self) -> bool:
