@@ -64,20 +64,16 @@ class Paginator(commands.Paginator):
         empty: :class:`bool`
             From :meth:`discord.ext.commands.Paginator.add_line`. Whether an empty line should be added too.
         """
-
-        def line_handler(line: str, /, max_page_size: int, *, empty: bool) -> None:
-            if len(self.pages) == 0 or len(line) + len(self.pages[-1]) > max_page_size:
-                self.pages.append(f"{self.prefix}\n{line}" + (self.linesep if empty else ""))
-            else:
-                self.pages[-1] += f"\n{line}"
-
         max_page_size = self.max_size - self._prefix_len - self._suffix_len - 2 * self._linesep_len
         if len(line) > max_page_size:
             lines: list[str] = wrap(line, max_page_size)
             for l in lines:
-                line_handler(l, max_page_size, empty=empty)
+                super().add_line(l)
         else:
-            line_handler(line, max_page_size, empty=empty)
+            super().add_line(line)
+        if empty:
+            self._current_page.append('')
+            self._count += self._linesep_len
 
 
 class Interface(discord.ui.View):
