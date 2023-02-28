@@ -85,7 +85,7 @@ def member(_member: discord.Member, /) -> dict[str, Any]:
         "nick": _member.nick,
         "joined_at": str(_member.joined_at),
         "is_pending": False,
-        "flags": 0,
+        "flags": _member._flags,  # type: ignore
         "communication_disabled_until": str(_member.timed_out_until) if _member.timed_out_until else None,
         "avatar": _member._avatar,  # type: ignore
         "user": user(_member._user),  # type: ignore
@@ -96,31 +96,90 @@ def member(_member: discord.Member, /) -> dict[str, Any]:
 
 
 def channel(_channel: discord.abc.GuildChannel, /, context: commands.Context[types.Bot]) -> dict[str, Any]:
-    if _channel.category_id is not None:
-        parent_id = str(_channel.category_id)
-    else:
-        parent_id = None
-    _channel.permissions_for
-    return {
+    payload: dict[str, Any] = {
         "type": _channel.type.value,
         "permissions": str(context.permissions.value),
-        "parent_id": parent_id,
+        "parent_id": str(_channel.category_id) if _channel.category_id else None,
         "name": _channel.name,
         "id": str(_channel.id),
+        "nsfw": _channel.nsfw,  # type: ignore
+        "position": _channel.position,
+        "permission_overwrites": [overwrite._asdict() for overwrite in _channel._overwrites],  # type: ignore
     }
+    metadata: dict[str, Any] = {}
+    if isinstance(_channel, discord.TextChannel):
+        metadata.update(
+            {
+                "topic": _channel.topic,
+                "rate_limit_per_user": _channel.slowmode_delay,
+                "default_auto_archive_duration": _channel.default_auto_archive_duration,
+                "last_message_id": _channel.last_message_id,
+            }
+        )
+    elif isinstance(_channel, discord.ForumChannel):
+        metadata.update(
+            {
+                "topic": _channel.topic,
+                "rate_limit_per_user": _channel.slowmode_delay,
+                "default_auto_archive_duration": _channel.default_auto_archive_duration,
+                "last_message_id": _channel.last_message_id,
+                "default_thread_rate_limit_per_user": _channel.default_thread_slowmode_delay,
+                "default_forum_layout": _channel.default_layout.value,
+                "available_tags": [tag.to_dict() for tag in _channel.available_tags],
+                "default_reaction_emoji": _channel.default_reaction_emoji.to_dict()
+                if _channel.default_reaction_emoji
+                else None,
+                "flags": _channel._flags,  # type: ignore
+            }
+        )
+    elif isinstance(_channel, (discord.VoiceChannel, discord.StageChannel)):
+        metadata.update(
+            {
+                "rtc_region": _channel.rtc_region,
+                "video_quality_mode": _channel.video_quality_mode.value,
+                "last_message_id": _channel.last_message_id,
+                "rate_limit_per_user": _channel.slowmode_delay,
+                "bitrate": _channel.bitrate,
+                "user_limit": _channel.user_limit,
+            }
+        )
+        if isinstance(_channel, discord.StageChannel):
+            metadata["topic"] = _channel.topic
+    payload.update(metadata)
+    return payload
 
 
 def thread(_thread: discord.Thread, /, context: commands.Context[types.Bot]) -> dict[str, Any]:
-    channel_data = channel(_thread, context)  # type: ignore
-    channel_data["type"] = 11
-    channel_data["thread_metadata"] = {
-        "locked": _thread.locked,
-        "create_timestamp": str(_thread.created_at),
-        "auto_archive_duration": _thread.auto_archive_duration,
-        "archived": _thread.archived,
-        "archive_timestamp": str(_thread.archive_timestamp),
+    payload: dict[str, Any] = {
+        "id": str(_thread.id),
+        "parent_id": str(_thread.parent_id),
+        "owner_id": str(_thread.owner_id),
+        "name": _thread.name,
+        "type": _thread._type.value,  # type: ignore
+        "last_message_id": _thread.last_message_id,
+        "rate_limit_per_user": _thread.slowmode_delay,
+        "message_count": _thread.message_count,
+        "member_count": _thread.member_count,
+        "flags": _thread._flags,  # type: ignore
+        "thread_metadata": {
+            "archiver_id": _thread.archiver_id,
+            "invitable": _thread.invitable,
+            "locked": _thread.locked,
+            "create_timestamp": str(_thread.created_at),
+            "auto_archive_duration": _thread.auto_archive_duration,
+            "archived": _thread.archived,
+            "archive_timestamp": str(_thread.archive_timestamp),
+        },
     }
-    return channel_data
+    me = context.me
+    if isinstance(me, discord.Member):
+        payload["member"] = {
+            "id": me.id,
+            "thread_id": payload["id"],
+            "join_timestamp": str(me.joined_at),
+            "flags": me._flags,  # type: ignore
+        }
+    return payload
 
 
 TYPE_MAPPING = {
