@@ -2,21 +2,21 @@
 
 ## @dev.root.command(name=MISSING, **kwargs)
 A decorator that converts the given function to a
-temporary [Command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclasscommand) class.
+temporary [Command](https://github.com/Lee-matod/dev/blob/main/docs/commands/registration.md#class-devutilsbaseclasscommand) class.
 #### Parameters
 - name([str](https://docs.python.org/3/library/stdtypes.html#str)) – The name of the command that should be used. If
   no name is provided, the function's name will be used.
 - kwargs – Keyword arguments that will be forwarded to
-  the [Command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclasscommand) class.
+  the [Command](https://github.com/Lee-matod/dev/blob/main/docs/commands/registration.md#class-devutilsbaseclasscommand) class.
 
 ## @dev.root.group(name=MISSING, **kwargs)
 A decorator that converts the given function to a
-temporary [Group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup) class.
+temporary [Group](https://github.com/Lee-matod/dev/blob/main/docs/commands/registration.md#class-devutilsbaseclassgroup) class.
 #### Parameters
 - name([str](https://docs.python.org/3/library/stdtypes.html#str)) – The name of the command that should be used. If
   no name is provided, the function's name will be used.
 - kwargs – Key-word arguments that'll be forwarded to
-  the [Group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#class-devutilsbaseclassgroup) class.
+  the [Group](https://github.com/Lee-matod/dev/blob/main/docs/commands/registration.md#class-devutilsbaseclassgroup) class.
 
 ***
 
@@ -27,7 +27,7 @@ simulates [discord.ext.commands.Group](https://discordpy.readthedocs.io/en/lates
 
 This class is used to keep track of which functions be groups, and it shouldn't get called manually.
 Instead, consider
-using [group](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#staticmethod-groupnamemissing-kwargs) to
+using [group](https://github.com/Lee-matod/dev/blob/main/docs/commands/registration.md#devrootgroupnamemissing-kwargs) to
 instantiate this class.
 > ### to_instance(command_mapping, /)
 > Converts this class to an instance of its respective simulation.
@@ -47,7 +47,7 @@ simulates [discord.ext.commands.Command](https://discordpy.readthedocs.io/en/lat
 
 This class is used to keep track of which functions should be commands, and it shouldn't get called manually.
 Instead, consider
-using [command](https://github.com/Lee-matod/dev/blob/main/docs/commands.md#staticmethod-commandnamemissing-kwargs)
+using [command](https://github.com/Lee-matod/dev/blob/main/docs/commands/registration.md#devrootcommandnamemissing-kwargs)
 to instantiate this class.
 > ### to_instance(command_mapping, /)
 > Converts this class to an instance of its respective simulation.
