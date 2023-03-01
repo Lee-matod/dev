@@ -21,7 +21,7 @@ from discord.ext import commands
 
 from dev import root
 from dev.components import AuthoredView, CodeEditor, ModalSender, SettingsToggler
-from dev.converters import CodeblockConverter, str_bool, str_ints
+from dev.converters import codeblock_converter, str_bool, str_ints
 from dev.handlers import ExceptionHandler, replace_vars
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 from dev.types import Annotated, Over, OverType
@@ -31,6 +31,7 @@ from dev.utils.utils import clean_code, codeblock_wrapper, escape, plural
 
 if TYPE_CHECKING:
     from dev import types
+    from dev.converters import MessageCodeblock
 
 
 class RootOver(root.Container):
@@ -102,7 +103,7 @@ class RootOver(root.Container):
         self,
         ctx: commands.Context[types.Bot],
         *,
-        command_code: Annotated[tuple[str | None, str | None], CodeblockConverter],
+        command_code: Annotated[MessageCodeblock, codeblock_converter],
     ):
         r"""Temporarily override a command.
         All changes will be undone once the bot is restarted.
@@ -110,9 +111,8 @@ class RootOver(root.Container):
         This differentiates from its counterpart `dev overwrite` which permanently changes a file.
         The script that will be used as override should be specified in a codeblock.
         """
-        command_string, script = command_code
-        command_string: str | None
-        script: str | None
+        command_string = command_code.content
+        script = command_code.codeblock
         if not command_string:
             return await send(ctx, "Malformed arguments were given.")
         command: types.Command = self.bot.get_command(command_string)  # type: ignore
@@ -333,22 +333,21 @@ class RootOver(root.Container):
         self,
         ctx: commands.Context[types.Bot],
         *,
-        command_code: Annotated[tuple[str | None, str | None], CodeblockConverter],
+        command_code: Annotated[MessageCodeblock, codeblock_converter],
     ):
         r"""Completely change a command's execution script to be permanently overwritten.
         The script that will be used as the command overwrite should be specified inside a codeblock
         (or in between \`\`\`).
         This command edits the command's file with the new script.
         """
-        command_string, script = command_code
-        command_string: str | None
-        script: str | None
+        command_string = command_code.content
+        script = command_code.codeblock
         if not all([command_string, script]):
             return await send(ctx, "Malformed arguments were given.")
         command: types.Command = self.bot.get_command(command_string)  # type: ignore
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
-        base: BaseCommandRegistration | None = self.get_base_command(command_string)  # type: ignore
+        base: BaseCommandRegistration | None = self.get_base_command(command_string)
         if base is None:
             return await send(ctx, "Could not find base command.")
         callback = base.callback

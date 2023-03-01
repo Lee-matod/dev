@@ -11,19 +11,23 @@ Custom converters used within the dev extension.
 """
 from __future__ import annotations
 
+import collections
 import re
-from typing import TYPE_CHECKING, Any, Literal, Optional, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Deque, Literal, TypeVar, Union
 
 import discord
 from discord.ext import commands
+
+from dev.utils.utils import clean_code, codeblock_wrapper
 
 if TYPE_CHECKING:
     from dev import types
 
 __all__ = (
-    "CodeblockConverter",
     "GlobalTextChannelConverter",
     "LiteralModes",
+    "MessageCodeblock",
+    "codeblock_converter",
     "str_bool",
     "str_ints",
 )
@@ -138,49 +142,70 @@ class LiteralModes(commands.Converter[Union[str, None]]):
         return cls(item, case_sensitive)
 
 
-class CodeblockConverter(commands.Converter[Tuple[Optional[str], Optional[str]]]):
-    """A custom converter that identifies and separates normal string arguments from codeblocks.
-
-    Codeblock cleaning should be done later on as this does not automatically return the clean code.
-
-    Subclass of :class:`discord.ext.commands.Converter`.
+class MessageCodeblock:
+    """Represents a Discord message with a codeblock.
+    
+    Attributes
+    ----------
+    content: :class:`str`
+        Any arguments outside of the codeblock.
+    codeblock: Optional[:class:`str`]
+        The contents of codeblock, if any. Does not include backticks nor highlight language.
+    highlightjs: Optional[:class:`str`]
+        The highlight language of the codeblock, if any.
     """
 
-    async def convert(self, ctx: commands.Context[types.Bot], argument: str) -> tuple[str | None, str | None]:
-        """The method that converts the argument passed in.
+    def __init__(self, content: str, codeblock: str | None, highlightjs: str | None) -> None:
+        self.content: str = content
+        self.codeblock: str | None = clean_code(codeblock) if codeblock is not None else None
+        self.lang: str | None = highlightjs
 
-        Parameters
-        ----------
-        ctx: :class:`Context`
-            The invocation context in which the argument is being using on.
-        argument: :class:`str`
-            The string that should get converted and parsed.
+    def __str__(self) -> str:
+        """Returns a completed string with all components of the message combined."""
+        if self.codeblock and self.lang:
+            return f"{self.content} {codeblock_wrapper(self.codeblock, self.lang)}"
+        return self.content
 
-        Returns
-        -------
-        Tuple[Optional[str], Optional[str]]
-            A tuple with the arguments and codeblocks.
-        """
 
-        start: int | None = False
+def codeblock_converter(content: str) -> MessageCodeblock:
+    """A custom converter that identifies and separates normal string arguments from codeblocks.
 
-        for idx, value in enumerate(argument):
-            try:
-                if "".join([value, argument[idx + 1], argument[idx + 2]]) == "```":
-                    start = idx
-                    break
-            except IndexError:
-                return argument, None
-        codeblock = None
-        arguments = argument[:start]
-        if start is not False and argument.endswith("```"):
-            if len(argument[start:]) > 3:
-                codeblock = argument[start:]
-            else:
-                arguments = argument
-        elif start is not False and not argument.endswith("```"):
-            arguments = argument
-        return arguments.strip() or None, codeblock
+    Parameters
+    ----------
+    content: :class:`str`
+        The string that should be parsed.
+
+    Returns
+    -------
+    MessageCodeblock
+        The divided message as a useful pythonic object.
+    """
+    start: int | None = None
+    lang: int | None = None
+    last_seen: Deque[str] = collections.deque(maxlen=3)
+
+    for idx, char in enumerate(content):
+        last_seen.append(char)
+        if "".join(last_seen) == "```":
+            #  With this we know where the codeblock starts.
+            #  Likewise, we know where the argument will end.
+            start = idx - 2
+        if start is not None and char == "\n":
+            #  Now that we know we're actually in the codeblock,
+            #  we can find out which language was being used.
+            #  This also means that we can break out, because
+            #  everything else is of no use to us.
+            lang = idx
+            break
+    hljs: str | None = None
+    codeblock: str | None = None
+    if start is not None and lang is not None:
+        hljs = content[start + 3 : lang].strip()
+    if lang is not None:
+        cleaned_initial = content[lang + 1 :].strip()
+        if cleaned_initial.endswith("```"):
+            codeblock = cleaned_initial[:-3].strip("\n")
+    return MessageCodeblock(content[:start].strip(), codeblock, hljs)
 
 
 def str_ints(content: str) -> list[int]:
