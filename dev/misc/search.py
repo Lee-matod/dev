@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING
 
 import discord
 
-from dev.components import AuthoredView, SearchCategory
 from dev import root
+from dev.components import AuthoredView, SearchCategory
 from dev.utils.functs import send
 
 if TYPE_CHECKING:
