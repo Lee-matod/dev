@@ -69,7 +69,7 @@ A custom converter that identifies and separates normal string arguments from co
 - content([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should be parsed.
 
 #### Returns
-[MessageCodeblock](https://github.com/Lee-matod/dev/blob/main/docs/converters.md#class-devconvertersmessagecodeblockcontent-codeblock-highlightjs) –
+[MessageCodeblock](https://github.com/Lee-matod/dev/blob/main/docs/api/converters.md#class-devconvertersmessagecodeblockcontent-codeblock-highlightjs) –
   The divided message as a useful pythonic object.
 
 ***
