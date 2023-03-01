@@ -4,25 +4,20 @@ These are custom converters that you can either add as a type hint to a command,
 
 ***
 
-### `class` dev.converters.CodeblockConverter
+### `class` dev.converters.MessageCodeblock(content, codeblock, highlightjs)
 
-A custom converter that identifies and separates normal string arguments from codeblocks.
+Represents a Discord message with a codeblock.
 
-Codeblock cleaning should be done later on as this does not automatically return the clean code.
+#### Attributes
+content([str](https://docs.python.org/3/library/stdtypes.html#str)]) – Any arguments outside of the codeblock.
+codeblock(Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)]) – The contents of codeblock, if any.
+  Does not include backticks nor highlight language.
+highlightjs(Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)]) – The highlight language of the
+  codeblock, if any.
 
-Subclass
-of [discord.ext.commands.Converter](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Converter).
-> ### *await* convert(ctx, argument)
-> The method that converts the argument passed in.
-> #### Parameters
-> - ctx([discord.ext.commands.Context](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Context)) –
-> The invocation context in which the argument is being using on.
-> - argument([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should get converted and 
-> parsed.
->
-> #### Returns
-> Tuple[Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)], Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)]] – 
-> A tuple with the arguments and codeblocks.
+> ### Supported Operations
+>> #### str(x)
+>> Returns a completed string with all components of the message combined.
 
 ***
 
@@ -63,6 +58,19 @@ async def bar(ctx: commands.Context, arg: LiteralModes[typing.Literal["foo"]]):
 > #### Returns
 > Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)] – The mode that was accepted, if it falls under
 > any of the specified modes.
+
+***
+
+### dev.converters.codeblock_converter(content)
+
+A custom converter that identifies and separates normal string arguments from codeblocks.
+
+#### Paramters
+- content([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should be parsed.
+
+#### Returns
+[MessageCodeblock](https://github.com/Lee-matod/dev/blob/main/docs/converters.md#class-devconvertersmessagecodeblockcontent-codeblock-highlightjs) –
+  The divided message as a useful pythonic object.
 
 ***
 
