@@ -111,21 +111,23 @@ class RootBot(root.Container):
             AuthoredView(ctx.author, select),
         )
 
-    @root.command(name="load", parent="dev bot", aliases=["reload", "unload"], require_var_positional=True)
+    @root.command(name="load", parent="dev bot", aliases=["reload", "unload"])
     async def root_bot_load(self, ctx: commands.Context[types.Bot], *extensions: str):
         """Load, reload, or unload a set of extensions.
-        Use '~' to reference all currently loaded cogs.
-        This extension is skipped when loading.
+        Use '~' to reference all currently loaded cogs. To prevent errors, cogs are checked
+        if they currently exist when loading or unloading.
         """
-        assert ctx.invoked_with is not None
+        invoked_with: Literal["load", "reload", "unload"] = ctx.invoked_with  # type: ignore
+        if not extensions or "~" in extensions:
+            extensions = tuple(self.bot.extensions)
 
-        successful, output, perf = await self._manage_extension(ctx.invoked_with, extensions)  # type: ignore
+        successful, output, perf = await self._manage_extension(invoked_with, extensions)
         embed = discord.Embed(
-            title=f"{ctx.invoked_with.title()}ed {plural(successful, 'Cog')}",
+            title=f"{invoked_with.title()}ed {plural(successful, 'Cog')}",
             description=output,
             color=discord.Color.blurple(),
         )
-        embed.set_footer(text=f"{ctx.invoked_with.title()}ing took {perf:.3f}s")
+        embed.set_footer(text=f"{invoked_with.title()}ing took {perf:.3f}s")
         await send(ctx, embed)
 
     @root.command(name="enable", parent="dev bot", require_var_positional=True)
@@ -163,28 +165,26 @@ class RootBot(root.Container):
     async def _manage_extension(
         self, action: Literal["load", "reload", "unload"], extensions: tuple[str, ...]
     ) -> tuple[int, str, float]:
-        if action == "load":
-            emoji: str = "\U0001f4e5"
-        elif action == "unload":
-            emoji: str = "\U0001f4e4"
-        else:
-            emoji: str = "\U0001f504"
+        emojis = {"load": "\U0001f4e5", "reload": "\U0001f504", "unload": "\U0001f4e4"}
+        emoji = emojis[action]
 
-        if "~" in extensions:
-            extensions = tuple(self.bot.extensions)
+        loaded_extensions = set(self.bot.extensions)
         successful: int = 0
         output: list[str] = []
         start = time.perf_counter()
         method = getattr(self.bot, f"{action}_extension")
         for ext in extensions:
-            if ext == "dev" and action == "load":
-                continue
-            try:
-                await method(ext)
-            except commands.ExtensionError as exc:
-                output.append(f"\u26a0 {ext}: {exc}")
+            if action == "load" and ext in loaded_extensions:
+                output.append(f"\U0001f4f6 {ext}: Already a loaded extension.")
+            elif action == "unload" and ext not in loaded_extensions:
+                output.append(f"\U0001f6a9 {ext}: Not a loaded extension.")
             else:
-                successful += 1
-                output.append(f"{emoji} {ext}")
+                try:
+                    await method(ext)
+                except commands.ExtensionError as exc:
+                    output.append(f"\u26a0 {ext}: {exc}")
+                else:
+                    successful += 1
+                    output.append(f"{emoji} {ext}")
         end = time.perf_counter()
         return successful, "\n".join(output), end - start
