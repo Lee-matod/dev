@@ -11,6 +11,7 @@ Direct bot reconfiguration and attributes manager.
 """
 from __future__ import annotations
 
+import pathlib
 import time
 from typing import TYPE_CHECKING, Literal
 
@@ -113,18 +114,20 @@ class RootBot(root.Container):
 
     @root.command(name="load", parent="dev bot", aliases=["reload", "unload"])
     async def root_bot_load(self, ctx: commands.Context[types.Bot], *extensions: str):
-        """Load, reload, or unload a set of extensions.
-        Use '~' to reference all currently loaded cogs. To prevent errors, cogs are checked
-        if they currently exist when loading or unloading.
+        r"""Load, reload, or unload a set of extensions.
+        To prevent noisy errors, cogs are checked if they currently exist when loading or unloading.
+        - Use '~' to reference all currently loaded cogs.
+        - Use 'module.\*' to include all files in 'module'.
+        - Use '!cog' to exclude it from being (re/un)loaded.
         """
         invoked_with: Literal["load", "reload", "unload"] = ctx.invoked_with  # type: ignore
-        if not extensions or "~" in extensions:
+        if not extensions:
             extensions = tuple(self.bot.extensions)
 
-        successful, output, perf = await self._manage_extension(invoked_with, extensions)
+        successful, output, perf = await self._manage_extensions(invoked_with, extensions)
         embed = discord.Embed(
             title=f"{invoked_with.title()}ed {plural(successful, 'Cog')}",
-            description=output,
+            description=escape(output),
             color=discord.Color.blurple(),
         )
         embed.set_footer(text=f"{invoked_with.title()}ing took {perf:.3f}s")
@@ -162,25 +165,28 @@ class RootBot(root.Container):
         await ctx.message.add_reaction("\U0001f44b")
         await self.bot.close()
 
-    async def _manage_extension(
+    async def _manage_extensions(
         self, action: Literal["load", "reload", "unload"], extensions: tuple[str, ...]
     ) -> tuple[int, str, float]:
         emojis = {"load": "\U0001f4e5", "reload": "\U0001f504", "unload": "\U0001f4e4"}
         emoji = emojis[action]
 
-        loaded_extensions = set(self.bot.extensions)
+        loaded_extensions = list(self.bot.extensions)
         successful: int = 0
         output: list[str] = []
+        coro = getattr(self.bot, f"{action}_extension")
+        final, exclude = self._resolve_extensions(extensions)
         start = time.perf_counter()
-        method = getattr(self.bot, f"{action}_extension")
-        for ext in extensions:
+        for ext in final:
+            if ext in exclude:
+                continue
             if action == "load" and ext in loaded_extensions:
                 output.append(f"\U0001f4f6 {ext}: Already a loaded extension.")
             elif action == "unload" and ext not in loaded_extensions:
                 output.append(f"\U0001f6a9 {ext}: Not a loaded extension.")
             else:
                 try:
-                    await method(ext)
+                    await coro(ext)
                 except commands.ExtensionError as exc:
                     output.append(f"\u26a0 {ext}: {exc}")
                 else:
@@ -188,3 +194,31 @@ class RootBot(root.Container):
                     output.append(f"{emoji} {ext}")
         end = time.perf_counter()
         return successful, "\n".join(output), end - start
+
+    def _resolve_extensions(self, extensions: tuple[str, ...], /) -> tuple[set[str], set[str]]:
+        all_extensions: set[str] = set()
+        excluded_extensions: set[str] = set()
+        for ext in extensions:
+            if ext == "~":
+                all_extensions.update(self.bot.extensions)
+            elif ext.endswith(".*"):
+                path = pathlib.Path(*ext[:-2].split("."))
+                if not path.is_dir():
+                    continue
+                for subpath in path.glob("*.py"):
+                    parts = subpath.with_suffix("").parts
+                    if parts[0] == ".":
+                        parts = parts[1:]
+                    all_extensions.add(".".join(parts))
+
+                for subpath in path.glob("*/__init__.py"):
+                    parent, *folders = subpath.parent.parts
+                    if parent == ".":
+                        all_extensions.add(".".join(folders))
+                    else:
+                        all_extensions.add(".".join({parent, *folders}))
+            elif ext.startswith("!"):
+                excluded_extensions.add(ext)
+            else:
+                all_extensions.add(ext)
+        return all_extensions, excluded_extensions
