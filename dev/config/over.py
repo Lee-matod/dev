@@ -21,7 +21,7 @@ from discord.ext import commands
 
 from dev import root
 from dev.components import AuthoredView, CodeEditor, ModalSender, SettingsToggler
-from dev.converters import codeblock_converter, str_bool, str_ints
+from dev.converters import MessageCodeblock, codeblock_converter, str_bool, str_ints
 from dev.handlers import ExceptionHandler, replace_vars
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 from dev.types import Annotated, Over, OverType
@@ -31,7 +31,6 @@ from dev.utils.utils import clean_code, codeblock_wrapper, escape, plural
 
 if TYPE_CHECKING:
     from dev import types
-    from dev.converters import MessageCodeblock
 
 
 class RootOver(root.Container):
