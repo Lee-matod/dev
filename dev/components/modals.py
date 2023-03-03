@@ -127,6 +127,23 @@ class CodeEditor(discord.ui.Modal):
                         "The command's name cannot be changed.",
                         view=None,
                     )
+                if isinstance(self.command, commands.Group):
+                    if not isinstance(obj, commands.Group):
+                        self.ctx.bot.remove_command(obj.qualified_name)
+                        self.ctx.bot.add_command(self.command)
+                        return await interaction_response(
+                            interaction,
+                            discord.InteractionResponseType.message_update,
+                            "The command provided was initially a group, but override did not make this attribute persist.",
+                            view=None,
+                        )
+                    for child in self.command.commands:
+                        obj.add_command(child)
+                obj.cog = self.command.cog
+                if self.command.parent is not None:
+                    command.parent.add_command(obj)  # type: ignore
+                elif obj not in self.ctx.bot.commands:
+                    self.bot.add_command(obj)  # type: ignore
                 self.root.update_register(
                     CommandRegistration(
                         obj,

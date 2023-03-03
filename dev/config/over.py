@@ -179,11 +179,15 @@ class RootOver(root.Container):
             return await send(ctx, "Command name cannot be changed.")
         if isinstance(command, commands.Group):
             if not isinstance(obj, commands.Group):
-                await send(
+                self.bot.remove_command(obj.qualified_name)
+                self.bot.add_command(command)
+                return await send(
                     ctx, "The command provided was initially a group, but override did not make this attribute persist."
                 )
             for child in command.commands:
                 obj.add_command(child)  # type: ignore
+        if command.cog is not None:
+            obj.cog = command.cog
         if command.parent is not None:
             command.parent.add_command(obj)  # type: ignore
         elif obj not in self.bot.commands:
