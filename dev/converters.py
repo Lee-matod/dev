@@ -186,7 +186,7 @@ def codeblock_converter(content: str) -> MessageCodeblock:
 
     for idx, char in enumerate(content):
         last_seen.append(char)
-        if "".join(last_seen) == "```":
+        if start is None and "".join(last_seen) == "```":
             #  With this we know where the codeblock starts.
             #  Likewise, we know where the argument will end.
             start = idx - 2
