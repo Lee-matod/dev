@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import io
 import json
-import math
 from collections.abc import Iterable
 from copy import copy
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
@@ -36,9 +35,9 @@ T = TypeVar("T")
 __all__ = (
     "flag_parser",
     "generate_ctx",
+    "generate_table",
     "interaction_response",
     "send",
-    "table_creator",
 )
 
 
@@ -91,47 +90,31 @@ def flag_parser(string: str, delimiter: str) -> dict[str, Any]:
     return dict(zip(keys, values))
 
 
-def table_creator(rows: list[list[Any]], labels: list[str]) -> str:
-    table: list[dict[Any, list[Any]]] = []
-    table_str = ""
-    for label in labels:
-        if label == labels[1]:
-            largest = max((row[1] for row in rows), key=lambda x: len(x))
-            if len(largest) < len(label):
-                for row in rows:
-                    first, second = (len(label) - len(row[1])) // 2, math.ceil((len(label) - len(row[1])) / 2)
-                    row[1] = (" " * first) + row[1] + (" " * second)
-            elif len(largest) > len(label):
-                first, second = (len(largest) - len(label)) // 2, math.ceil((len(largest) - len(label)) / 2)
-                label = (" " * first) + label + (" " * second)
-                for row in rows:
-                    first, second = (len(largest) - len(row[1])) // 2, round((len(largest) - len(row[1])) / 2)
-                    row[1] = (" " * first) + row[1] + (" " * second)
-        table.append({label: []})
+def generate_table(**label_rows: list[str]) -> str:
+    table: dict[str, list[str]] = {}
 
-    for row in rows:
-        num, _type, desc = row
-        id_lab, type_lab, desc_lab = (
-            list(table[0].keys())[0],
-            list(table[1].keys())[0],
-            list(table[2].keys())[0],
-        )
-        table[0][id_lab].append(num)
-        table[1][type_lab].append(_type)
-        table[2][desc_lab].append(desc)
-    table_str += "  \u2502  ".join(list(label.keys())[0] for label in table)
-    length = ""
-    for char in table_str:
-        if char == "\u2502":
-            length += "\u253c"
-        else:
-            length += "\u2500"
-    table_str += f"\n{length}\n"
-    for row in rows:
-        num = f"{' ' * (3 - len(str(row[0])))}{str(row[0])}"
-        table_str += "  \u2502  ".join([num, row[1], row[2]])
-        table_str += f"\n{length}\n"
-    return "\n".join(table_str.split("\n")[:-2])
+    def fmt(s: str, pad: int) -> str:
+        if len(s) > 13:
+            return s[:10] + "..."
+        return f"{{0:<{pad}}}".format(s)
+
+    for idx, row in enumerate(label_rows.values()):
+        if len(row) != len(label_rows):
+            for _ in range(len(label_rows) - len(row)):
+                row.append("")
+        label = tuple(label_rows)[idx]
+        largest = max((*row, label), key=lambda x: len(x))
+        padding = len(largest)
+        table[fmt(label, padding)] = [fmt(r, padding) for r in row]
+    ordered: dict[str, list[str]] = {key: [] for key in table}
+    for label, row in table.items():
+        for idx, value in enumerate(row):
+            lab = tuple(table)[idx]
+            ordered[lab].append(value)
+    splitter = "+".join("-" * (len(lab) + (1 if idx == 0 else 2)) for idx, lab in enumerate(ordered))
+    rendered: list[str] = [" | ".join(ordered), splitter.replace("-", "=")]
+    rendered.extend(" | ".join(r) + "\n" + splitter for r in ordered.values())
+    return "\n".join(rendered)
 
 
 @overload
