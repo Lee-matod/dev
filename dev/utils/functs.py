@@ -97,23 +97,26 @@ def generate_table(**label_rows: list[str]) -> str:
         if len(s) > 13:
             return s[:10] + "..."
         return f"{{0:<{pad}}}".format(s)
-
+    longest = len(max(label_rows.values(), key=len))
+    
     for idx, row in enumerate(label_rows.values()):
-        if len(row) != len(label_rows):
-            for _ in range(len(label_rows) - len(row)):
-                row.append("")
         label = tuple(label_rows)[idx]
-        largest = max((*row, label), key=lambda x: len(x))
+        largest = max((*row, label), key=len)
         padding = len(largest)
-        table[fmt(label, padding)] = [fmt(r, padding) for r in row]
-    ordered: dict[str, list[str]] = {key: [] for key in table}
-    for label, row in table.items():
-        for idx, value in enumerate(row):
-            lab = tuple(table)[idx]
-            ordered[lab].append(value)
-    splitter = "+".join("-" * (len(lab) + (1 if idx == 0 else 2)) for idx, lab in enumerate(ordered))
-    rendered: list[str] = [" | ".join(ordered), splitter.replace("-", "=")]
-    rendered.extend(" | ".join(r) + "\n" + splitter for r in ordered.values())
+        extra = max(longest - len(row), 0)
+        if idx == len(label_rows) - 1:
+            table[label] = row + [""] * extra
+        else:
+            table[fmt(label, padding)] = [fmt(r, padding) for r in row] + [""] * extra
+    ordered: list[list[str]] = []
+    for idx in range(longest):
+        row_values: list[str] = []
+        for row_idx in range(len(table.values())):
+            row_values.append(tuple(table.values())[row_idx][idx])
+        ordered.append(row_values)
+    splitter = "+".join("-" * (len(lab) + (1 if idx == 0 else 2)) for idx, lab in enumerate(table))
+    rendered: list[str] = [" | ".join(table), splitter.replace("-", "=")]
+    rendered.extend(" | ".join(r) + "\n" + splitter for r in ordered)
     return "\n".join(rendered)
 
 
