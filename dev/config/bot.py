@@ -12,7 +12,6 @@ Direct bot reconfiguration and attributes manager.
 from __future__ import annotations
 
 import pathlib
-import re
 import time
 from typing import TYPE_CHECKING, Literal
 
@@ -28,11 +27,6 @@ if TYPE_CHECKING:
     from dev import types
 
 _EXTENSION_EMOJIS = {"load": "\U0001f4e5", "reload": "\U0001f504", "unload": "\U0001f4e4"}
-_base = r"(\w?\d?_?\.?)"
-_module = _base + r"\.*"
-_filename = _base + r""
-_EXTENSION_RE = re.compile(r"(\w?\d?_?\.?)")
-_EXTENSION_MOD_RE = re.compile(r"")
 
 
 class RootBot(root.Container):
@@ -132,25 +126,19 @@ class RootBot(root.Container):
             extensions = tuple(self.bot.extensions)
         emoji = _EXTENSION_EMOJIS[invoked_with]
 
-        loaded_extensions = list(self.bot.extensions)
         successful: int = 0
         output: list[str] = []
         coro = getattr(self.bot, f"{invoked_with}_extension")
         final = self._resolve_extensions(extensions)
         start = time.perf_counter()
         for ext in final:
-            if invoked_with == "load" and ext in loaded_extensions:
-                output.append(f"\U0001f4f6 {ext}: Already a loaded extension.")
-            elif invoked_with == "unload" and ext not in loaded_extensions:
-                output.append(f"\u274c {ext}: Not a loaded extension.")
+            try:
+                await coro(ext)
+            except commands.ExtensionError as exc:
+                output.append(f"\u26a0 {ext}: {exc}")
             else:
-                try:
-                    await coro(ext)
-                except commands.ExtensionError as exc:
-                    output.append(f"\u26a0 {ext}: {exc}")
-                else:
-                    successful += 1
-                    output.append(f"{emoji} {ext}")
+                successful += 1
+                output.append(f"{emoji} {ext}")
         end = time.perf_counter()
 
         embed = discord.Embed(
