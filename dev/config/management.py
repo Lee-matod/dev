@@ -22,9 +22,9 @@ from dev import root
 from dev.components import BoolInput
 from dev.registrations import ManagementRegistration
 from dev.types import ManagementOperation
-from dev.utils.functs import send, table_creator
+from dev.utils.functs import send, generate_table
 from dev.utils.startup import Settings
-from dev.utils.utils import escape, plural
+from dev.utils.utils import codeblock_wrapper, escape, plural
 
 if TYPE_CHECKING:
     from discord.ext import commands
@@ -52,23 +52,19 @@ class RootManagement(root.Container):
         self.cwd = path
         await ctx.message.add_reaction("\u2611")
 
-    @root.group(name="explorer", parent="dev", ignore_extra=True, invoke_without_command=True)
+    @root.group(name="explorer", parent="dev", invoke_without_command=True)
     async def root_explorer(self, ctx: commands.Context[types.Bot]):
         """View modifications made to directories."""
-        if operations := self.explorer_rgs:
-            rows = [
-                [
-                    index,
-                    index,
-                    rgs.operation_type.name,
-                    f"{rgs}. Date modified: {rgs.created_at}",
-                ]
-                for index, rgs in enumerate(operations, start=1)
-            ]
-            return await send(
-                ctx,
-                f"```py\n{table_creator(rows, ['IDs', 'Types', 'Descriptions'])}\n```",
+        operations = self.explorer_rgs
+        if operations:
+            table = generate_table(
+                **{
+                    "ID": [i + 1 for i in range(len(operations))],
+                    "Type": [rgs.operation_type.name for rgs in operations],
+                    "Description": [f"{rgs}. Date modified: {rgs.created_at}" for rgs in operations],
+                }
             )
+            return await send(ctx, codeblock_wrapper(table, "less"))
         await send(ctx, "No modifications have been made.")
 
     @root.command(

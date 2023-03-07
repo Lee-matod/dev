@@ -25,7 +25,7 @@ from dev.converters import MessageCodeblock, codeblock_converter, str_bool, str_
 from dev.handlers import ExceptionHandler, replace_vars
 from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
 from dev.types import Annotated, Over, OverType
-from dev.utils.functs import flag_parser, send, table_creator
+from dev.utils.functs import flag_parser, generate_table, send
 from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper, escape, plural
 
@@ -36,20 +36,21 @@ if TYPE_CHECKING:
 class RootOver(root.Container):
     """Override and overwrite different attributes"""
 
-    @root.group(name="override", parent="dev", ignore_extra=True, invoke_without_command=True)
+    @root.group(name="override", parent="dev", invoke_without_command=True)
     async def root_override(self, ctx: commands.Context[types.Bot]):
         """Get a table of overrides that have been made with their respective IDs.
         Name of the command and date modified are also included in the table.
         """
-        if overrides := self.registers_from_type(Over.OVERRIDE):
-            rows = [
-                [index, rgs.qualified_name, f"Date modified: {rgs.created_at}"]
-                for index, rgs in enumerate(overrides, start=1)
-            ]
-            return await send(
-                ctx,
-                f"```py\n{table_creator(rows, ['IDs', 'Names', 'Descriptions'])}\n```",
+        overrides = self.registers_from_type(Over.OVERRIDE)
+        if overrides:
+            table = generate_table(
+                **{
+                    "ID": [i + 1 for i in range(len(overrides))],
+                    "Name": [rgs.qualified_name for rgs in overrides],
+                    "Date Modified": [rgs.created_at for rgs in overrides],
+                }
             )
+            return await send(ctx, codeblock_wrapper(table, "less"))
         await send(ctx, "No overrides have been made.")
 
     @root.command(name="undo", parent="dev override")
@@ -186,8 +187,7 @@ class RootOver(root.Container):
                 )
             for child in command.commands:
                 obj.add_command(child)  # type: ignore
-        if command.cog is not None:
-            obj.cog = command.cog
+        obj.cog = command.cog
         if command.parent is not None:
             command.parent.add_command(obj)  # type: ignore
         elif obj not in self.bot.commands:
@@ -201,21 +201,21 @@ class RootOver(root.Container):
             Over.ADD,
         )
 
-    @root.group(name="overwrite", parent="dev", ignore_extra=True, invoke_without_command=True)
+    @root.group(name="overwrite", parent="dev", invoke_without_command=True)
     async def root_overwrite(self, ctx: commands.Context[types.Bot]):
         """Get a table of overwrites that have been made with their respective IDs.
         Overwrite type, changes made, and date modified are also included in the table.
         """
-        if overwrites := self.registers_from_type(Over.OVERWRITE):
-            overwrites: list[CommandRegistration | SettingRegistration]
-            rows = [
-                [index, rgs.over_type.name, f"{rgs} ‒ {rgs.created_at}"]
-                for index, rgs in enumerate(overwrites, start=1)
-            ]
-            return await send(
-                ctx,
-                codeblock_wrapper(table_creator(rows, ["IDs", "Types", "Descriptions"]), "py"),
+        overwrites = self.registers_from_type(Over.OVERWRITE)
+        if overwrites:
+            table = generate_table(
+                **{
+                    "ID": [i + 1 for i in range(len(overwrites))],
+                    "Type": [rgs.over_type.name for rgs in overwrites],
+                    "Description": [f"{rgs} \u2012 {rgs.created_at}" for rgs in overwrites],
+                }
             )
+            return await send(ctx, codeblock_wrapper(table, "less"))
         await send(ctx, "No overwrites have been made.")
 
     @root.command(name="undo", parent="dev overwrite", aliases=["del", "delete"])
