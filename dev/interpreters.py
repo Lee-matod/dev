@@ -21,7 +21,7 @@ import queue
 import subprocess
 import sys
 import time
-from typing import IO, TYPE_CHECKING, Any, AsyncGenerator, Callable, Literal, NoReturn, TypeVar, overload
+from typing import IO, TYPE_CHECKING, Any, AsyncGenerator, Callable, NoReturn, TypeVar, overload
 
 import discord
 
@@ -187,7 +187,7 @@ class Process:
         return None
 
     @overload
-    async def run_until_complete(self, context: Literal[None], /) -> str | None:
+    async def run_until_complete(self, /) -> str | None:
         ...
 
     @overload
@@ -214,12 +214,12 @@ class Process:
         Optional[:class:`str`]
             If *context* was not given, then the full output of the subprocess is returned.
         """
-        str_msg = ""
+        stdout = ""
         while self.is_alive and not self.force_kill:
             if not self._initial_command:
                 self._initial_command = True
                 if context is None:
-                    str_msg = self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}")
+                    stdout = self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}")
                 else:
                     _, paginator = await send(  # type: ignore
                         context,
@@ -268,7 +268,7 @@ class Process:
                 return message, paginator
             if line:
                 if context is None:
-                    str_msg = self.__session.add_line(line)
+                    stdout = self.__session.add_line(line)
                     continue
                 _, paginator = await send(
                     context,
@@ -279,7 +279,7 @@ class Process:
                 )
             else:
                 if context is None:
-                    str_msg = self.__session.raw
+                    stdout = self.__session.raw
                     continue
                 _, paginator = await send(
                     context,
@@ -291,7 +291,7 @@ class Process:
             if paginator is not None:
                 self.__session.paginator = paginator
         if context is None:
-            return str_msg
+            return stdout
 
     def start_reading(self, stream: IO[bytes], callback: Callable[[bytes], Any]) -> asyncio.Task[str | None]:
         return self.loop.create_task(self.in_executor(self.reader, stream, callback))
