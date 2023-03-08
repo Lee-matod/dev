@@ -38,9 +38,9 @@ except ModuleNotFoundError:
 else:
     _HASBLACK = True
 
-BLACK_LINE_LENGTH = re.compile(r"(-l|--line-length) ([0-9]+)")
-BLACK_TARGET_VERSION = re.compile(
-    r"(-t|--target-version) (" + r"|".join(f"py3{vernum}" for vernum in range(3, 12)) + r")"
+BLACK_ARGS = (
+    re.compile(r"(-l|--line-length) ([0-9]+)"),
+    re.compile(r"(-t|--target-version) (" + r"|".join(f"py3{vernum}" for vernum in range(3, 12)) + r")"),
 )
 BLACK_BOOLEANS = (
     "--pyi",
@@ -58,6 +58,24 @@ BLACK_BOOLEANS = (
     "-q",
     "--verbose",
     "-v",
+)
+
+PYRIGHT_PYPROJ = re.compile(r"^#[ ]*pyright:[ ]*([a-zA-Z]+)=(.+)$", re.MULTILINE)
+PYRIGHT_ARGS = (
+    re.compile(r"(--level) (error|warning)"),
+    re.compile(
+        r"(--pythonplatform) (" + "|".join(f"(?i)\b{pltfrm}\b" for pltfrm in ("darwin", "linux", "windows")) + ")"
+    ),
+    re.compile(r"(--pythonversion) (" + "|".join(rf"3\.{v}" for v in (3, 12)) + ")"),
+)
+PYRIGHT_BOOLEANS = (
+    "--dependencies",
+    "--lib",
+    "--output-json",
+    "--skipunannotated",
+    "--stats",
+    "--verbose",
+    "--warnings",
 )
 
 
@@ -118,6 +136,63 @@ class RootShell(root.Container):
             except KeyError:
                 pass
 
+    if shutil.which("pyright"):
+
+        @root.command(name="pyright", parent="dev", require_var_positional=True)
+        async def root_pyright(
+            self, ctx: commands.Context[types.Bot], *, code: Annotated[MessageCodeblock, codeblock_converter]
+        ):
+            """Run pyright with the provided code.
+
+            Invokes the system shell. Arguments that are before the codeblock will be
+            forwarded to pyright's executable options.
+
+            Adjust a temporary `pyproject.toml` file to your liking by using comments as
+            shown in the example below.
+            ```
+            # pyright: typeCheckingMode="strict"
+            # pyright: pythonVersion="3.9"
+            # pyright: reportUnnecessaryTypeIgnoreComment=true
+            ```
+
+            This feature is only available if the pyright executable is detected.
+            """
+            cmd_args = code.content
+            script = code.codeblock
+            if script is None:
+                return await send(ctx, "Malformed arguments were given.")
+
+            enabled_options: list[str] = [opt for opt in PYRIGHT_BOOLEANS if opt in cmd_args.split()]
+
+            for compiled in PYRIGHT_ARGS:
+                match = compiled.search(cmd_args)
+                if match:
+                    enabled_options.append(f"{match.group(1)} {match.group(2)}")
+
+            with tempfile.TemporaryDirectory() as directory:
+                path = pathlib.Path(directory)
+                main_tmp = path / "main.py"
+                pyproject = path / "pyproject.toml"
+                main_tmp.touch()
+                pyproject.touch()
+
+                with main_tmp.open("w") as fp:
+                    fp.write(script)
+
+                with pyproject.open("w") as fp:
+                    pyproject_options = "\n".join(f"{name}={value}" for name, value in PYRIGHT_PYPROJ.findall(script))
+                    fp.write(f"[tool.pyright]\n{pyproject_options}")
+
+                full = f"cd {directory} && pyright main.py"
+                if enabled_options:
+                    full = f"cd {directory} && pyright {' '.join(enabled_options)} main.py"
+
+                session = ShellSession()
+                with session(full) as proc:
+                    output = await proc.run_until_complete()
+                    if output is not None:
+                        await send(ctx, codeblock_wrapper(output, session.highlight))
+
     if shutil.which("black") and not _HASBLACK:
 
         @root.command(name="black", parent="dev", require_var_positional=True)
@@ -138,7 +213,7 @@ class RootShell(root.Container):
 
             enabled_options: list[str] = [opt for opt in BLACK_BOOLEANS if opt in cmd_args.split()]
 
-            for compiled in (BLACK_LINE_LENGTH, BLACK_TARGET_VERSION):
+            for compiled in BLACK_ARGS:
                 match = compiled.search(cmd_args)
                 if match:
                     enabled_options.append(f"{match.group(1)} {match.group(2)}")
