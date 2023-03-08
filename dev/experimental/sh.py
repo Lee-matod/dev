@@ -60,12 +60,10 @@ BLACK_BOOLEANS = (
     "-v",
 )
 
-PYRIGHT_PYPROJ = re.compile(r"^#[ ]*pyright:[ ]*([a-zA-Z]+)=(.+)$", re.MULTILINE)
+PYRIGHT_PYPROJ = re.compile(r"^#[ ]*pyproject:[ ]*([a-zA-Z]+)=(.+)$", re.MULTILINE)
 PYRIGHT_ARGS = (
     re.compile(r"(--level) (error|warning)"),
-    re.compile(
-        r"(--pythonplatform) (" + "|".join(f"(?i)\b{pltfrm}\b" for pltfrm in ("darwin", "linux", "windows")) + ")"
-    ),
+    re.compile(r"(--pythonplatform) (Darwin|Linux|Windows)"),
     re.compile(r"(--pythonversion) (" + "|".join(rf"3\.{v}" for v in range(3, 12)) + ")"),
 )
 PYRIGHT_BOOLEANS = (
@@ -150,9 +148,9 @@ class RootShell(root.Container):
             Adjust a temporary `pyproject.toml` file to your liking by using comments as
             shown in the example below.
             ```
-            # pyright: typeCheckingMode="strict"
-            # pyright: pythonVersion="3.9"
-            # pyright: reportUnnecessaryTypeIgnoreComment=true
+            # pyproject: typeCheckingMode="strict"
+            # pyproject: pythonVersion="3.9"
+            # pyproject: reportUnnecessaryTypeIgnoreComment=true
             ```
 
             This feature is only available if the pyright executable is detected.
@@ -191,7 +189,7 @@ class RootShell(root.Container):
                 with session(full) as proc:
                     output = await proc.run_until_complete()
                     if output is not None:
-                        await send(ctx, codeblock_wrapper(output, session.highlight))
+                        await send(ctx, codeblock_wrapper(output, "py"))
 
     if shutil.which("black") and not _HASBLACK:
 
