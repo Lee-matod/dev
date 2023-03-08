@@ -201,7 +201,7 @@ class RootPython(root.Container):
             pyversion = _BLACK_PYVERSION.search(code)
             linelength = _BLACK_LINELENGTH.search(code)
             bool_settings: list[tuple[str, bool]] = [
-                (match[1], True if match[0] == "enable" else False) for match in _BLACK_BOOL.findall(code)
+                (setting, toggled == "enable") for toggled, setting in _BLACK_BOOL.findall(code)
             ]
             if pyversion is not None:
                 versions: set[int] = set(str_ints(pyversion.group(1).replace(".", "")))
