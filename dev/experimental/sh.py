@@ -66,7 +66,7 @@ PYRIGHT_ARGS = (
     re.compile(
         r"(--pythonplatform) (" + "|".join(f"(?i)\b{pltfrm}\b" for pltfrm in ("darwin", "linux", "windows")) + ")"
     ),
-    re.compile(r"(--pythonversion) (" + "|".join(rf"3\.{v}" for v in (3, 12)) + ")"),
+    re.compile(r"(--pythonversion) (" + "|".join(rf"3\.{v}" for v in range(3, 12)) + ")"),
 )
 PYRIGHT_BOOLEANS = (
     "--dependencies",
