@@ -22,7 +22,7 @@ from dev import root
 from dev.components import BoolInput
 from dev.registrations import ManagementRegistration
 from dev.types import ManagementOperation
-from dev.utils.functs import send, generate_table
+from dev.utils.functs import generate_table, send
 from dev.utils.startup import Settings
 from dev.utils.utils import codeblock_wrapper, escape, plural
 
