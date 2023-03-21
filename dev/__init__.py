@@ -14,7 +14,7 @@ __title__ = "dev"
 __author__ = "Lee"
 __license__ = "MIT"
 __copyright__ = "Copyright 2022-present Lee (Lee-matod)"
-__version__ = "1.0.1"
+__version__ = "2.0.0a"
 
 from typing import Literal, NamedTuple
 
@@ -78,7 +78,7 @@ class VersionInfo(NamedTuple):
     serial: int
 
 
-version_info = VersionInfo(major=1, minor=0, micro=1, releaselevel="final", serial=0)
+version_info = VersionInfo(major=2, minor=0, micro=0, releaselevel="alpha", serial=0)
 
 
 class Dev(
