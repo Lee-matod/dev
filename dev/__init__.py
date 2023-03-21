@@ -9,6 +9,13 @@ A simple debugging, editing and testing extension for discord.py version 2.0.
 :copyright: Copyright 2022-present Lee (Lee-matod)
 :license: MIT, see LICENSE for more details.
 """
+
+__title__ = "dev"
+__author__ = "Lee"
+__license__ = "MIT"
+__copyright__ = "Copyright 2022-present Lee (Lee-matod)"
+__version__ = "1.0.1rc"
+
 from typing import Literal, NamedTuple
 
 from dev.__main__ import *
@@ -61,11 +68,6 @@ __all__ = (
     "str_bool",
     "str_ints",
 )
-
-__title__ = "dev"
-__author__ = "Lee"
-__license__ = "Apache 2.0"
-__version__ = "1.0.1rc"
 
 
 class VersionInfo(NamedTuple):
