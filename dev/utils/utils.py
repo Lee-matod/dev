@@ -11,9 +11,11 @@ Basic utilities used within the dev extension.
 """
 from __future__ import annotations
 
+import traceback
+
 from discord.utils import escape_markdown, escape_mentions
 
-__all__ = ("clean_code", "codeblock_wrapper", "escape", "plural", "responses")
+__all__ = ("clean_code", "codeblock_wrapper", "escape", "format_exception", "plural", "responses")
 
 responses: dict[str, str] = {
     "1": "Informational response",
@@ -22,6 +24,24 @@ responses: dict[str, str] = {
     "4": "Client error response",
     "5": "Server error response",
 }
+
+
+def format_exception(exception: BaseException, /) -> str:
+    """Formats a stack trace and traceback information.
+
+    Shorthand for :meth:`traceback.format_exception`.
+
+    Parameters
+    ----------
+    exception: :class:`BaseException`
+        The exception that should be formatted.
+
+    Returns
+    -------
+    str
+        The formatted exception.
+    """
+    return "".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
 
 
 def clean_code(content: str) -> str:
