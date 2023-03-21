@@ -17,24 +17,18 @@ import inspect
 import io
 import itertools
 import sys
-from traceback import format_exception
 from typing import TYPE_CHECKING, Any, Callable, TextIO
 
 import discord
 from discord.ext import commands
 
 from dev.utils.startup import Settings
+from dev.utils.utils import format_exception
 
 if TYPE_CHECKING:
     from types import TracebackType
 
-__all__ = (
-    "ExceptionHandler",
-    "GlobalLocals",
-    "RelativeStandard",
-    "TimedInfo",
-    "replace_vars",
-)
+__all__ = ("ExceptionHandler", "GlobalLocals", "RelativeStandard", "TimedInfo", "replace_vars")
 
 
 class RelativeStandard(io.StringIO):
@@ -100,12 +94,7 @@ class GlobalLocals:
     When getting items, the global scope is prioritized over the local scope.
     """
 
-    def __init__(
-        self,
-        __globals: dict[str, Any] | None = None,
-        __locals: dict[str, Any] | None = None,
-        /,
-    ) -> None:
+    def __init__(self, __globals: dict[str, Any] | None = None, __locals: dict[str, Any] | None = None, /) -> None:
         self.globals: dict[str, Any] = __globals or {}
         self.locals: dict[str, Any] = __locals or {}
 
@@ -195,10 +184,7 @@ class GlobalLocals:
         return res
 
     def update(
-        self,
-        __new_globals: dict[str, Any] | None = None,
-        __new_locals: dict[str, Any] | None = None,
-        /,
+        self, __new_globals: dict[str, Any] | None = None, __new_locals: dict[str, Any] | None = None, /
     ) -> None:
         """Update the current instance of variables with new ones.
 
@@ -258,10 +244,7 @@ class ExceptionHandler:
         return self
 
     async def __aexit__(
-        self,
-        exc_type: type[Exception] | None,
-        exc_val: Exception | None,
-        exc_tb: TracebackType | None,
+        self, exc_type: type[Exception] | None, exc_val: Exception | None, exc_tb: TracebackType | None
     ) -> bool:
         if exc_val is None:
             if not self.debug:
@@ -302,12 +285,7 @@ class ExceptionHandler:
                 self.on_error(exc_type, exc_val, exc_tb)
 
         if self.debug:
-            ExceptionHandler.error.append(
-                (
-                    type(exc_val).__name__,
-                    "".join(format_exception(exc_type, exc_val, exc_tb)),
-                )
-            )
+            ExceptionHandler.error.append((type(exc_val).__name__, format_exception(exc_val)))
         return True
 
     @classmethod
