@@ -9,6 +9,8 @@ A simple debugging, editing and testing extension for discord.py version 2.0.
 :copyright: Copyright 2022-present Lee (Lee-matod)
 :license: MIT, see LICENSE for more details.
 """
+from typing import Literal, NamedTuple
+
 from dev.__main__ import *
 from dev.components import *
 from dev.config import RootBot, RootManagement, RootOver, RootVariables
@@ -50,6 +52,7 @@ __all__ = (
     "codeblock_converter",
     "codeblock_wrapper",
     "escape",
+    "format_exception",
     "interaction_response",
     "plural",
     "replace_vars",
@@ -62,7 +65,18 @@ __all__ = (
 __title__ = "dev"
 __author__ = "Lee"
 __license__ = "Apache 2.0"
-__version__ = "1.0.1a"
+__version__ = "1.0.1rc"
+
+
+class VersionInfo(NamedTuple):
+    major: int
+    minor: int
+    micro: int
+    releaselevel: Literal["alpha", "beta", "candidate", "final"]
+    serial: int
+
+
+version_info = VersionInfo(major=1, minor=0, micro=1, releaselevel="candidate", serial=0)
 
 
 class Dev(
