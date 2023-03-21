@@ -1,5 +1,6 @@
 [tool.black]
 line-length = 120
+skip-magic-trailing-comma = true
 
 [tool.pyright]
 exclude = ["**/tests/test_*.py", "**/__pycache__", ".venv/"]
