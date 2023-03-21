@@ -13,15 +13,16 @@ from __future__ import annotations
 
 import pathlib
 import time
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 from dev import root
 from dev.components import AuthoredView, PermissionsSelector
 from dev.utils.functs import send
-from dev.utils.utils import escape, plural
+from dev.utils.utils import codeblock_wrapper, escape, format_exception, plural
 
 if TYPE_CHECKING:
     from dev import types
@@ -38,9 +39,7 @@ class RootBot(root.Container):
         if self.bot.user is None:
             return await send(ctx, "This is not a bot.")
         embed = discord.Embed(
-            title=self.bot.user,
-            description=self.bot.description or "",
-            color=discord.Color.blurple(),
+            title=self.bot.user, description=self.bot.description or "", color=discord.Color.blurple()
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         mapping = {True: "enabled", False: "disabled", None: "unknown"}
@@ -48,8 +47,7 @@ class RootBot(root.Container):
         visibility_field = (
             f"This bot can see {plural(len(self.bot.guilds), 'guild')}, "
             + plural(
-                len([c for c in self.bot.get_all_channels() if not isinstance(c, discord.CategoryChannel)]),
-                "channel",
+                len([c for c in self.bot.get_all_channels() if not isinstance(c, discord.CategoryChannel)]), "channel"
             )
             + f" and {plural(len(self.bot.users), 'account')}, "
             f"{len([user for user in self.bot.users if not user.bot])} of which are users."
@@ -93,12 +91,110 @@ class RootBot(root.Container):
         embed.add_field(name="Information", value=information_field.strip(), inline=False)
         await send(ctx, embed)
 
-    @root.command(name="permissions", parent="dev bot", aliases=["perms"])
-    async def root_bot_permissions(
-        self,
-        ctx: commands.Context[types.Bot],
-        channel: discord.TextChannel | None = None,
+    @root.command(name="sync", parent="dev bot")
+    async def root_bot_sync(
+        self, ctx: commands.Context[types.Bot], target: Literal[".", "*", "~.", "~*", "~"] | None, *guilds: int
     ):
+        """Sync this bot's application command tree with Discord.
+        Omit modes to sync globally.
+        **Modes**
+        `.`: Sync the current guild.
+        `*`: Copy all global commands to the current guild and sync.
+        `~`: Inverts the current mode.
+
+        Using the inverter causes the following change in behavoir:
+        `~` clears all global commands or local commands from the given guilds.
+        `~.` clears all commands from the current guild.
+        `~*` copies all global commands to the given guilds.
+        """
+        if not self.bot.application_id:
+            return await send(ctx, "Unable to sync. Application information has not been fetched.")
+
+        syncing_guild: discord.Guild | None = ctx.guild
+        if target in {".", "*", "~."}:
+            if ctx.guild is None:
+                return await send(ctx, "This mode is only available when used in a guild.")
+        if target == "*":
+            assert ctx.guild is not None
+            try:
+                self.bot.tree.copy_global_to(guild=ctx.guild)
+            except app_commands.CommandLimitReached:
+                return await send(
+                    ctx, f"Cannot copy global commands because this guild's command limit has been reached."
+                )
+        elif target == "~.":
+            assert ctx.guild is not None
+            self.bot.tree.clear_commands(guild=ctx.guild)
+        elif target == "~*":
+            if not guilds:
+                return await send(ctx, "Cannot copy globals to guilds because no guilds were given.")
+            skipped: set[int] = set()
+            global_menus: list[app_commands.ContextMenu] = [
+                cmd
+                for menu, cmd in self.bot.tree._context_menus.items()  # pyright: ignore [reportPrivateUsage]
+                if menu[1] is None
+            ]
+            for guild_id in guilds:
+                mapping: dict[int, dict[str, app_commands.Command[Any, ..., Any] | app_commands.Group]] = self.bot.tree._guild_commands.get(guild_id, {}).copy()  # type: ignore
+                mapping.update(self.bot.tree._global_commands)  # type: ignore
+                local_menus: list[app_commands.ContextMenu] = [
+                    cmd
+                    for menu, cmd in self.bot.tree._context_menus.items()  # pyright: ignore [reportPrivateUsage]
+                    if menu[1] is not None and menu[1] == guild_id
+                ]
+                if len(mapping) > 100 or len({*global_menus, *local_menus}) > 5:
+                    skipped.add(guild_id)
+            for guild_id in guilds:
+                if guild_id in skipped:
+                    continue
+                #  No exception should be raised here, because we
+                #  checked if we could copy them before.
+                self.bot.tree.copy_global_to(guild=discord.Object(guild_id))
+            if skipped:
+                await send(
+                    ctx,
+                    f"Skipped a total of {plural(len(skipped), 'guild')} because the command limit was reached in those guilds. "
+                    f"Skipped guilds were:\n{', '.join(map(str, skipped))}",
+                    forced=True,
+                )
+        elif target == "~":
+            if not guilds:
+                self.bot.tree.clear_commands(guild=None)
+                syncing_guild = None
+            else:
+                for guild_id in guilds:
+                    self.bot.tree.clear_commands(guild=discord.Object(guild_id))
+        guild_set: set[discord.abc.Snowflake | None] = set(map(discord.Object, guilds))
+        if not guilds:
+            if target is None:
+                syncing_guild = None
+            guild_set.add(syncing_guild)
+        successful_commands = 0
+        successful_guilds: set[str] = set()
+        for guild in guild_set:
+            try:
+                synced = await self.bot.tree.sync(guild=guild)
+            except discord.HTTPException as exc:
+                tb = codeblock_wrapper(format_exception(exc), "py")
+                guild_str = f"to `{guild.id}`" if guild else "globally"
+                await send(ctx, f"An error occurred while syncing {guild_str}:\n{tb}", forced=True)
+            else:
+                successful_guilds.add(f"`{getattr(guild, 'id', 'Globally')}`")
+                successful_commands += len(synced)
+        fmt = f"synced {plural(successful_commands, 'application command')}"
+        if target is not None and "*" in target:
+            fmt = f"copied {plural(successful_commands, 'application command')}"
+        elif target is not None and "~" in target:
+            fmt = "cleared all commands"
+        await send(
+            ctx,
+            f"\U0001f6f0 Successfully {fmt} across {plural(len(successful_guilds), 'guild')}.\n"
+            + "\n".join(successful_guilds),
+            forced=True,
+        )
+
+    @root.command(name="permissions", parent="dev bot", aliases=["perms"])
+    async def root_bot_permissions(self, ctx: commands.Context[types.Bot], channel: discord.TextChannel | None = None):
         """Show which permissions the bot has.
         A text channel may be optionally passed to check for permissions in the given channel.
         """
@@ -108,8 +204,7 @@ class RootBot(root.Container):
         await send(
             ctx,
             discord.Embed(
-                description="\n".join(["```ansi", *select.sort_perms("general"), "```"]),
-                color=discord.Color.blurple(),
+                description="\n".join(["```ansi", *select.sort_perms("general"), "```"]), color=discord.Color.blurple()
             ),
             AuthoredView(ctx.author, select),
         )
@@ -209,4 +304,3 @@ class RootBot(root.Container):
             else:
                 extensions.add(".".join({parent, *folders}))
         return extensions
-
