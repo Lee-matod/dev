@@ -42,10 +42,7 @@ def strtoints(val: str) -> list[int]:
 
 class _DefaultFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
-        fmt = logging.Formatter(
-            "[%(asctime)s] [%(levelname)s] BLANK%(name)s: %(message)s",
-            "%Y/%m/%d %H:%M:%S",
-        )
+        fmt = logging.Formatter("[%(asctime)s] [%(levelname)s] BLANK%(name)s: %(message)s", "%Y/%m/%d %H:%M:%S")
         output = fmt.format(record)
         return output.replace("BLANK", " " * (8 - len(record.levelname)), 1)
 
@@ -282,10 +279,7 @@ Settings = _SettingsSentinel()
 
 
 def setup_logging(
-    *,
-    level: int = logging.INFO,
-    handler: logging.Handler = MISSING,
-    formatter: logging.Formatter = MISSING,
+    *, level: int = logging.INFO, handler: logging.Handler = MISSING, formatter: logging.Formatter = MISSING
 ) -> logging.Logger:
     if handler is MISSING:
         handler = logging.StreamHandler()
@@ -307,9 +301,7 @@ def setup_logging(
     return logger
 
 
-async def enforce_owner(
-    bot: types.Bot,
-) -> logging.Logger:
+async def enforce_owner(bot: types.Bot) -> logging.Logger:
     _log = setup_logging()
     if not any((Settings.owners, bot.owner_ids, bot.owner_id)):
         #  Try to set the owner as the application's owner or its team members

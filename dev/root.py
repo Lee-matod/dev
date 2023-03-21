@@ -51,12 +51,7 @@ def command(
         Keyword arguments that will be forwarded to the :class:`Command` class.
     """
 
-    def decorator(
-        func: Callable[
-            Concatenate[CogT, commands.Context[types.Bot], P],
-            Coro[Any],
-        ]
-    ) -> Command[CogT]:
+    def decorator(func: Callable[Concatenate[CogT, commands.Context[types.Bot], P], Coro[Any],]) -> Command[CogT]:
         if isinstance(func, Command):
             raise TypeError("Callback is already a command.")
         return Command(func, name=name, **kwargs)
@@ -248,18 +243,12 @@ class Container(commands.Cog):
         return [rgs for rgs in self.registrations.values() if rgs.register_type is rgs_type]
 
     def update_register(
-        self,
-        register: CommandRegistration | SettingRegistration,
-        mode: Literal[Over.ADD] | Literal[Over.DELETE],
-        /,
+        self, register: CommandRegistration | SettingRegistration, mode: Literal[Over.ADD] | Literal[Over.DELETE], /
     ) -> None:
         if mode is Over.DELETE and register not in self.registrations.values():
             raise IndexError("Registration cannot be deleted because it does not exist")
         if mode is Over.DELETE:
-            for (
-                k,
-                v,
-            ) in self.registrations.copy().items():
+            for (k, v) in self.registrations.copy().items():
                 if v == register:
                     del self.registrations[k]
         else:

@@ -69,12 +69,7 @@ class BaseRegistration:
 
 class ManagementRegistration(BaseRegistration):
     @overload
-    def __init__(
-        self,
-        directory: str,
-        operation_type: Literal[ManagementOperation.RENAME],
-        other: str,
-    ) -> None:
+    def __init__(self, directory: str, operation_type: Literal[ManagementOperation.RENAME], other: str) -> None:
         ...
 
     @overload

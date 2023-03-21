@@ -32,13 +32,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-__all__ = (
-    "flag_parser",
-    "generate_ctx",
-    "generate_table",
-    "interaction_response",
-    "send",
-)
+__all__ = ("flag_parser", "generate_ctx", "generate_table", "interaction_response", "send")
 
 
 def flag_parser(string: str, delimiter: str) -> dict[str, Any]:
@@ -97,8 +91,9 @@ def generate_table(**label_rows: list[str]) -> str:
         if len(s) > 13:
             return s[:10] + "..."
         return f"{{0:<{pad}}}".format(s)
+
     longest = len(max(label_rows.values(), key=len))
-    
+
     for idx, row in enumerate(label_rows.values()):
         label = tuple(label_rows)[idx]
         largest = max((*row, label), key=len)
@@ -122,10 +117,7 @@ def generate_table(**label_rows: list[str]) -> str:
 
 @overload
 async def send(
-    ctx: commands.Context[types.Bot],
-    *args: types.MessageContent,
-    paginator: Paginator | Literal[None],
-    **options: Any,
+    ctx: commands.Context[types.Bot], *args: types.MessageContent, paginator: Paginator | Literal[None], **options: Any
 ) -> tuple[discord.Message, Paginator | None]:
     ...
 
@@ -138,10 +130,7 @@ async def send(  # type: ignore
 
 
 async def send(  # type: ignore
-    ctx: commands.Context[types.Bot],
-    *args: Any,
-    paginator: Any = MISSING,
-    **options: Any,
+    ctx: commands.Context[types.Bot], *args: Any, paginator: Any = MISSING, **options: Any
 ) -> Any:
     """Evaluates how to safely send a Discord message.
 
@@ -289,11 +278,7 @@ async def interaction_response(  # type: ignore
 
 
 async def interaction_response(  # type: ignore
-    interaction: Any,
-    response_type: Any,
-    *args: Any,
-    paginator: Any = MISSING,
-    **options: Any,
+    interaction: Any, response_type: Any, *args: Any, paginator: Any = MISSING, **options: Any
 ) -> Any:
     """Evaluates how to safely respond to a Discord interaction.
 
@@ -505,12 +490,7 @@ def _check_file(file: discord.File, token: str, /, replace_path: bool) -> discor
         )
     except UnicodeDecodeError:
         return file
-    return discord.File(
-        io.BytesIO(string),
-        file.filename,
-        spoiler=file.spoiler,
-        description=file.description,
-    )
+    return discord.File(io.BytesIO(string), file.filename, spoiler=file.spoiler, description=file.description)
 
 
 def _check_embed(embed: discord.Embed, token: str, /, replace_path: bool) -> discord.Embed:

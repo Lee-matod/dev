@@ -216,11 +216,7 @@ class SyntheticInteraction(discord.Interaction):
             payload["app_permissions"] = "0"
 
         #  Application command synthetic payload
-        data: ApplicationCommandData = {
-            "type": 1,
-            "name": getattr(command.root_parent, "name", command.name),
-            "id": 0,
-        }
+        data: ApplicationCommandData = {"type": 1, "name": getattr(command.root_parent, "name", command.name), "id": 0}
         payload["data"] = data
         resolved: ResolvedData = {}
         command_parameters: list[OptionsData] = []

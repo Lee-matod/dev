@@ -26,12 +26,7 @@ if TYPE_CHECKING:
 
 
 class RootInformation(root.Container):
-    @root.command(
-        name="inspect",
-        parent="dev",
-        global_use=True,
-        require_var_positional=True,
-    )
+    @root.command(name="inspect", parent="dev", global_use=True, require_var_positional=True)
     async def root_types(self, ctx: commands.Context[types.Bot], *, command_string: str):
         """Inspect a command.
         Receive command signature, aliases, and some other useful information.
@@ -57,9 +52,7 @@ class RootInformation(root.Container):
             params.append(fmt)
 
         embed = discord.Embed(
-            title=command.qualified_name,
-            description=command.description or None,
-            color=discord.Color.darker_gray(),
+            title=command.qualified_name, description=command.description or None, color=discord.Color.darker_gray()
         )
         if command.aliases:
             embed.add_field(name="Aliases", value=f"`{'`, `'.join(command.aliases)}`")
@@ -76,12 +69,7 @@ class RootInformation(root.Container):
         embed.set_footer(text=f"{hex(id(command))}")
         await send(ctx, embed)
 
-    @root.command(
-        name="source",
-        parent="dev",
-        aliases=["src"],
-        require_var_positional=True,
-    )
+    @root.command(name="source", parent="dev", aliases=["src"], require_var_positional=True)
     async def root_source(self, ctx: commands.Context[types.Bot], *, command_string: str):
         """View the source code of a command.
         The token of the bot will be hidden as `[token]` if it is found within the source code.
@@ -95,10 +83,7 @@ class RootInformation(root.Container):
             try:
                 source = inspect.getsource(command.callback)
             except OSError:
-                return await send(
-                    ctx,
-                    f"Couldn't get source lines for the command `{command_string}`.",
-                )
+                return await send(ctx, f"Couldn't get source lines for the command `{command_string}`.")
             self._refresh_base_registrations()
         else:
             source = over.source

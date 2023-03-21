@@ -99,8 +99,7 @@ class RootManagement(root.Container):
                     )
             if files_exist:
                 await send(
-                    ctx,
-                    f"{plural(len(files_exist), 'File', False)} " f"{', '.join(files_exist)} already exist.",
+                    ctx, f"{plural(len(files_exist), 'File', False)} " f"{', '.join(files_exist)} already exist."
                 )
             return await ctx.message.add_reaction("\u2611")
         path = pathlib.Path(directory)
@@ -122,18 +121,10 @@ class RootManagement(root.Container):
             await send(ctx, f"Path {str(path.absolute())} already exists.")
 
     @root.command(
-        name="edit",
-        parent="dev explorer",
-        root_placeholder=True,
-        aliases=["change"],
-        require_var_positional=True,
+        name="edit", parent="dev explorer", root_placeholder=True, aliases=["change"], require_var_positional=True
     )
     async def root_explorer_edit(
-        self,
-        ctx: commands.Context[types.Bot],
-        attachment: discord.Attachment,
-        *,
-        directory: str,
+        self, ctx: commands.Context[types.Bot], attachment: discord.Attachment, *, directory: str
     ):
         """Edit an existing file.
         This command does not change the file's name. Consider using `dev explorer rename`.
@@ -174,12 +165,7 @@ class RootManagement(root.Container):
         self.explorer_rgs.append(ManagementRegistration(f"{old_path}", ManagementOperation.RENAME, f"{new_path}"))
         await ctx.message.add_reaction("\u2611")
 
-    @root.command(
-        name="show",
-        parent="dev explorer",
-        root_placeholder=True,
-        aliases=["view", "tree", "tree!"],
-    )
+    @root.command(name="show", parent="dev explorer", root_placeholder=True, aliases=["view", "tree", "tree!"])
     async def root_explorer_show(self, ctx: commands.Context[types.Bot], *, directory: str = ""):
         """Uploads an existing file to Discord or shows the tree of a directory.
         Execute `tree!` instead of `tree` to show the full path of the files and folders.

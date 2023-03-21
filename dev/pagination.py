@@ -72,7 +72,7 @@ class Paginator(commands.Paginator):
         else:
             super().add_line(line)
         if empty:
-            self._current_page.append('')
+            self._current_page.append("")
             self._count += self._linesep_len
 
 

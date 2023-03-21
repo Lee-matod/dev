@@ -32,35 +32,23 @@ class PermissionsSelector(discord.ui.Select[AuthoredView]):
             description="All 'General' permissions from the official Discord UI.",
             default=True,
         ),
-        discord.SelectOption(
-            label="All Channel",
-            value="all_channel",
-            description="All channel-specific permissions.",
-        ),
+        discord.SelectOption(label="All Channel", value="all_channel", description="All channel-specific permissions."),
         discord.SelectOption(
             label="Membership",
             value="membership",
             description="All 'Membership' permissions from the official Discord UI.",
         ),
         discord.SelectOption(
-            label="Text",
-            value="text",
-            description="All 'Text' permissions from the official Discord UI.",
+            label="Text", value="text", description="All 'Text' permissions from the official Discord UI."
         ),
         discord.SelectOption(
-            label="Voice",
-            value="voice",
-            description="All 'Voice' permissions from the official Discord UI.",
+            label="Voice", value="voice", description="All 'Voice' permissions from the official Discord UI."
         ),
         discord.SelectOption(
-            label="Stage",
-            value="stage",
-            description="All 'Stage Channel' permissions from the official Discord UI.",
+            label="Stage", value="stage", description="All 'Stage Channel' permissions from the official Discord UI."
         ),
         discord.SelectOption(
-            label="Stage Moderator",
-            value="stage_moderator",
-            description="All permissions for stage moderators.",
+            label="Stage Moderator", value="stage_moderator", description="All permissions for stage moderators."
         ),
         discord.SelectOption(
             label="Elevated",
@@ -68,9 +56,7 @@ class PermissionsSelector(discord.ui.Select[AuthoredView]):
             description="All permissions that require 2FA (2 Factor Authentication).",
         ),
         discord.SelectOption(
-            label="Advanced",
-            value="advanced",
-            description="All 'Advanced' permissions from the official Discord UI.",
+            label="Advanced", value="advanced", description="All 'Advanced' permissions from the official Discord UI."
         ),
     )
 
@@ -87,8 +73,7 @@ class PermissionsSelector(discord.ui.Select[AuthoredView]):
                 option.default = True
         permissions = ["```ansi", *self.sort_perms(self.values[0]), "```"]
         await interaction.response.edit_message(
-            embed=discord.Embed(description="\n".join(permissions), color=discord.Color.blurple()),
-            view=self.view,
+            embed=discord.Embed(description="\n".join(permissions), color=discord.Color.blurple()), view=self.view
         )
 
     def sort_perms(self, permission: str) -> list[str]:
@@ -138,16 +123,7 @@ class SearchCategory(discord.ui.Select[AuthoredView]):
         self.embed: discord.Embed = embed
         self.mapping: dict[str, str] = {
             "all": "\n".join(
-                list(
-                    itertools.chain(
-                        cogs[:3],
-                        cmds[:3],
-                        channels[:3],
-                        emojis[:3],
-                        members[:3],
-                        roles[:3],
-                    )
-                )[:8]
+                list(itertools.chain(cogs[:3], cmds[:3], channels[:3], emojis[:3], members[:3], roles[:3]))[:8]
             ),
             "cogs": "\n".join(cogs),
             "commands": "\n".join(cmds),

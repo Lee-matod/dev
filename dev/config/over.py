@@ -100,10 +100,7 @@ class RootOver(root.Container):
         usage="<command_name> <script>",
     )
     async def root_override_command(
-        self,
-        ctx: commands.Context[types.Bot],
-        *,
-        command_code: Annotated[MessageCodeblock, codeblock_converter],
+        self, ctx: commands.Context[types.Bot], *, command_code: Annotated[MessageCodeblock, codeblock_converter]
     ):
         r"""Temporarily override a command.
         All changes will be undone once the bot is restarted.
@@ -121,18 +118,12 @@ class RootOver(root.Container):
         impl: CommandRegistration = self.get_last_implementation(command_string)  # type: ignore
         # modals have a maximum of 4000 characters
         if not script and len(impl.source) > 4000:
-            return await send(
-                ctx,
-                "The command's source code exceeds the 4000 maximum character limit.",
-            )
+            return await send(ctx, "The command's source code exceeds the 4000 maximum character limit.")
         if not script:
             return await send(
                 ctx,
                 ModalSender(
-                    CodeEditor(ctx, command, self),
-                    ctx.author,
-                    label="View Code",
-                    style=discord.ButtonStyle.blurple,
+                    CodeEditor(ctx, command, self), ctx.author, label="View Code", style=discord.ButtonStyle.blurple
                 ),
             )
         self.bot.remove_command(command_string)
@@ -148,10 +139,7 @@ class RootOver(root.Container):
             parsed = ast.parse(script)
             if [ast.AsyncFunctionDef] != [type(expr) for expr in parsed.body]:
                 self.bot.add_command(command)
-                return await send(
-                    ctx,
-                    "Top-level code should consist of a single asynchronous function.",
-                )
+                return await send(ctx, "Top-level code should consist of a single asynchronous function.")
             # Prepare variables for script wrapping
             func: ast.AsyncFunctionDef = parsed.body[-1]  # type: ignore
             body = textwrap.indent("\n".join(script.split("\n")[len(func.decorator_list) + 1 :]), "\t")
@@ -170,10 +158,7 @@ class RootOver(root.Container):
             # check after execution
         if not isinstance(obj, (commands.Command, commands.Group)):
             self.bot.add_command(command)
-            return await send(
-                ctx,
-                "Top-level function should be a command-like object.",
-            )
+            return await send(ctx, "Top-level function should be a command-like object.")
         if obj.qualified_name != command_string:
             self.bot.remove_command(obj.qualified_name)
             self.bot.add_command(command)
@@ -235,10 +220,7 @@ class RootOver(root.Container):
             return await send(ctx, f"Overwrite with ID of `{index}` not found.")
         if ctx.invoked_with in ("delete", "del"):
             self.update_register(overwrite, Over.DELETE)
-            return await send(
-                ctx,
-                f"Successfully deleted override: {overwrite}",
-            )
+            return await send(ctx, f"Successfully deleted override: {overwrite}")
         if overwrite.over_type is OverType.COMMAND:
             assert isinstance(overwrite, CommandRegistration)
             base = self.get_base_command(overwrite.command.qualified_name)
@@ -250,10 +232,7 @@ class RootOver(root.Container):
             lines = overwrite.source.split("\n")
             base_command = self.get_base_command(overwrite.qualified_name)
             if base_command is None or not hasattr(base_command, "line_no"):
-                return await send(
-                    ctx,
-                    f"Could not get source lines for the command `{overwrite.qualified_name}`.",
-                )
+                return await send(ctx, f"Could not get source lines for the command `{overwrite.qualified_name}`.")
             line_no = base_command.line_no
             with open(directory, "r", encoding="utf-8") as fp:
                 read_lines = fp.readlines()
@@ -261,10 +240,7 @@ class RootOver(root.Container):
             self.update_register(overwrite, Over.DELETE)
             old_command = self.get_last_implementation(overwrite.qualified_name)
             if old_command is None or not old_command.source:
-                return await send(
-                    ctx,
-                    f"Could not get source lines for the command `{overwrite.qualified_name}`.",
-                )
+                return await send(ctx, f"Could not get source lines for the command `{overwrite.qualified_name}`.")
             old_lines = old_command.source
             old_lines_split = old_lines.split("\n")
             # make sure that we have the correct amount of lines necessary to include the new script
@@ -311,8 +287,7 @@ class RootOver(root.Container):
                 return await send(ctx, codeblock_wrapper(last.source, "py"))
             assert isinstance(last, SettingRegistration)
             return await send(
-                ctx,
-                "\n".join(f"Settings.{sett.lower()} = `{escape(value)}`" for sett, value in last.changed.items()),
+                ctx, "\n".join(f"Settings.{sett.lower()} = `{escape(value)}`" for sett, value in last.changed.items())
             )
         overwrite = overwrites[index - 1]  # Shouldn't raise IndexError because we sanitized it before
         if isinstance(overwrite, CommandRegistration):
@@ -321,8 +296,7 @@ class RootOver(root.Container):
             return await send(ctx, codeblock_wrapper(overwrite.source, "py"))
         assert isinstance(overwrite, SettingRegistration)
         await send(
-            ctx,
-            "\n".join(f"Settings.{sett.lower()} = `{escape(value)}`" for sett, value in overwrite.changed.items()),
+            ctx, "\n".join(f"Settings.{sett.lower()} = `{escape(value)}`" for sett, value in overwrite.changed.items())
         )
 
     @root.command(
@@ -333,10 +307,7 @@ class RootOver(root.Container):
         usage="<command_name> <script>",
     )
     async def root_overwrite_command(
-        self,
-        ctx: commands.Context[types.Bot],
-        *,
-        command_code: Annotated[MessageCodeblock, codeblock_converter],
+        self, ctx: commands.Context[types.Bot], *, command_code: Annotated[MessageCodeblock, codeblock_converter]
     ):
         r"""Completely change a command's execution script to be permanently overwritten.
         The script that will be used as the command overwrite should be specified inside a codeblock
@@ -363,10 +334,7 @@ class RootOver(root.Container):
         async with ExceptionHandler(ctx.message):
             parsed: ast.Module = ast.parse(code)
             if [ast.AsyncFunctionDef] != [type(expr) for expr in parsed.body]:
-                return await send(
-                    ctx,
-                    "Top-level code should consist of a single asynchronous function.",
-                )
+                return await send(ctx, "Top-level code should consist of a single asynchronous function.")
         code = code.split("\n")
         indentation = 0
         for char in lines[0]:
@@ -439,10 +407,7 @@ class RootOver(root.Container):
             if not hasattr(Settings, key):
                 error_settings.append(key)
         if error_settings:
-            return await send(
-                ctx,
-                f"{plural(len(error_settings), 'Setting')} not found: {', '.join(error_settings)}",
-            )
+            return await send(ctx, f"{plural(len(error_settings), 'Setting')} not found: {', '.join(error_settings)}")
         for key, attr in new_settings.items():
             str_setting = key.lower()
             setting = getattr(Settings, str_setting)

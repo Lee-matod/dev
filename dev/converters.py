@@ -144,7 +144,7 @@ class LiteralModes(commands.Converter[Union[str, None]]):
 
 class MessageCodeblock:
     """Represents a Discord message with a codeblock.
-    
+
     Attributes
     ----------
     content: :class:`str`

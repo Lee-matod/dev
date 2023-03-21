@@ -84,11 +84,7 @@ class RootHTTP(root.Container):
             return await send(ctx, f"Parsing options failed. {exc}")
         async with aiohttp.ClientSession() as session:
             try:
-                request = await session.get(
-                    replace_vars(url, self.scope),
-                    allow_redirects=allow_redirects,
-                    **kwargs,
-                )
+                request = await session.get(replace_vars(url, self.scope), allow_redirects=allow_redirects, **kwargs)
             except aiohttp.InvalidURL:
                 return await send(ctx, "Invalid URL link.")
             except aiohttp.ClientConnectorError:
@@ -129,7 +125,4 @@ class RootHTTP(root.Container):
                 with io.BytesIO() as binary_file:
                     binary_file.write(data)
                     binary_file.seek(0)
-                    await send(
-                        ctx,
-                        discord.File(filename=f"response.{file_ext}", fp=binary_file),
-                    )
+                    await send(ctx, discord.File(filename=f"response.{file_ext}", fp=binary_file))

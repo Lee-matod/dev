@@ -35,19 +35,7 @@ class RootVariables(root.Container):
         mode: Annotated[
             str | None,
             LiteralModes[
-                Literal[
-                    "~",
-                    "all",
-                    "content",
-                    "create",
-                    "del",
-                    "delete",
-                    "edit",
-                    "exists",
-                    "new",
-                    "replace",
-                    "value",
-                ]
+                Literal["~", "all", "content", "create", "del", "delete", "edit", "exists", "new", "replace", "value",]
             ],
         ],
         *,
@@ -71,14 +59,7 @@ class RootVariables(root.Container):
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
             if name in self.scope:
                 return await send(ctx, f"A variable called `{name}` already exists.")
-            await send(
-                ctx,
-                ModalSender(
-                    VariableValueSubmitter(name, True),
-                    ctx.author,
-                    label="Submit Variable Value",
-                ),
-            )
+            await send(ctx, ModalSender(VariableValueSubmitter(name, True), ctx.author, label="Submit Variable Value"))
 
         elif mode in ["delete", "del"]:
             if name is None:
@@ -96,9 +77,7 @@ class RootVariables(root.Container):
             await send(
                 ctx,
                 ModalSender(
-                    VariableValueSubmitter(name, False, self.scope[name]),
-                    ctx.author,
-                    label="Submit Variable Value",
+                    VariableValueSubmitter(name, False, self.scope[name]), ctx.author, label="Submit Variable Value"
                 ),
             )
 
@@ -113,10 +92,7 @@ class RootVariables(root.Container):
                 return await ctx.message.add_reaction("\u274c")
             await ctx.message.add_reaction("\u2611")
 
-        elif mode in [
-            "content",
-            "value",
-        ]:
+        elif mode in ["content", "value"]:
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
             if name not in self.scope:

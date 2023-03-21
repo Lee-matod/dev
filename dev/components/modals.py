@@ -47,10 +47,7 @@ class VariableValueSubmitter(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction, /) -> None:
         Container.scope.update({self.name: self.value.value})
         fmt = "created new variable" if self.new else "edited"
-        await interaction.response.edit_message(
-            content=f"Successfully {fmt} `{self.name}`",
-            view=None,
-        )
+        await interaction.response.edit_message(content=f"Successfully {fmt} `{self.name}`", view=None)
 
 
 class CodeEditor(discord.ui.Modal):
@@ -71,15 +68,10 @@ class CodeEditor(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction, /) -> None:
         self.ctx.bot.remove_command(self.command.qualified_name)
-        lcls: dict[str, Any] = {
-            "discord": discord,
-            "commands": commands,
-            "bot": self.ctx.bot,
-        }
+        lcls: dict[str, Any] = {"discord": discord, "commands": commands, "bot": self.ctx.bot}
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             async with ExceptionHandler(
-                self.ctx.message,
-                lambda *_: self.ctx.bot.add_command(self.command),  # type: ignore
+                self.ctx.message, lambda *_: self.ctx.bot.add_command(self.command)  # type: ignore
             ):
                 # make sure everything is parsed correctly
                 parsed = ast.parse(self.code.value)
@@ -93,10 +85,7 @@ class CodeEditor(discord.ui.Modal):
                     )
                 # prepare variables for script wrapping
                 func: ast.AsyncFunctionDef = parsed.body[-1]  # type: ignore
-                body = textwrap.indent(
-                    "\n".join(self.code.value.split("\n")[len(func.decorator_list) + 1 :]),
-                    "\t",
-                )
+                body = textwrap.indent("\n".join(self.code.value.split("\n")[len(func.decorator_list) + 1 :]), "\t")
                 parameters = self.code.value.split("\n")[func.lineno - 1][len(f"async def {func.name}(") :]
                 upper = "\n".join(self.code.value.split("\n")[: func.lineno - 1])
 
@@ -146,17 +135,12 @@ class CodeEditor(discord.ui.Modal):
                     self.bot.add_command(obj)  # type: ignore
                 self.root.update_register(
                     CommandRegistration(
-                        obj,
-                        Over.OVERRIDE,
-                        source=f"{upper.lstrip()}\nasync def {func.name}({parameters}\n{body}",
+                        obj, Over.OVERRIDE, source=f"{upper.lstrip()}\nasync def {func.name}({parameters}\n{body}"
                     ),
                     Over.ADD,
                 )
         await interaction_response(
-            interaction,
-            discord.InteractionResponseType.message_update,
-            "New script has been submitted.",
-            view=None,
+            interaction, discord.InteractionResponseType.message_update, "New script has been submitted.", view=None
         )
 
 

@@ -86,9 +86,7 @@ class DiscordGroup(commands.Group[CogT, ..., Any], _DiscordMixin):
 
 class BaseCommand(Generic[CogT, P, T]):
     def __init__(
-        self,
-        func: Callable[Concatenate[CogT, commands.Context[types.Bot], P], Coro[T]],
-        **kwargs: Any,
+        self, func: Callable[Concatenate[CogT, commands.Context[types.Bot], P], Coro[T]], **kwargs: Any
     ) -> None:
         if not asyncio.iscoroutinefunction(func):
             raise TypeError("Callback must be a coroutine.")
@@ -104,10 +102,7 @@ class BaseCommand(Generic[CogT, P, T]):
         if self.parent:
             self.level = len(self.parent.split())
 
-        self.on_error: Callable[
-            [CogT, commands.Context[types.Bot], commands.CommandError],
-            Coro[Any],
-        ] | None = None
+        self.on_error: Callable[[CogT, commands.Context[types.Bot], commands.CommandError], Coro[Any],] | None = None
         self.cog: CogT | None = None
 
     def __repr__(self) -> str:
@@ -128,11 +123,7 @@ class BaseCommand(Generic[CogT, P, T]):
         raise NotImplementedError
 
     def error(
-        self,
-        func: Callable[
-            [CogT, commands.Context[types.Bot], commands.CommandError],
-            Coro[Any],
-        ],
+        self, func: Callable[[CogT, commands.Context[types.Bot], commands.CommandError], Coro[Any],]
     ) -> Callable[[CogT, commands.Context[types.Bot], commands.CommandError], Coro[Any],]:
         """Set a local error handler"""
         self.on_error = func

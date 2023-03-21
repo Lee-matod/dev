@@ -27,26 +27,14 @@ from dev.utils.functs import generate_ctx, send
 if TYPE_CHECKING:
     from dev import types
 
-_DiscordObjects = Union[
-    GlobalTextChannelConverter,
-    discord.Guild,
-    discord.Member,
-    discord.Thread,
-    discord.User,
-]
+_DiscordObjects = Union[GlobalTextChannelConverter, discord.Guild, discord.Member, discord.Thread, discord.User]
 
 
 class RootInvoke(root.Container):
     """Invoke commands with some additional diagnostics and debugging abilities."""
 
     @root.command(name="timeit", parent="dev", require_var_positional=True)
-    async def root_timeit(
-        self,
-        ctx: commands.Context[types.Bot],
-        timeout: float | None,
-        *,
-        command_name: str,
-    ):
+    async def root_timeit(self, ctx: commands.Context[types.Bot], timeout: float | None, *, command_name: str):
         """Invoke a command and measure how long it takes to invoke finish.
         Optionally add a maximum amount of time that the command can take to finish executing.
         """
@@ -74,10 +62,7 @@ class RootInvoke(root.Container):
             invokable = await self._get_invokable(ctx, command_name, kwargs)
             if invokable is None:
                 return await send(ctx, f"Command `{command_name}` not found.")
-            args = (
-                *invokable,
-                "reinvoke" if ctx.invoked_with.endswith("!") else "invoke",
-            )
+            args = (*invokable, "reinvoke" if ctx.invoked_with.endswith("!") else "invoke")
             await self._execute_invokable(*args)
 
     @root.command(name="debug", parent="dev", aliases=["dbg"], require_var_positional=True)
@@ -93,11 +78,7 @@ class RootInvoke(root.Container):
             await self._execute_invokable(*invokable)
         if handler.error:
             embeds = [
-                discord.Embed(
-                    title=exc[0],
-                    description=f"```py\n{exc[1]}\n```",
-                    color=discord.Color.red(),
-                )
+                discord.Embed(title=exc[0], description=f"```py\n{exc[1]}\n```", color=discord.Color.red())
                 for exc in handler.error
             ]
             handler.cleanup()
@@ -105,12 +86,7 @@ class RootInvoke(root.Container):
         else:
             await ctx.message.add_reaction("\u2611")
 
-    @root.command(
-        name="execute",
-        parent="dev",
-        aliases=["exec", "execute!", "exec!"],
-        require_var_positional=True,
-    )
+    @root.command(name="execute", parent="dev", aliases=["exec", "execute!", "exec!"], require_var_positional=True)
     async def root_execute(
         self,
         ctx: commands.Context[types.Bot],
@@ -150,10 +126,7 @@ class RootInvoke(root.Container):
         await self._execute_invokable(*args)
 
     async def _execute_invokable(
-        self,
-        command: Invokeable,
-        ctx: commands.Context[types.Bot],
-        action: Literal["invoke", "reinvoke"] = "invoke",
+        self, command: Invokeable, ctx: commands.Context[types.Bot], action: Literal["invoke", "reinvoke"] = "invoke"
     ) -> None:
         await (getattr(command, action)(ctx))
 

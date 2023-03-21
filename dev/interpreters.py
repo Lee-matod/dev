@@ -596,11 +596,7 @@ class Execute:
     def function(self) -> Callable[..., AsyncGenerator[Any, Any] | Coro[Any]]:
         if self._executor is not None:
             return self._executor
-        exec(
-            compile(self.wrapper(), "<repl>", "exec"),
-            self.vars.globals,
-            self.vars.locals,
-        )
+        exec(compile(self.wrapper(), "<repl>", "exec"), self.vars.globals, self.vars.locals)
         self._executor = self.vars.get("_executor")
         return self._executor
 

@@ -35,32 +35,20 @@ class RootSearch(root.Container):
         Items include cogs, command names, channels, emojis, members, and roles.
         """
         if ctx.guild is not None:
-            channels = _match(
-                query,
-                [(channel.name, channel.mention) for channel in ctx.guild.channels],
-            )
+            channels = _match(query, [(channel.name, channel.mention) for channel in ctx.guild.channels])
             members = _match(query, [(member.name, member.mention) for member in ctx.guild.members])
             emojis = _match(query, [(emoji.name, f"{emoji}") for emoji in ctx.guild.emojis])
             roles = _match(query, [(role.name, role.mention) for role in ctx.guild.roles])
         else:
             channels = members = emojis = roles = []
-        cmds = _match(
-            query,
-            [(cmd.qualified_name, f"`{cmd.qualified_name}`") for cmd in self.bot.walk_commands()],
-        )
+        cmds = _match(query, [(cmd.qualified_name, f"`{cmd.qualified_name}`") for cmd in self.bot.walk_commands()])
         cogs = _match(query, [(cog, f"`{cog}`") for cog in self.bot.cogs])
         if not any(_ for _ in [channels, members, cmds, emojis, cogs, roles]):
             return await send(ctx, "Couldn't find anything.")
         embed = discord.Embed(title=f"Query {query} returned...", color=discord.Color.blurple())
         embed.set_footer(text="Category: All")
         select = SearchCategory(
-            embed,
-            cogs=cogs,
-            cmds=cmds,
-            channels=channels,
-            emojis=emojis,
-            members=members,
-            roles=roles,
+            embed, cogs=cogs, cmds=cmds, channels=channels, emojis=emojis, members=members, roles=roles
         )
         embed.description = select.mapping.get("all")
         await send(ctx, embed, AuthoredView(ctx.author, select))

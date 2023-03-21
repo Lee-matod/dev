@@ -126,10 +126,7 @@ class RootPython(root.Container):
             try:
                 code = filed_code.decode("utf-8")
             except UnicodeDecodeError:
-                return await send(
-                    ctx,
-                    "Unable to decode attachment. Make sure it is UTF-8 compatible.",
-                )
+                return await send(ctx, "Unable to decode attachment. Make sure it is UTF-8 compatible.")
         elif code is None and not ctx.message.attachments:
             raise commands.MissingRequiredArgument(ctx.command.clean_params["code"])
         assert code is not None
@@ -141,9 +138,7 @@ class RootPython(root.Container):
         output: list[str] = []
 
         async def on_error(
-            exc_type: type[Exception] | None,
-            exc_val: Exception | None,
-            exc_tb: TracebackType | None,
+            exc_type: type[Exception] | None, exc_val: Exception | None, exc_tb: TracebackType | None
         ) -> None:
             if handler.debug or exc_type is None or exc_val is None or exc_tb is None:
                 return
@@ -152,15 +147,8 @@ class RootPython(root.Container):
 
         reader_task: asyncio.Task[None] = self.bot.loop.create_task(self._on_update(ctx, output))
         executor = Execute(code, self.repl, args)
-        stdout = RelativeStandard(
-            callback=lambda s: output.append(s),
-            filename=executor.filename,
-        )
-        stderr = RelativeStandard(
-            sys.__stderr__,
-            lambda s: output.append(s),
-            filename=executor.filename,
-        )
+        stdout = RelativeStandard(callback=lambda s: output.append(s), filename=executor.filename)
+        stderr = RelativeStandard(sys.__stderr__, lambda s: output.append(s), filename=executor.filename)
         try:
             async with ExceptionHandler(ctx.message, on_error=on_error) as handler:
                 with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
@@ -226,14 +214,8 @@ class RootPython(root.Container):
     async def _on_update(self, ctx: commands.Context[types.Bot], view: list[str], /) -> None:
         current = len(view)
         if view:
-            await send(
-                ctx,
-                "[stdout/stderr]\n" + codeblock_wrapper("".join(view).strip("\n"), "py"),
-            )
+            await send(ctx, "[stdout/stderr]\n" + codeblock_wrapper("".join(view).strip("\n"), "py"))
         while True:
             if current != len(view):
-                await send(
-                    ctx,
-                    "[stdout/stderr]\n" + codeblock_wrapper("".join(view).strip("\n"), "py"),
-                )
+                await send(ctx, "[stdout/stderr]\n" + codeblock_wrapper("".join(view).strip("\n"), "py"))
             await asyncio.sleep(0)
