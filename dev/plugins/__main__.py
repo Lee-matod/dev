@@ -110,7 +110,7 @@ class RootCommand(root.Plugin):
             is_enabled = getattr(self.bot.intents, intent.lower(), None)
             intent_info.append(f"{intent.replace('_', ' ')} intent is {translator[is_enabled]}")
         brief.append(
-            f"Average websocket latency is {round(self.bot.latency, 2) * 1000}ms. " + "; ".join(intent_info[:-1]) + "."
+            f"Average websocket latency is {round(self.bot.latency, 2) * 1000}ms. " + "; ".join(intent_info) + "."
         )
         await send(ctx, "\n".join(brief))
 
