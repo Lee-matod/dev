@@ -55,7 +55,7 @@ with open("README.md", "r") as file:
     readme = file.read()
 
 extras_require = {"test": ["pytest", "pytest-asyncio"]}
-packages = ["dev", "dev.components", "dev.config", "dev.experimental", "dev.misc", "dev.utils"]
+packages = ["dev", "dev.components", "dev.plugins", "dev.utils"]
 
 setup(
     name="dev",

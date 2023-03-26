@@ -18,15 +18,14 @@ __version__ = "2.0.0a"
 
 from typing import Literal, NamedTuple
 
-from dev.__main__ import *
+from discord.ext import commands
+
 from dev.components import *
-from dev.config import RootBot, RootManagement, RootOver, RootVariables
 from dev.converters import *
-from dev.experimental import RootHTTP, RootInvoke, RootPython, RootShell
 from dev.handlers import *
 from dev.interpreters import *
-from dev.misc import RootFlags, RootInformation, RootSearch
 from dev.pagination import *
+from dev.plugins import *
 from dev.registrations import *
 from dev.types import *
 from dev.utils.baseclass import *
@@ -39,6 +38,7 @@ __all__ = (
     "BaseCommandRegistration",
     "BoolInput",
     "CommandRegistration",
+    "Dev",
     "ExceptionHandler",
     "Execute",
     "GlobalLocals",
@@ -81,24 +81,10 @@ class VersionInfo(NamedTuple):
 version_info = VersionInfo(major=2, minor=0, micro=0, releaselevel="alpha", serial=0)
 
 
-class Dev(
-    RootBot,
-    RootCommand,
-    RootFlags,
-    RootHTTP,
-    RootInformation,
-    RootInvoke,
-    RootManagement,
-    RootOver,
-    RootPython,
-    RootSearch,
-    RootShell,
-    RootVariables,
-):
-    """The frontend root cog of the dev extension that implements all features."""
-
-
 async def setup(bot: commands.Bot) -> None:
     _log = await enforce_owner(bot)
     await bot.add_cog(Dev(bot))
     _log.info("Dev cog has been successfully loaded")
+
+
+del Literal, NamedTuple, commands
