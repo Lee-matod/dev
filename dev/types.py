@@ -81,7 +81,7 @@ else:
 
     class Annotated:
         def __class_getitem__(cls, key: tuple[Any, ...]):
-            return Union[key[1:]]
+            return key[1]
 
 
 T = TypeVar("T")
