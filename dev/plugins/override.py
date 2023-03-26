@@ -21,7 +21,6 @@ from dev import root
 from dev.converters import MessageCodeblock, codeblock_converter
 from dev.handlers import ExceptionHandler, GlobalLocals
 from dev.interpreters import Execute
-from dev.registrations import BaseCommandRegistration
 from dev.types import Annotated
 from dev.utils.functs import send
 
@@ -110,14 +109,10 @@ class RootOverride(root.Plugin):
         origin: types.Command | None = self.bot.get_command(command_string)
         if origin is None:
             return await send(ctx, f"Command `{command_string}` not found.")
-        base: BaseCommandRegistration | None = self.get_base_command(command_string)
-        if base is None:
-            return await send(ctx, "Could not find base command.")
-        callback = base.callback
-        directory = inspect.getsourcefile(callback)
+        directory = inspect.getsourcefile(origin.callback)
         if directory is None:
             return await send(ctx, "Could not find source.")
-        lines, line_no = inspect.getsourcelines(callback)
+        lines, line_no = inspect.getsourcelines(origin.callback)
         line_no -= 1
         async with ExceptionHandler(ctx.message):
             parsed = ast.parse(script)

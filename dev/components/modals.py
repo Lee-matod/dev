@@ -14,14 +14,12 @@ from __future__ import annotations
 import ast
 import contextlib
 import io
-import textwrap
 from typing import TYPE_CHECKING, Any
 
 import discord
 
 from dev.converters import str_ints
 from dev.handlers import ExceptionHandler
-from dev.registrations import CommandRegistration, Over
 from dev.root import Plugin
 from dev.utils.functs import interaction_response
 from dev.utils.startup import Settings
@@ -56,10 +54,7 @@ class CodeEditor(discord.ui.Modal):
     )
 
     def __init__(self, ctx: commands.Context[types.Bot], command: types.Command, root: Plugin) -> None:
-        impl = root.get_last_implementation(command.qualified_name)
-        assert impl is not None, "Managed to get to modal __init__ even though no registrations were found"
         self.code.label = self.code.label.replace("command", command.qualified_name)
-        self.code.default = impl.source
 
         super().__init__(title=f"{command.name}'s Script")
         self.command: types.Command = command
@@ -85,8 +80,6 @@ class CodeEditor(discord.ui.Modal):
                     )
                 # prepare variables for script wrapping
                 func: ast.AsyncFunctionDef = parsed.body[-1]  # type: ignore
-                body = textwrap.indent("\n".join(self.code.value.split("\n")[len(func.decorator_list) + 1 :]), "\t")
-                parameters = self.code.value.split("\n")[func.lineno - 1][len(f"async def {func.name}(") :]
                 upper = "\n".join(self.code.value.split("\n")[: func.lineno - 1])
 
                 exec(
@@ -133,12 +126,6 @@ class CodeEditor(discord.ui.Modal):
                     command.parent.add_command(obj)  # type: ignore
                 elif obj not in self.ctx.bot.commands:
                     self.bot.add_command(obj)  # type: ignore
-                self.root.update_register(
-                    CommandRegistration(
-                        obj, Over.OVERRIDE, source=f"{upper.lstrip()}\nasync def {func.name}({parameters}\n{body}"
-                    ),
-                    Over.ADD,
-                )
         await interaction_response(
             interaction, discord.InteractionResponseType.message_update, "New script has been submitted.", view=None
         )

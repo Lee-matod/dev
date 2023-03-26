@@ -23,8 +23,6 @@ from discord.ext import commands
 from dev import root
 from dev.components import AuthoredView, PermissionsSelector, SettingsToggler
 from dev.converters import str_bool, str_ints
-from dev.registrations import SettingRegistration
-from dev.types import Over
 from dev.utils.functs import flag_parser, send
 from dev.utils.startup import Settings
 from dev.utils.utils import codeblock_wrapper, escape, format_exception, plural
@@ -44,7 +42,6 @@ class RootManagement(root.Plugin):
             view = AuthoredView(ctx.author)
             SettingsToggler.add_buttons(view)
             return await send(ctx, view)
-        default = Settings.kwargs.copy()
         changed: list[str] = []  # a formatted version of the settings that were changed
         raw_changed = {}
         try:
@@ -76,7 +73,6 @@ class RootManagement(root.Plugin):
                     setattr(Settings, k, v)  # type: ignore
                 return await send(ctx, f"Invalid value for Settings.{key}: `{exc}`")
             changed.append(f"Settings.{str_setting}={attr}")
-        self.update_register(SettingRegistration(default, raw_changed), Over.ADD)
         await send(
             ctx,
             discord.Embed(

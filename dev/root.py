@@ -12,15 +12,13 @@ Command decorators and cogs used to register commands.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Literal, overload
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable
 
 import discord
 from discord.ext import commands, tasks
 from discord.utils import MISSING
 
 from dev.handlers import GlobalLocals
-from dev.registrations import BaseCommandRegistration, CommandRegistration, SettingRegistration
-from dev.types import Over
 from dev.utils.baseclass import Command, DiscordCommand, DiscordGroup, Group
 from dev.utils.startup import Settings
 
@@ -102,8 +100,6 @@ class Plugin(commands.Cog):
         The bot instance that was passed to the constructor of this class.
     commands: Dict[:class:`str`, types.Command]
         A dictionary that stores all dev commands.
-    registrations: Dict[int, Union[CommandRegistration, SettingRegistration]]
-        A dictionary that stores all modifications made in over commands.
     """
 
     scope: ClassVar[GlobalLocals] = GlobalLocals()
@@ -167,7 +163,6 @@ class Plugin(commands.Cog):
         if type(self).__base__ == Plugin:
             return
         self.commands: dict[str, types.Command] = {}
-        self.registrations: dict[int, CommandRegistration | SettingRegistration] = {}
 
         root_commands: list[Command[Plugin] | Group[Plugin]] = list(_get_commands(tuple(Plugin._subclasses)))
         root_commands.sort(key=lambda c: c.level)
@@ -181,78 +176,7 @@ class Plugin(commands.Cog):
                 # Top level command
                 bot.add_command(r)
 
-        self._base_registrations: tuple[BaseCommandRegistration, ...] = ()
-        self._refresh_base_registrations()
-
         self._clear_cached_messages.start()
-
-    def _refresh_base_registrations(self) -> list[BaseCommandRegistration]:
-        base_list: list[BaseCommandRegistration] = []
-        for cmd in self.bot.walk_commands():
-            base = BaseCommandRegistration(cmd)
-            if hasattr(base, "line_no"):
-                # Source could be found, probably an actual "hard coded" command
-                base_list.append(base)
-        self._base_registrations = tuple(base_list)
-        return base_list
-
-    def get_base_command(self, command_name: str, /) -> BaseCommandRegistration | None:
-        return discord.utils.find(lambda c: c.qualified_name == command_name, self._base_registrations)
-
-    def get_all_implementations(self, qualified_name: str) -> Iterable[CommandRegistration]:
-        base = self.get_base_command(qualified_name)
-        if base is not None:
-            yield base.to_command()
-        for cmd in self.registrations.values():
-            if isinstance(cmd, CommandRegistration) and cmd.qualified_name == qualified_name:
-                yield cmd
-
-    def get_last_implementation(self, qualified_name: str, /) -> CommandRegistration | None:
-        cmd = discord.utils.find(
-            lambda c: isinstance(c, CommandRegistration) and c.qualified_name == qualified_name,
-            reversed(self.registrations.values()),
-        )
-        if cmd is not None:
-            return cmd  # type: ignore
-        base = self.get_base_command(qualified_name)
-        if base is not None:
-            return base.to_command()
-        return None
-
-    def get_first_implementation(self, qualified_name: str, /) -> CommandRegistration | None:
-        cmd = discord.utils.find(
-            lambda c: isinstance(c, CommandRegistration) and c.qualified_name == qualified_name,
-            self.registrations.values(),
-        )
-        if cmd is not None:
-            return cmd  # type: ignore
-        base = self.get_base_command(qualified_name)
-        if base is not None:
-            return base.to_command()
-        return None
-
-    @overload
-    def registers_from_type(self, rgs_type: Literal[Over.OVERRIDE]) -> list[CommandRegistration]:
-        ...
-
-    @overload
-    def registers_from_type(self, rgs_type: Literal[Over.OVERWRITE]) -> list[CommandRegistration | SettingRegistration]:
-        ...
-
-    def registers_from_type(self, rgs_type: Any) -> Any:
-        return [rgs for rgs in self.registrations.values() if rgs.register_type is rgs_type]
-
-    def update_register(
-        self, register: CommandRegistration | SettingRegistration, mode: Literal[Over.ADD] | Literal[Over.DELETE], /
-    ) -> None:
-        if mode is Over.DELETE and register not in self.registrations.values():
-            raise IndexError("Registration cannot be deleted because it does not exist")
-        if mode is Over.DELETE:
-            for (k, v) in self.registrations.copy().items():
-                if v == register:
-                    del self.registrations[k]
-        else:
-            self.registrations[len(self.registrations)] = register
 
     async def cog_check(self, ctx: commands.Context[types.Bot]) -> bool:  # type: ignore
         """A check that is called every time a dev command is invoked.

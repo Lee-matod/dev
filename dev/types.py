@@ -11,7 +11,6 @@ Type shortcuts used for type hinting and type checking as well as enums.
 """
 from __future__ import annotations
 
-from enum import Enum
 from typing import TYPE_CHECKING, Any, Coroutine, Optional, Protocol, TypeVar, Union
 
 import discord
@@ -22,10 +21,7 @@ __all__ = (
     "Channel",
     "Command",
     "Invokeable",
-    "ManagementOperation",
     "MessageContent",
-    "Over",
-    "OverType",
     "User",
 )
 
@@ -88,6 +84,7 @@ else:
             assert len(key) == 2
             return key[1]
 
+
 T = TypeVar("T")
 Coro = Coroutine[Any, Any, T]
 CogT = TypeVar("CogT", bound="Optional[Plugin]")
@@ -99,28 +96,3 @@ class Invokeable(Protocol):
 
     async def reinvoke(self, context: commands.Context[Bot], /, *, call_hooks: bool = False) -> None:
         ...
-
-
-# Enums
-
-
-class Over(Enum):
-    OVERRIDE = 1
-    OVERWRITE = 2
-    ADD = 3
-    DELETE = 4
-
-
-class OverType(Enum):
-    COMMAND = 1
-    SETTING = 2
-
-
-class ManagementOperation(Enum):
-    UPLOAD = 1
-    EDIT = 2
-    RENAME = 3
-    DELETE = 4
-
-    # Aliases
-    CREATE = 1

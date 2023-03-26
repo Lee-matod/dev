@@ -26,7 +26,6 @@ from dev.handlers import *
 from dev.interpreters import *
 from dev.pagination import *
 from dev.plugins import *
-from dev.registrations import *
 from dev.types import *
 from dev.utils.baseclass import *
 from dev.utils.functs import *
@@ -35,22 +34,15 @@ from dev.utils.utils import *
 
 __all__ = (
     "AuthoredView",
-    "BaseCommandRegistration",
     "BoolInput",
-    "CommandRegistration",
     "Dev",
     "ExceptionHandler",
     "Execute",
     "GlobalLocals",
     "GlobalTextChannelConverter",
-    "ManagementOperation",
-    "ManagementRegistration",
     "MessageCodeblock",
     "ModalSender",
-    "Over",
-    "OverType",
     "Process",
-    "SettingRegistration",
     "Settings",
     "ShellSession",
     "TimedInfo",

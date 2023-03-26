@@ -82,13 +82,8 @@ class RootInformation(root.Plugin):
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
 
-        over = self.get_last_implementation(command.qualified_name)
-        if over is None or not over.source:
-            try:
-                source = inspect.getsource(command.callback)
-            except OSError:
-                return await send(ctx, f"Couldn't get source lines for the command `{command_string}`.")
-            self._refresh_base_registrations()
-        else:
-            source = over.source
-        return await send(ctx, codeblock_wrapper(source, "py"))
+        try:
+            source = inspect.getsource(command.callback)
+        except OSError:
+            return await send(ctx, f"Couldn't get source lines for the command `{command_string}`.")
+        await send(ctx, codeblock_wrapper(source, "py"))
