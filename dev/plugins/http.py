@@ -19,9 +19,7 @@ import aiohttp
 import discord
 
 from dev import root
-from dev.converters import LiteralModes
 from dev.handlers import replace_vars
-from dev.types import Annotated
 from dev.utils.functs import flag_parser, send
 from dev.utils.startup import Settings
 from dev.utils.utils import responses
@@ -60,7 +58,7 @@ class RootHTTP(root.Plugin):
         self,
         ctx: commands.Context[types.Bot],
         url: str,
-        mode: Annotated[str | None, LiteralModes[Literal["json", "read", "status"]]],
+        mode: Literal["json", "read", "status"],
         allow_redirects: bool = False,
         *,
         options: str | None = None,
@@ -72,8 +70,6 @@ class RootHTTP(root.Plugin):
         `read` = Read the response and return it.
         `status` = Return the status code of the website.
         """
-        if mode is None:
-            return
         #  Perhaps '>' is a needed literal in a parameter, so we shouldn't remove it
         #  if not necessary
         if url.startswith("<") and url.endswith(">"):

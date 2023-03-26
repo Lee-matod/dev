@@ -43,7 +43,6 @@ __all__ = (
     "Execute",
     "GlobalLocals",
     "GlobalTextChannelConverter",
-    "LiteralModes",
     "ManagementOperation",
     "ManagementRegistration",
     "MessageCodeblock",

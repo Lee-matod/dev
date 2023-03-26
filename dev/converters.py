@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import collections
 import re
-from typing import TYPE_CHECKING, Any, Deque, Literal, TypeVar, Union
+from typing import TYPE_CHECKING, Deque, TypeVar
 
 import discord
 from discord.ext import commands
@@ -25,7 +25,6 @@ if TYPE_CHECKING:
 
 __all__ = (
     "GlobalTextChannelConverter",
-    "LiteralModes",
     "MessageCodeblock",
     "codeblock_converter",
     "str_bool",
@@ -54,92 +53,6 @@ class GlobalTextChannelConverter(commands.TextChannelConverter):
         if channel is None:
             raise commands.ChannelNotFound(argument)
         return channel  # type: ignore
-
-
-class LiteralModes(commands.Converter[Union[str, None]]):
-    """A custom converter that checks if a given argument falls under a typing.Literal list.
-
-    Subclass of :class:`discord.ext.commands.Converter`.
-
-    Examples
-    --------
-    .. codeblock:: python3
-
-        @bot.command()
-        async def foo(ctx: commands.Context, arg: LiteralModes[typing.Literal["bar", "ABC"], True]):
-            ...
-
-        @bot.command()
-        async def bar(ctx: commands.Context, arg: LiteralModes[typing.Literal["foo"]]):
-            ...
-
-    Parameters
-    ----------
-    modes: :class:`Literal[...]`
-        The list of strings that should be accepted.
-
-    case_sensitive: :class:`bool`
-        Whether the modes should be case-sensitive. Defaults to `False`
-    """
-
-    def __init__(self, modes: Literal[...], case_sensitive: bool) -> None:  # type: ignore
-        self.case_sensitive: bool = case_sensitive
-        if not case_sensitive:
-            self.modes: list[str] = [mode.lower() for mode in map(str, modes.__args__)]  # type: ignore
-        else:
-            self.modes: list[str] = list(map(str, modes.__args__))  # type: ignore
-
-    async def convert(self, ctx: commands.Context[types.Bot], argument: str) -> str | None:
-        """The method that converts the argument passed in.
-
-        Parameters
-        ----------
-        ctx: :class:`Context`
-            The invocation context in which the argument is being using on.
-        argument: :class:`str`
-            The string that should get checked if it falls under any of the specified modes.
-
-        Returns
-        -------
-        Optional[str]
-            The mode that was accepted, if it falls under any of the specified modes.
-        """
-        is_upper: bool = argument.isupper()
-        if not self.case_sensitive:
-            argument = argument.lower()
-        if argument not in self.modes:
-            valid = ", ".join(f"`{mode}`" for mode in self.modes)
-            await ctx.send(
-                f"`{argument}` is not a valid mode. "
-                f"Case-sensitive is {'enabled' if self.case_sensitive else 'disabled'}. Acceptable modes are: {valid}"
-            )
-            return
-        return argument.upper() if is_upper else argument
-
-    def __class_getitem__(cls, item: Any) -> LiteralModes:  # type: ignore
-        # mostly just check that arguments were passed in correctly
-        if not isinstance(item, tuple):
-            item = (item, False)
-        if len(item) != 2:  # type: ignore
-            raise TypeError(
-                f"LiteralModes[...[, bool]] expected a maximum of 2 attributes, got {len(item)}"  # type: ignore
-            )
-        item, case_sensitive = item
-        item: Any
-        case_sensitive: bool
-        if type(item) != type(Literal[...]):  # type: ignore
-            raise TypeError(
-                f"LiteralModes[...[, bool]] expected a typing.Literal to be passed, "
-                f"not {item.__name__ if isinstance(item, type) else item.__class__.__name__}"
-            )
-        if any(i for i in item.__args__ if not isinstance(i, str)):
-            raise TypeError("LiteralModes[...[, bool]] should only have strings")
-        if not isinstance(case_sensitive, bool):
-            raise TypeError(
-                f"Case sensitive argument should be a bool, "
-                f"not {item.__name__ if isinstance(item, type) else item.__class__.__name__}"
-            )
-        return cls(item, case_sensitive)
 
 
 class MessageCodeblock:
