@@ -125,7 +125,7 @@ def plural(amount: int, singular: str, include_amount: bool = True) -> str:
     str
         The formatted string with its plural/singular form.
     """
-    _plural = singular + ("s" if not singular.endswith("s") else "'")
+    _plural = singular + ("s" if not singular.endswith("s") else "es")
     if singular == "is":
         _plural = "are"
     return (
