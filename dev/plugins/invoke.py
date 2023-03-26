@@ -11,7 +11,6 @@ Alterable command invocations.
 """
 from __future__ import annotations
 
-import time
 from typing import TYPE_CHECKING, Any, Literal, Union
 
 import discord
@@ -35,7 +34,7 @@ class RootInvoke(root.Plugin):
 
     @root.command("timeit", parent="dev", require_var_positional=True)
     async def root_timeit(self, ctx: commands.Context[types.Bot], timeout: float | None, *, command_name: str):
-        """Invoke a command and measure how long it takes to invoke finish.
+        """Invoke a command and measure how long it takes to finish.
         Optionally add a maximum amount of time that the command can take to finish executing.
         """
         kwargs = {"content": f"{ctx.prefix}{command_name}"}
@@ -43,13 +42,12 @@ class RootInvoke(root.Plugin):
         if invokable is None:
             return await send(ctx, f"Command `{command_name}` not found.")
 
-        info = TimedInfo(timeout=timeout)
+        timeit = TimedInfo(timeout=timeout)
         if timeout is not None:
-            self.bot.loop.create_task(info.wait_for(ctx.message))
-        info.start = time.perf_counter()
-        await self._execute_invokable(*invokable)
-        info.end = time.perf_counter()
-        await send(ctx, f"Command finished in {info.end - info.start:.3f}s.", forced=True)
+            self.bot.loop.create_task(timeit.wait_for(ctx.message.reply("Command timed out.", mention_author=False)))
+        with timeit:
+            await self._execute_invokable(*invokable)
+        await send(ctx, f"Command finished in {timeit.duration:.3f}s ({timeit}).", forced=True)
 
     @root.command("repeat", parent="dev", aliases=["repeat!"], require_var_positional=True)
     async def root_repeat(self, ctx: commands.Context[types.Bot], amount: int, *, command_name: str):

@@ -18,7 +18,7 @@ import io
 import itertools
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Callable, TextIO
+from typing import TYPE_CHECKING, Any, Callable, TextIO, TypeVar
 
 import discord
 from discord.ext import commands
@@ -31,7 +31,11 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self
 
+    from dev.types import Coro
+
 __all__ = ("ExceptionHandler", "GlobalLocals", "RelativeStandard", "TimedInfo", "replace_vars")
+
+T = TypeVar("T")
 
 
 class RelativeStandard(io.StringIO):
@@ -96,7 +100,7 @@ class TimedInfo:
             raise ValueError("End time has not been set")
         return self.end - self.start
 
-    async def wait_for(self, message: discord.Message) -> None:
+    async def wait_for(self, coro: Coro[T], /) -> T | None:
         """Wait for the timeout to end. If timeout is reached and :attr:`end` is not set, react to the given message.
 
         This function should be called as a task.
@@ -106,7 +110,7 @@ class TimedInfo:
             raise ValueError("Timeout cannot be None")
         await asyncio.sleep(timeout)
         if self.end is None:
-            await message.add_reaction("\u23f0")
+            return await coro
 
 
 class GlobalLocals:
