@@ -157,6 +157,7 @@ class Command(BaseCommand[CogT, ..., Any]):
                 raise RuntimeError(f"Could not find parent {self.parent!r} for {self.name!r}")
             if not isinstance(command, commands.Group):
                 raise RuntimeError(f"Parent {self.parent!r} of {self.name!r} is not commands.Group instance")
+            command.remove_command(self.name)
             deco = command.command
         else:
             deco = commands.command
@@ -193,6 +194,7 @@ class Group(BaseCommand[CogT, ..., Any]):
                 raise RuntimeError(f"Could not find a parent {self.parent!r} for {self.name!r}")
             if not isinstance(command, commands.Group):
                 raise RuntimeError(f"Parent {self.parent!r} of {self.name!r} is not commands.Group instance")
+            command.remove_command(self.name)
             deco = command.group
         else:
             deco = commands.group
