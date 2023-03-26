@@ -38,6 +38,7 @@ class RootManagement(root.Plugin):
 
     @root.command("settings", parent="dev")
     async def root_settings(self, ctx: commands.Context[types.Bot], settings: str | None = None):
+        """Change or edit this extension's configuration."""
         if settings is None:
             view = AuthoredView(ctx.author)
             SettingsToggler.from_view(view)
