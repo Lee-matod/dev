@@ -154,9 +154,9 @@ class Command(BaseCommand[CogT, ..., Any]):
         if self.parent:
             command = command_mapping.get(self.parent)
             if not command:
-                raise RuntimeError(f"Couldn't find {self.qualified_name} command's parent")
+                raise RuntimeError(f"Could not find parent {self.parent!r} for {self.name!r}")
             if not isinstance(command, commands.Group):
-                raise RuntimeError("Command's parent command is not commands.Group instance")
+                raise RuntimeError(f"Parent {self.parent!r} of {self.name!r} is not commands.Group instance")
             deco = command.command
         else:
             deco = commands.command
@@ -190,9 +190,9 @@ class Group(BaseCommand[CogT, ..., Any]):
         if self.parent:
             command = command_mapping.get(self.parent)
             if not command:
-                raise RuntimeError(f"Couldn't find {self.qualified_name} command's parent")
+                raise RuntimeError(f"Could not find a parent {self.parent!r} for {self.name!r}")
             if not isinstance(command, commands.Group):
-                raise RuntimeError("Group's parent command is not commands.Group instance")
+                raise RuntimeError(f"Parent {self.parent!r} of {self.name!r} is not commands.Group instance")
             deco = command.group
         else:
             deco = commands.group
