@@ -81,7 +81,6 @@ else:
 
     class Annotated:
         def __class_getitem__(cls, key: tuple[Any, ...]):
-            assert len(key) == 2
             return Union[key[1:]]
 
 
