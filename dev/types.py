@@ -28,7 +28,7 @@ __all__ = (
 if TYPE_CHECKING:
     from typing import Sequence
 
-    from typing_extensions import Annotated  # type: ignore
+    from typing_extensions import Annotated  # pyright: ignore [reportUnusedImport]
 
     from dev.root import Plugin
 
@@ -80,9 +80,9 @@ else:
     User = (discord.ClientUser, discord.Member, discord.User)
 
     class Annotated:
-        def __class_getitem__(self, key: tuple[Any, Any]):
+        def __class_getitem__(cls, key: tuple[Any, ...]):
             assert len(key) == 2
-            return key[1]
+            return Union[key[1:]]
 
 
 T = TypeVar("T")
