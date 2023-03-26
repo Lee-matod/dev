@@ -17,6 +17,7 @@ import inspect
 import io
 import itertools
 import sys
+import time
 from typing import TYPE_CHECKING, Any, Callable, TextIO
 
 import discord
@@ -27,6 +28,8 @@ from dev.utils.utils import format_exception
 
 if TYPE_CHECKING:
     from types import TracebackType
+
+    from typing_extensions import Self
 
 __all__ = ("ExceptionHandler", "GlobalLocals", "RelativeStandard", "TimedInfo", "replace_vars")
 
@@ -64,8 +67,37 @@ class TimedInfo:
         self.start: float | None = None
         self.end: float | None = None
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} start={self.start} end={self.end} timeout={self.timeout}>"
+
+    def __int__(self) -> int:
+        return int(self.duration)
+
+    def __float__(self) -> float:
+        return self.duration
+
+    def __str__(self) -> str:
+        mins, secs = divmod(self.duration, 60)
+        hrs, mins = divmod(mins, 60)
+        return f"{hrs}:{mins}:{secs}"
+
+    def __enter__(self) -> Self:
+        self.start = time.perf_counter()
+        return self
+
+    def __exit__(self, *_: Any) -> None:
+        self.end = time.perf_counter()
+
+    @property
+    def duration(self) -> float:
+        if self.start is None:
+            raise ValueError("Start time has not been set")
+        elif self.end is None:
+            raise ValueError("End time has not been set")
+        return self.end - self.start
+
     async def wait_for(self, message: discord.Message) -> None:
-        """Wait for the timeout to end. If timeout is reached and `end` is not set, react to the given message.
+        """Wait for the timeout to end. If timeout is reached and :attr:`end` is not set, react to the given message.
 
         This function should be called as a task.
         """
