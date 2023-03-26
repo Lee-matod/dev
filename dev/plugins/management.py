@@ -40,7 +40,7 @@ class RootManagement(root.Plugin):
     async def root_settings(self, ctx: commands.Context[types.Bot], settings: str | None = None):
         if settings is None:
             view = AuthoredView(ctx.author)
-            SettingsToggler.add_buttons(view)
+            SettingsToggler.from_view(view)
             return await send(ctx, view)
         changed: list[str] = []  # a formatted version of the settings that were changed
         raw_changed = {}

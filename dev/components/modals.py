@@ -23,7 +23,7 @@ from dev.utils.startup import Settings
 if TYPE_CHECKING:
     from dev.components.views import ModalSender
 
-__all__ = ("SettingEditor", "VariableValueSubmitter")
+__all__ = ("SettingsEditor", "VariableValueSubmitter")
 
 
 class VariableValueSubmitter(discord.ui.Modal):
@@ -41,7 +41,7 @@ class VariableValueSubmitter(discord.ui.Modal):
         await interaction.response.edit_message(content=f"Successfully {fmt} `{self.name}`", view=None)
 
 
-class SettingEditor(discord.ui.Modal):
+class SettingsEditor(discord.ui.Modal):
     def __init__(self, setting: str) -> None:
         self.setting: str = setting
         self.setting_obj: set[int] | str = getattr(Settings, setting)

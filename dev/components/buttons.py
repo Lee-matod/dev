@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import discord
 
-from dev.components.modals import SettingEditor
+from dev.components.modals import SettingsEditor
 from dev.components.views import AuthoredView
 from dev.utils.functs import interaction_response
 from dev.utils.startup import Settings
@@ -32,7 +32,7 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
             self.style = discord.ButtonStyle.blurple
 
     @classmethod
-    def add_buttons(cls, view: AuthoredView, /) -> None:
+    def from_view(cls, view: AuthoredView, /) -> None:
         for setting in Settings.kwargs:
             fmt = " ".join(word.lower() if len(word) <= 2 else word.title() for word in setting.split("_"))
             view.add_item(cls(setting, view.author, label=fmt))
@@ -41,7 +41,7 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
         if self.setting not in [sett for sett, ann in Settings.mapping.items() if ann == bool]:
             label = self.label
             if label is not None:
-                return await interaction.response.send_modal(SettingEditor(label.replace(" ", "_").lower()))
+                return await interaction.response.send_modal(SettingsEditor(label.replace(" ", "_").lower()))
             return await interaction_response(
                 interaction,
                 discord.InteractionResponseType.channel_message,
@@ -56,5 +56,5 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
             setattr(Settings, setting, True)
             self.style = discord.ButtonStyle.green
         view = AuthoredView(self.author)
-        self.add_buttons(view)
+        self.from_view(view)
         await interaction_response(interaction, discord.InteractionResponseType.message_update, view)
