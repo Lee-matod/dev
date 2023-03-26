@@ -11,26 +11,19 @@ All :class:`discord.ui.Modal` related classes.
 """
 from __future__ import annotations
 
-import ast
-import contextlib
-import io
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import discord
 
 from dev.converters import str_ints
-from dev.handlers import ExceptionHandler
 from dev.root import Plugin
 from dev.utils.functs import interaction_response
 from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
-    from discord.ext import commands
-
-    from dev import types
     from dev.components.views import ModalSender
 
-__all__ = ("CodeEditor", "SettingEditor", "VariableValueSubmitter")
+__all__ = ("SettingEditor", "VariableValueSubmitter")
 
 
 class VariableValueSubmitter(discord.ui.Modal):
@@ -46,89 +39,6 @@ class VariableValueSubmitter(discord.ui.Modal):
         Plugin.scope.update({self.name: self.value.value})
         fmt = "created new variable" if self.new else "edited"
         await interaction.response.edit_message(content=f"Successfully {fmt} `{self.name}`", view=None)
-
-
-class CodeEditor(discord.ui.Modal):
-    code: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(
-        label="Code inspection for 'command'", style=discord.TextStyle.long
-    )
-
-    def __init__(self, ctx: commands.Context[types.Bot], command: types.Command, root: Plugin) -> None:
-        self.code.label = self.code.label.replace("command", command.qualified_name)
-
-        super().__init__(title=f"{command.name}'s Script")
-        self.command: types.Command = command
-        self.ctx: commands.Context[types.Bot] = ctx
-        self.root: Plugin = root
-
-    async def on_submit(self, interaction: discord.Interaction, /) -> None:
-        self.ctx.bot.remove_command(self.command.qualified_name)
-        lcls: dict[str, Any] = {"discord": discord, "commands": commands, "bot": self.ctx.bot}
-        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            async with ExceptionHandler(
-                self.ctx.message, lambda *_: self.ctx.bot.add_command(self.command)  # type: ignore
-            ):
-                # make sure everything is parsed correctly
-                parsed = ast.parse(self.code.value)
-                if [ast.AsyncFunctionDef] != [type(expr) for expr in parsed.body]:
-                    self.ctx.bot.add_command(self.command)
-                    return await interaction_response(
-                        interaction,
-                        discord.InteractionResponseType.message_update,
-                        "Top-level code should consist of a single asynchronous function.",
-                        view=None,
-                    )
-                # prepare variables for script wrapping
-                func: ast.AsyncFunctionDef = parsed.body[-1]  # type: ignore
-                upper = "\n".join(self.code.value.split("\n")[: func.lineno - 1])
-
-                exec(
-                    f"async def func():\n"
-                    f"\t{upper}\n"
-                    "\tasync def {func.name}({parameters}\n"
-                    "{body}\n"
-                    "\treturn {func.name}",
-                    lcls,
-                )
-                obj: commands.Command[Any, ..., Any] | commands.Group[Any, ..., Any] = await lcls["func"]()
-                # check after execution
-                if not isinstance(obj, (commands.Command, commands.Group)):
-                    self.ctx.bot.add_command(self.command)
-                    return await interaction_response(
-                        interaction,
-                        discord.InteractionResponseType.message_update,
-                        "Top-level function should be a command-like object.",
-                        view=None,
-                    )
-                if obj.qualified_name != self.command.qualified_name:
-                    self.ctx.bot.remove_command(obj.qualified_name)
-                    self.ctx.bot.add_command(self.command)
-                    return await interaction_response(
-                        interaction,
-                        discord.InteractionResponseType.message_update,
-                        "The command's name cannot be changed.",
-                        view=None,
-                    )
-                if isinstance(self.command, commands.Group):
-                    if not isinstance(obj, commands.Group):
-                        self.ctx.bot.remove_command(obj.qualified_name)
-                        self.ctx.bot.add_command(self.command)
-                        return await interaction_response(
-                            interaction,
-                            discord.InteractionResponseType.message_update,
-                            "The command provided was initially a group, but override did not make this attribute persist.",
-                            view=None,
-                        )
-                    for child in self.command.commands:
-                        obj.add_command(child)
-                obj.cog = self.command.cog
-                if self.command.parent is not None:
-                    command.parent.add_command(obj)  # type: ignore
-                elif obj not in self.ctx.bot.commands:
-                    self.bot.add_command(obj)  # type: ignore
-        await interaction_response(
-            interaction, discord.InteractionResponseType.message_update, "New script has been submitted.", view=None
-        )
 
 
 class SettingEditor(discord.ui.Modal):

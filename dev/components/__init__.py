@@ -17,7 +17,6 @@ from dev.components.views import *
 __all__ = (
     "AuthoredView",
     "BoolInput",
-    "CodeEditor",
     "ModalSender",
     "PermissionsSelector",
     "SearchCategory",
