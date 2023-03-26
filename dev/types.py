@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Annotated  # type: ignore
 
-    from dev.root import Container
+    from dev.root import Plugin
 
     Bot = Union[commands.Bot, commands.AutoShardedBot]
     Channel = Union[
@@ -90,7 +90,7 @@ else:
 
 T = TypeVar("T")
 Coro = Coroutine[Any, Any, T]
-CogT = TypeVar("CogT", bound="Optional[Container]")
+CogT = TypeVar("CogT", bound="Optional[Plugin]")
 
 
 class Invokeable(Protocol):

@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
     P = ParamSpec("P")
 
-__all__ = ("Container", "command", "group")
+__all__ = ("Plugin", "command", "group")
 
 _log = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def group(
     return decorator
 
 
-class Container(commands.Cog):
+class Plugin(commands.Cog):
     """A cog subclass that implements a global check and some default functionality
     that the dev extension should have.
 
@@ -108,12 +108,12 @@ class Container(commands.Cog):
 
     scope: ClassVar[GlobalLocals] = GlobalLocals()
     cached_messages: ClassVar[dict[int, discord.Message]] = {}
-    _subclasses: set[type[Container]] = set()
+    _subclasses: set[type[Plugin]] = set()
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         #  Only allow direct subclasses of Container to be added, otherwise cog conflict may occur.
-        if cls.__base__ == Container:
-            Container._subclasses.add(cls)
+        if cls.__base__ == Plugin:
+            Plugin._subclasses.add(cls)
         super().__init_subclass__()
 
     def __init__(self, bot: types.Bot) -> None:
@@ -129,7 +129,7 @@ class Container(commands.Cog):
                         Group: "group",
                         Command: "command",
                     }
-                    as_method: type[Command[Container]] | type[Group[Container]] | None = mapping.get(
+                    as_method: type[Command[Plugin]] | type[Group[Plugin]] | None = mapping.get(
                         type(original)  # type: ignore
                     )
                     if as_method != type(cmd):
@@ -157,19 +157,19 @@ class Container(commands.Cog):
                 if actual.qualified_name == actual.name:
                     #  Top level command
                     bot.add_command(actual)
-                if type(self).__base__ == Container:
+                if type(self).__base__ == Plugin:
                     actual.cog = frontend_cog  # type: ignore
                 else:
                     self.__dict__.update(frontend_cog.__dict__)
                     actual.cog = self
                 frontend_cog.commands[actual.qualified_name] = actual  # type: ignore
             return
-        if type(self).__base__ == Container:
+        if type(self).__base__ == Plugin:
             return
         self.commands: dict[str, types.Command] = {}
         self.registrations: dict[int, CommandRegistration | SettingRegistration] = {}
 
-        root_commands: list[Command[Container] | Group[Container]] = list(_get_commands(tuple(Container._subclasses)))
+        root_commands: list[Command[Plugin] | Group[Plugin]] = list(_get_commands(tuple(Plugin._subclasses)))
         root_commands.sort(key=lambda c: c.level)
         for command in root_commands:
             command.cog = self
@@ -302,18 +302,18 @@ class Container(commands.Cog):
             time_since_created = int(discord.utils.utcnow().timestamp() - created_at)
             return time_since_created >= 120
 
-        message_ids: Iterable[int] = filter(function, Container.cached_messages.copy())
+        message_ids: Iterable[int] = filter(function, Plugin.cached_messages.copy())
         for _id in message_ids:
-            del Container.cached_messages[_id]
+            del Plugin.cached_messages[_id]
 
 
-def _get_commands(cls: tuple[type, ...]) -> set[Command[Container] | Group[Container]]:
-    cmds: set[Command[Container] | Group[Container]] = set()
+def _get_commands(cls: tuple[type, ...]) -> set[Command[Plugin] | Group[Plugin]]:
+    cmds: set[Command[Plugin] | Group[Plugin]] = set()
     for kls in cls:
-        if issubclass(kls, Container):
-            _log.debug("Loading Container class %r", kls)
+        if issubclass(kls, Plugin):
+            _log.debug("Loading Plugin class %r", kls)
         for val in kls.__dict__.values():
             if isinstance(val, (Command, Group)):
-                cmd: Command[Container] | Group[Container] = val
+                cmd: Command[Plugin] | Group[Plugin] = val
                 cmds.add(cmd)
     return cmds

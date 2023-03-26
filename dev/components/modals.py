@@ -22,7 +22,7 @@ import discord
 from dev.converters import str_ints
 from dev.handlers import ExceptionHandler
 from dev.registrations import CommandRegistration, Over
-from dev.root import Container
+from dev.root import Plugin
 from dev.utils.functs import interaction_response
 from dev.utils.startup import Settings
 
@@ -45,7 +45,7 @@ class VariableValueSubmitter(discord.ui.Modal):
         self.new: bool = new
 
     async def on_submit(self, interaction: discord.Interaction, /) -> None:
-        Container.scope.update({self.name: self.value.value})
+        Plugin.scope.update({self.name: self.value.value})
         fmt = "created new variable" if self.new else "edited"
         await interaction.response.edit_message(content=f"Successfully {fmt} `{self.name}`", view=None)
 
@@ -55,7 +55,7 @@ class CodeEditor(discord.ui.Modal):
         label="Code inspection for 'command'", style=discord.TextStyle.long
     )
 
-    def __init__(self, ctx: commands.Context[types.Bot], command: types.Command, root: Container) -> None:
+    def __init__(self, ctx: commands.Context[types.Bot], command: types.Command, root: Plugin) -> None:
         impl = root.get_last_implementation(command.qualified_name)
         assert impl is not None, "Managed to get to modal __init__ even though no registrations were found"
         self.code.label = self.code.label.replace("command", command.qualified_name)
@@ -64,7 +64,7 @@ class CodeEditor(discord.ui.Modal):
         super().__init__(title=f"{command.name}'s Script")
         self.command: types.Command = command
         self.ctx: commands.Context[types.Bot] = ctx
-        self.root: Container = root
+        self.root: Plugin = root
 
     async def on_submit(self, interaction: discord.Interaction, /) -> None:
         self.ctx.bot.remove_command(self.command.qualified_name)
