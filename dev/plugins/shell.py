@@ -87,8 +87,8 @@ class RootShell(root.Plugin):
     @root.command("shell", parent="dev", aliases=["sh", "cmd", "bash", "ps"])
     async def root_shell(self, ctx: commands.Context[types.Bot], *, script: Annotated[str, clean_code]):
         """Invoke and evaluate shell commands.
-        After initiating a new session, all new commands must be prefixed with the interface's
-        prefix (e.g `$` for bash/shell, `PS>` for powershell, etc).
+        After initiating a new session, reply to the message containing the terminal output to send
+        a new command to the console.
         Type `exit` to quit the session.
         """
         if ctx.author.id in self.active_shell_sessions:
@@ -102,9 +102,11 @@ class RootShell(root.Plugin):
 
             def check(msg: discord.Message) -> bool:
                 return (
-                    msg.author == ctx.author
+                    msg.reference is not None
+                    and process.message is not None
+                    and msg.reference.message_id == process.message.id
+                    and msg.author == ctx.author
                     and msg.channel == ctx.channel
-                    and msg.content.startswith(shell.interface.lower())
                 )
 
             while not shell.terminated and not process.is_alive:
@@ -119,7 +121,14 @@ class RootShell(root.Plugin):
                         forced_pagination=False,
                         paginator=shell.paginator,
                     )
-                with shell(message.content[len(shell.interface) :].strip()) as process:
+                if shell.terminated:  # Early check to prevent errors
+                    return await send(
+                        ctx,
+                        shell.set_exit_message(f"Return code: `{process.close_code}`"),
+                        forced_pagination=False,
+                        paginator=shell.paginator,
+                    )
+                with shell(message.content) as process:
                     await process.run_until_complete(ctx)
                 await asyncio.sleep(0)
             await send(

@@ -116,6 +116,7 @@ class Process:
     __slots__ = (
         "__session",
         "_initial_command",
+        "_message",
         "close_code",
         "cmd",
         "force_kill",
@@ -163,6 +164,7 @@ class Process:
                     self.__session.terminated = True
                     break
         self.close_code: int | None = None
+        self._message: discord.Message | None = None
 
     def __repr__(self) -> str:
         return (
@@ -185,6 +187,13 @@ class Process:
         if self.is_alive:
             return _SigKill(author, self)
         return None
+
+    @property
+    def message(self) -> discord.Message | None:
+        """Optional[:class:`discord.Message`]
+        The Discord message that is being used as a terminal, if any.
+        """
+        return self._message
 
     @overload
     async def run_until_complete(self, /) -> str | None:
@@ -221,13 +230,14 @@ class Process:
                 if context is None:
                     stdout = self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}")
                 else:
-                    _, paginator = await send(  # type: ignore
+                    message, paginator = await send(  # type: ignore
                         context,
                         self.__session.add_line(f"{self.__session.interface} {self.cmd.strip()}"),
                         self._get_view(context.author),  # type: ignore
                         paginator=self.__session.paginator,
                         forced_pagination=False,
                     )
+                    self._message = message
                     if paginator is not None:
                         self.__session.paginator = paginator
             if self.__session.terminated:
@@ -270,7 +280,7 @@ class Process:
                 if context is None:
                     stdout = self.__session.add_line(line)
                     continue
-                _, paginator = await send(
+                message, paginator = await send(
                     context,
                     self.__session.add_line(line),
                     forced_pagination=False,
@@ -281,13 +291,14 @@ class Process:
                 if context is None:
                     stdout = self.__session.raw
                     continue
-                _, paginator = await send(
+                message, paginator = await send(
                     context,
                     self.__session.raw,
                     forced_pagination=False,
                     paginator=self.__session.paginator,  # type: ignore
                     view=self._get_view(context.author),
                 )
+            self._message = message
             if paginator is not None:
                 self.__session.paginator = paginator
         if context is None:
