@@ -102,7 +102,7 @@ class RootCommand(root.Plugin):
             bot_summary = f"This bot is not sharded, "
         brief.append(
             bot_summary
-            + f"and can see {plural(len(self.bot.guilds), 'guild')} and {plural(len(self.bot.users), 'users')}."
+            + f"and can see {plural(len(self.bot.guilds), 'guild')} and {plural(len(self.bot.users), 'user')}."
         )
         translator = {True: "enabled", False: "disabled", None: "unknown"}
         intent_info: list[str] = []
