@@ -33,6 +33,14 @@ T = TypeVar("T")
 __all__ = ("Command", "DiscordCommand", "DiscordGroup", "Group")
 
 
+def copy_commands_to(group: commands.Group[Any, ..., Any], cmds: set[commands.Command[Any, ..., Any]], /) -> None:
+    for child in cmds:
+        try:
+            group.add_command(child)
+        except commands.CommandRegistrationError:
+            pass
+
+
 class _DiscordMixin:
     __global_use__: bool | None
     __virtual_vars__: bool
@@ -119,7 +127,7 @@ class BaseCommand(Generic[CogT, P, T]):
             return f"{self.parent} {self.name}"
         return self.name
 
-    def to_instance(self, command_mapping: dict[str, types.Command], /) -> types.Command:
+    def to_instance(self, bot: types.Bot, command_mapping: dict[str, types.Command] | None = None, /) -> types.Command:
         raise NotImplementedError
 
     def error(
@@ -138,7 +146,7 @@ class Command(BaseCommand[CogT, ..., Any]):
     Instead, consider using :meth:`root.command` to instantiate this class.
     """
 
-    def to_instance(self, command_mapping: dict[str, types.Command], /) -> commands.Command[CogT, ..., Any]:
+    def to_instance(self, bot: types.Bot, command_mapping: dict[str, types.Command] | None = None, /) -> commands.Command[CogT, ..., Any]:
         """Converts this class to an instance of its respective simulation.
 
         Parameters
@@ -151,6 +159,8 @@ class Command(BaseCommand[CogT, ..., Any]):
         discord.ext.commands.Command
             The command class made using the given attributes of this temporary class.
         """
+        if command_mapping is None:
+            command_mapping = {c.qualified_name: c for c in bot.commands}
         if self.parent:
             command = command_mapping.get(self.parent)
             if not command:
@@ -160,8 +170,9 @@ class Command(BaseCommand[CogT, ..., Any]):
             command.remove_command(self.name)
             deco = command.command
         else:
+            bot.remove_command(self.name)
             deco = commands.command
-        cmd: commands.Command[CogT, ..., Any] = deco(name=self.name, cls=DiscordCommand, **self.kwargs)(self.callback)
+        cmd: commands.Command[CogT, ..., Any] = deco(name=self.name, cls=self.__class__, **self.kwargs)(self.callback)
         if self.on_error:
             cmd.error(self.on_error)
         return cmd
@@ -175,7 +186,7 @@ class Group(BaseCommand[CogT, ..., Any]):
     Instead, consider using :meth:`root.group` to instantiate this class.
     """
 
-    def to_instance(self, command_mapping: dict[str, types.Command], /) -> commands.Group[CogT, ..., Any]:
+    def to_instance(self, bot: types.Bot, command_mapping: dict[str, types.Command] | None = None, /) -> commands.Group[CogT, ..., Any]:
         """Converts this class to an instance of its respective simulation.
 
         Parameters
@@ -188,17 +199,26 @@ class Group(BaseCommand[CogT, ..., Any]):
         discord.ext.commands.Group
             The group class made using the given attributes of this temporary class.
         """
+        if command_mapping is None:
+            command_mapping = {c.qualified_name: c for c in bot.commands}
+        children: set[commands.Command[Any, ..., Any]] = set()
         if self.parent:
             command = command_mapping.get(self.parent)
             if not command:
                 raise RuntimeError(f"Could not find a parent {self.parent!r} for {self.name!r}")
             if not isinstance(command, commands.Group):
                 raise RuntimeError(f"Parent {self.parent!r} of {self.name!r} is not commands.Group instance")
-            command.remove_command(self.name)
+            old_command = command.remove_command(self.name)
+            if old_command is not None and isinstance(old_command, commands.Group):
+                children.update(old_command.commands)
             deco = command.group
         else:
+            old_command = bot.remove_command(self.name)
+            if old_command is not None and isinstance(old_command, commands.Group):
+                children.update(old_command.commands)
             deco = commands.group
-        cmd: commands.Group[CogT, ..., Any] = deco(name=self.name, cls=DiscordGroup, **self.kwargs)(self.callback)
+        cmd: commands.Group[CogT, ..., Any] = deco(name=self.name, cls=self.__class__, **self.kwargs)(self.callback)
+        copy_commands_to(cmd, children)
         if self.on_error:
             cmd.error(self.on_error)
         return cmd

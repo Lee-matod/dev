@@ -102,7 +102,7 @@ class Plugin(commands.Cog):
         A dictionary that stores all dev commands.
     """
 
-    __plugin_commands__: dict[str, commands.Command[Self, ..., Any]] = {}
+    __plugin_commands__: list[commands.Command[Self, ..., Any]] = []
 
     scope: ClassVar[GlobalLocals] = GlobalLocals()
     cached_messages: ClassVar[dict[int, discord.Message]] = {}
@@ -113,14 +113,34 @@ class Plugin(commands.Cog):
         root_commands: list[Command[Plugin] | Group[Plugin]] = list(self.__get_commands())
         root_commands.sort(key=lambda c: c.level)
         for command in root_commands:
-            command = command.to_instance({**self.commands, **Plugin.__plugin_commands__})
+            command = command.to_instance(
+                self.bot, {**self.commands, **{c.qualified_name: c for c in Plugin.__plugin_commands__}}
+            )
             command.cog = self
             self.commands[command.qualified_name] = command
 
-        Plugin.__plugin_commands__.update(self.commands)
-        self.__cog_commands__ = [*self.__cog_commands__, *self.commands.values()]
+        Plugin.__plugin_commands__.extend(self.commands.values())
+        self.__cog_commands__ = list({*self.commands.values(), *self.__cog_commands__})
 
         self._clear_cached_messages.start()
+
+    async def cog_unload(self) -> None:
+        self._clear_cached_messages.cancel()
+
+    async def _eject(self, bot: types.Bot, guild_ids: Iterable[int] | None) -> None:  # type: ignore
+        await super()._eject(bot, guild_ids)
+        for command in self.commands.values():
+            Plugin.__plugin_commands__.remove(command)
+            if command.parent is not None:
+                command.parent.remove_command(command.name)
+                add_command = command.parent.add_command
+            else:
+                add_command = bot.add_command
+            second_command = discord.utils.get(
+                reversed(Plugin.__plugin_commands__), qualified_name=command.qualified_name
+            )
+            if second_command is not None:
+                add_command(second_command)
 
     def __get_commands(self) -> list[Command[Plugin] | Group[Plugin]]:
         cmds: dict[str, Command[Plugin] | Group[Plugin]] = {}
