@@ -15,7 +15,6 @@ import asyncio
 import contextlib
 import inspect
 import io
-import itertools
 import sys
 import time
 from typing import TYPE_CHECKING, Any, Callable, TextIO, TypeVar
@@ -23,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Callable, TextIO, TypeVar
 import discord
 from discord.ext import commands
 
-from dev.utils.startup import Settings
+from dev.scope import Scope, Settings
 from dev.utils.utils import format_exception
 
 if TYPE_CHECKING:
@@ -33,7 +32,7 @@ if TYPE_CHECKING:
 
     from dev.types import Coro
 
-__all__ = ("ExceptionHandler", "GlobalLocals", "RelativeStandard", "TimedInfo", "replace_vars")
+__all__ = ("ExceptionHandler", "RelativeStandard", "TimedInfo", "replace_vars")
 
 T = TypeVar("T")
 
@@ -111,130 +110,6 @@ class TimedInfo:
         await asyncio.sleep(timeout)
         if self.end is None:
             return await coro
-
-
-class GlobalLocals:
-    """Allows variables to be stored within a class instance, instead of a global scope or a dictionary.
-
-    Parameters
-    ----------
-    __globals: Optional[Dict[:class:`str`, Any]]
-        Global scope variables. Acts the same way as :meth:`globals()`.
-        Defaults to ``None``.
-    __locals: Optional[Dict[:class:`str`, Any]]
-        Local scope variables. Acts the same way as :meth:`locals()`.
-        Defaults to ``None``.
-
-    Notes
-    -----
-    When getting items, the global scope is prioritized over the local scope.
-    """
-
-    def __init__(self, __globals: dict[str, Any] | None = None, __locals: dict[str, Any] | None = None, /) -> None:
-        self.globals: dict[str, Any] = __globals or {}
-        self.locals: dict[str, Any] = __locals or {}
-
-    def __repr__(self) -> str:
-        return f"<GlobalLocals globals={self.globals} locals={self.locals}"
-
-    def __bool__(self) -> bool:
-        return bool(self.globals or self.locals)
-
-    def __delitem__(self, key: Any) -> None:
-        glob_exc, loc_ext = False, False
-        try:
-            del self.globals[key]
-        except KeyError:
-            glob_exc = True
-        try:
-            del self.locals[key]
-        except KeyError:
-            loc_ext = True
-        if glob_exc and loc_ext:
-            raise KeyError(key)
-
-    def __getitem__(self, item: Any) -> Any:
-        try:
-            return self.globals[item]
-        except KeyError:
-            return self.locals[item]
-
-    def __len__(self) -> int:
-        return len(self.globals) + len(self.locals)
-
-    def items(self) -> tuple[tuple[Any, Any], ...]:
-        """Returns a tuple of all global and local scopes with their respective key-value pairs.
-
-        Returns
-        -------
-        Tuple[Tuple[Any, Any], ...]
-            A joined tuple of global and local variables from the current scope.
-        """
-        return tuple(itertools.chain(self.globals.items(), self.locals.items()))
-
-    def keys(self) -> tuple[Any, ...]:
-        """Returns a tuple of keys of all global and local scopes.
-
-        Returns
-        -------
-        Tuple[Any, ...]
-            A tuple containing the list of global and local keys from the current scope.
-        """
-        return tuple(itertools.chain(self.globals.keys(), self.locals.keys()))
-
-    def values(self) -> tuple[Any, ...]:
-        """Returns a tuple of values of all global and local scopes.
-
-        Returns
-        -------
-        Tuple[Any, ...]
-            A tuple containing the list of global and local values from the current scope.
-        """
-        return tuple(itertools.chain(self.globals.values(), self.locals.values()))
-
-    def get(self, item: Any, default: Any = None) -> Any:
-        """Get an item from either the global scope or the locals scope.
-
-        Global scope will be searched first, then local scope and if no item is found, the default will be returned.
-        It's best to use this when you are just trying to get a value without worrying about the scope.
-
-        Parameters
-        ----------
-        item: Any
-            The item that should be searched for in the scopes.
-        default: Any
-            An argument that should be returned if no value was found. Defaults to ``None``.
-
-        Returns
-        -------
-        Any
-            The value of the item that was found, if it was found.
-        """
-        try:
-            res = self.globals[item]
-        except KeyError:
-            try:
-                res = self.locals[item]
-            except KeyError:
-                return default
-        return res
-
-    def update(
-        self, __new_globals: dict[str, Any] | None = None, __new_locals: dict[str, Any] | None = None, /
-    ) -> None:
-        """Update the current instance of variables with new ones.
-
-        Parameters
-        ----------
-        __new_globals: Optional[Dict[:class:`str`, Any]]
-            New instances of global variables.
-        __new_locals: Optional[Dict[:class:`str`, Any]]
-            New instances of local variables.
-        """
-        if __new_globals is not None:
-            self.globals.update(__new_globals)
-        if __new_locals is not None:
-            self.locals.update(__new_locals)
 
 
 class ExceptionHandler:
@@ -333,7 +208,7 @@ class ExceptionHandler:
         cls.debug = False
 
 
-def replace_vars(string: str, scope: GlobalLocals) -> str:
+def replace_vars(string: str, scope: Scope) -> str:
     """Replaces any instance of virtual variables with their respective values and returns the parsed string.
 
     Parameters
@@ -349,5 +224,5 @@ def replace_vars(string: str, scope: GlobalLocals) -> str:
         The converted string with the values of the virtual variables.
     """
     for (key, value) in scope.items():
-        string = string.replace(Settings.virtual_vars % key, value)
+        string = string.replace(Settings.VIRTUAL_VARS % key, value)
     return string

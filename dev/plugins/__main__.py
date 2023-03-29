@@ -23,8 +23,8 @@ import psutil
 from discord.ext import commands
 
 from dev import root
+from dev.scope import Settings
 from dev.utils.functs import send
-from dev.utils.startup import Settings
 from dev.utils.utils import plural
 
 if TYPE_CHECKING:
@@ -136,7 +136,7 @@ class RootCommand(root.Plugin):
         #  We do not care about that stuff, so just ignore.
         if before.content == after.content:
             return
-        if Settings.invoke_on_edit:
+        if Settings.INVOKE_ON_EDIT:
             prefix = await self.bot.get_prefix(after)
             if isinstance(prefix, list):
                 prefix = tuple(prefix)

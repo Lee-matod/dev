@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from typing_extensions import ParamSpec
 
     from dev import types
-    from dev.handlers import GlobalLocals
+    from dev.scope import Scope
     from dev.types import Coro
 
     P = ParamSpec("P")
@@ -596,11 +596,11 @@ class Execute:
 
     __slots__ = ("args_name", "args_value", "code", "vars", "_executor")
 
-    def __init__(self, code: str, global_locals: GlobalLocals, args: dict[str, Any]) -> None:
+    def __init__(self, code: str, scope: Scope, args: dict[str, Any]) -> None:
         self.code: str = code
-        self.vars: GlobalLocals = global_locals
+        self.vars: Scope = scope
         self.args_name: list[str] = ["_self_variables", *args.keys()]
-        self.args_value: list[Any] = [global_locals, *args.values()]
+        self.args_value: list[Any] = [scope, *args.values()]
         self._executor: Callable[..., AsyncGenerator[Any, Any] | Coro[Any]] | None = None
 
     @property
@@ -608,7 +608,7 @@ class Execute:
         if self._executor is not None:
             return self._executor
         exec(compile(self.wrapper(), "<repl>", "exec"), self.vars.globals, self.vars.locals)
-        self._executor = self.vars.get("_executor")
+        self._executor = self.vars["_executor"]
         return self._executor
 
     @property

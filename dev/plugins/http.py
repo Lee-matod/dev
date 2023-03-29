@@ -20,8 +20,8 @@ import discord
 
 from dev import root
 from dev.handlers import replace_vars
+from dev.scope import Settings
 from dev.utils.functs import flag_parser, send
-from dev.utils.startup import Settings
 from dev.utils.utils import responses
 
 if TYPE_CHECKING:
@@ -75,7 +75,7 @@ class RootHTTP(root.Plugin):
         if url.startswith("<") and url.endswith(">"):
             url = url[1:-1]
         try:
-            kwargs = flag_parser(replace_vars(options or "", self.scope), Settings.flag_delimiter.strip())
+            kwargs = flag_parser(replace_vars(options or "", self.scope), Settings.FLAG_DELIMITER.strip())
         except json.JSONDecodeError as exc:
             return await send(ctx, f"Parsing options failed. {exc}")
         async with aiohttp.ClientSession() as session:

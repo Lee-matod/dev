@@ -11,7 +11,6 @@ Bot and extension management commands.
 """
 from __future__ import annotations
 
-import json
 import pathlib
 import time
 from typing import TYPE_CHECKING, Any, Literal
@@ -22,9 +21,7 @@ from discord.ext import commands
 
 from dev import root
 from dev.components import AuthoredView, PermissionsSelector, SettingsToggler
-from dev.converters import str_bool, str_ints
-from dev.utils.functs import flag_parser, send
-from dev.utils.startup import Settings
+from dev.utils.functs import send
 from dev.utils.utils import codeblock_wrapper, escape, format_exception, plural
 
 if TYPE_CHECKING:
@@ -37,53 +34,11 @@ class RootManagement(root.Plugin):
     """Management commands for this extension and the bot"""
 
     @root.command("settings", parent="dev")
-    async def root_settings(self, ctx: commands.Context[types.Bot], settings: str | None = None):
+    async def root_settings(self, ctx: commands.Context[types.Bot]):
         """Change or edit this extension's configuration."""
-        if settings is None:
-            view = AuthoredView(ctx.author)
-            SettingsToggler.from_view(view)
-            return await send(ctx, view)
-        changed: list[str] = []  # a formatted version of the settings that were changed
-        raw_changed = {}
-        try:
-            new_settings = flag_parser(settings, "=")
-        except json.JSONDecodeError as exc:
-            return await send(ctx, f"Syntax error: {exc}")
-        error_settings: list[str] = []
-        for key in new_settings:
-            key = key.lower()
-            if key.startswith("_"):
-                continue
-            if not hasattr(Settings, key):
-                error_settings.append(key)
-        if error_settings:
-            return await send(ctx, f"{plural(len(error_settings), 'Setting')} not found: {', '.join(error_settings)}")
-        for key, attr in new_settings.items():
-            str_setting = key.lower()
-            setting = getattr(Settings, str_setting)
-            raw_changed[key] = setting
-            try:
-                if isinstance(setting, bool):
-                    setattr(Settings, str_setting, str_bool(attr))
-                elif isinstance(setting, set):
-                    setattr(Settings, str_setting, set(str_ints(attr)))
-                else:
-                    setattr(Settings, str_setting, attr)
-            except (ValueError, NotADirectoryError) as exc:
-                for k, v in raw_changed.items():  # type: ignore
-                    setattr(Settings, k, v)  # type: ignore
-                return await send(ctx, f"Invalid value for Settings.{key}: `{exc}`")
-            changed.append(f"Settings.{str_setting}={attr}")
-        await send(
-            ctx,
-            discord.Embed(
-                title="Settings Changed" if changed else "Nothing Changed",
-                description="`" + "`\n`".join(changed) + "`"
-                if changed
-                else "No changes were made to the current version of the settings.",
-                color=discord.Color.green() if changed else discord.Color.red(),
-            ),
-        )
+        view = AuthoredView(ctx.author)
+        SettingsToggler.from_view(view)
+        await send(ctx, view)
 
     @root.command("permissions", parent="dev", aliases=["perms"])
     async def root_permissions(self, ctx: commands.Context[types.Bot], channel: discord.TextChannel | None = None):

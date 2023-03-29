@@ -23,11 +23,11 @@ from discord.ext import commands
 
 from dev import root
 from dev.converters import str_ints
-from dev.handlers import ExceptionHandler, GlobalLocals, RelativeStandard, replace_vars
+from dev.handlers import ExceptionHandler, RelativeStandard, replace_vars
 from dev.interpreters import Execute
+from dev.scope import Scope, Settings
 from dev.types import Annotated
 from dev.utils.functs import send
-from dev.utils.startup import Settings
 from dev.utils.utils import clean_code, codeblock_wrapper
 
 if TYPE_CHECKING:
@@ -74,21 +74,21 @@ class RootPython(root.Plugin):
     def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
         self.retain: bool = False
-        self._vars: GlobalLocals | None = None
+        self._vars: Scope | None = None
         self.last_output: Any = None
 
     @property
-    def repl(self) -> GlobalLocals:
+    def repl(self) -> Scope:
         """Get the scope that a REPL session will use"""
         if self.retain and self._vars is not None:
             return self._vars
         if self.retain and self._vars is None:
-            self._vars = GlobalLocals()
+            self._vars = Scope()
             return self._vars
         if not self.retain and self._vars is not None:
             self._vars = None
-            return GlobalLocals()
-        return GlobalLocals()
+            return Scope()
+        return Scope()
 
     @root.command("retain", parent="dev")
     async def root_retain(self, ctx: commands.Context[types.Bot], toggle: bool | None = None):
@@ -134,7 +134,7 @@ class RootPython(root.Plugin):
         args: dict[str, Any] = {"bot": self.bot, "ctx": ctx}
         if self.last_output is not None:
             args["_"] = self.last_output
-        code = clean_code(replace_vars(code.replace("|root|", Settings.root_folder), self.scope))
+        code = clean_code(replace_vars(code.replace("|root|", Settings.ROOT_FOLDER), self.scope))
         output: list[str] = []
 
         async def on_error(

@@ -23,7 +23,7 @@ from discord.utils import MISSING
 
 from dev import root
 from dev.pagination import Interface, Paginator
-from dev.utils.startup import Settings
+from dev.scope import Settings
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -510,7 +510,7 @@ def _check_embed(embed: discord.Embed, token: str, /, replace_path: bool) -> dis
 def _replace(string: str, token: str, /, *, path: bool) -> str:
     string = string.replace(token, "[token]")
     if path:
-        string = string.replace(Settings.path_to_file, "~")
+        string = string.replace(Settings.PATH_TO_FILE, "~")
     return string
 
 

@@ -20,8 +20,8 @@ from discord.ext import commands
 from discord.utils import MISSING
 
 from dev.converters import str_bool
+from dev.scope import Settings
 from dev.utils import to_dict
-from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
     import datetime
@@ -69,7 +69,7 @@ async def get_parameters(
     optional_arguments = [param for param in command.parameters if not param.required]
     _, *arguments = context.message.content.split("\n")
     parameters: dict[str, str] = {
-        (name := param.split(Settings.flag_delimiter, 1)[0].strip()): param[len(f"{name}{Settings.flag_delimiter}") :]
+        (name := param.split(Settings.FLAG_DELIMITER, 1)[0].strip()): param[len(f"{name}{Settings.FLAG_DELIMITER}") :]
         for param in arguments
     }
     mapped: dict[app_commands.Parameter, Any] = {}
@@ -201,9 +201,9 @@ class SyntheticInteraction(discord.Interaction):
             "version": 1,
             "type": 2,
             "token": "",
-            "locale": Settings.locale,
+            "locale": Settings.LOCALE,
             "id": 0,
-            "guild_locale": Settings.locale,
+            "guild_locale": Settings.LOCALE,
             "channel_id": str(getattr(context.channel, "id", None)),
             "application_id": context.bot.user.id,  # type: ignore
         }

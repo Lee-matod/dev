@@ -18,9 +18,8 @@ import discord
 from discord.ext import commands, tasks
 from discord.utils import MISSING
 
-from dev.handlers import GlobalLocals
+from dev.scope import Scope, Settings
 from dev.utils.baseclass import Command, DiscordCommand, DiscordGroup, Group
-from dev.utils.startup import Settings
 
 if TYPE_CHECKING:
     from typing_extensions import Concatenate, ParamSpec, Self
@@ -104,7 +103,7 @@ class Plugin(commands.Cog):
 
     __plugin_commands__: list[commands.Command[Self, ..., Any]] = []
 
-    scope: ClassVar[GlobalLocals] = GlobalLocals()
+    scope: ClassVar[Scope] = Scope()
     cached_messages: ClassVar[dict[int, discord.Message]] = {}
 
     def __init__(self, bot: types.Bot) -> None:
@@ -159,7 +158,7 @@ class Plugin(commands.Cog):
 
         It first checks if the command is allowed for global use.
         If that check fails, it checks if the author of the invoked command is
-        specified in :attr:`Settings.owners`.
+        specified in :attr:`Settings.OWNERS`.
         If the owner list is empty, it'll lastly check if the author owns the bot.
 
         If all checks fail, :class:`discord.ext.commands.NotOwner` is raised.
@@ -186,11 +185,11 @@ class Plugin(commands.Cog):
         if not isinstance(ctx.command.cog, type(self.bot.get_cog("Dev"))):
             return True
         if isinstance(ctx.command, (DiscordCommand, DiscordGroup)):
-            if ctx.command.global_use and Settings.allow_global_uses:
+            if ctx.command.global_use and Settings.GLOBAL_USE:
                 return True
-        if ctx.author.id in Settings.owners:
+        if ctx.author.id in Settings.OWNERS:
             return True
-        if await self.bot.is_owner(ctx.author) and not Settings.owners:
+        if await self.bot.is_owner(ctx.author) and not Settings.OWNERS:
             return True
         raise commands.NotOwner("You have to own this bot to be able to use this command")
 

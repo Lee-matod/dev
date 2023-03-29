@@ -172,7 +172,7 @@ class Command(BaseCommand[CogT, ..., Any]):
         else:
             bot.remove_command(self.name)
             deco = commands.command
-        cmd: commands.Command[CogT, ..., Any] = deco(name=self.name, cls=self.__class__, **self.kwargs)(self.callback)
+        cmd: commands.Command[CogT, ..., Any] = deco(name=self.name, cls=DiscordCommand, **self.kwargs)(self.callback)
         if self.on_error:
             cmd.error(self.on_error)
         return cmd
@@ -217,7 +217,7 @@ class Group(BaseCommand[CogT, ..., Any]):
             if old_command is not None and isinstance(old_command, commands.Group):
                 children.update(old_command.commands)
             deco = commands.group
-        cmd: commands.Group[CogT, ..., Any] = deco(name=self.name, cls=self.__class__, **self.kwargs)(self.callback)
+        cmd: commands.Group[CogT, ..., Any] = deco(name=self.name, cls=DiscordGroup, **self.kwargs)(self.callback)
         copy_commands_to(cmd, children)
         if self.on_error:
             cmd.error(self.on_error)

@@ -26,6 +26,7 @@ from dev.handlers import *
 from dev.interpreters import *
 from dev.pagination import *
 from dev.plugins import *
+from dev.scope import *
 from dev.types import *
 from dev.utils.baseclass import *
 from dev.utils.functs import *
@@ -38,11 +39,11 @@ __all__ = (
     "Dev",
     "ExceptionHandler",
     "Execute",
-    "GlobalLocals",
     "GlobalTextChannelConverter",
     "MessageCodeblock",
     "ModalSender",
     "Process",
+    "Scope",
     "Settings",
     "ShellSession",
     "TimedInfo",

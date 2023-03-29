@@ -19,8 +19,9 @@ from discord.ext import commands
 
 from dev import root
 from dev.converters import MessageCodeblock, codeblock_converter
-from dev.handlers import ExceptionHandler, GlobalLocals
+from dev.handlers import ExceptionHandler
 from dev.interpreters import Execute
+from dev.scope import Scope
 from dev.types import Annotated
 from dev.utils.functs import send
 
@@ -63,7 +64,7 @@ class RootOverride(root.Plugin):
                     ctx, "The body of the script should consist of a single asynchronous function callback."
                 )
             ast_func: ast.AsyncFunctionDef = ast_parse.body[0]
-            scope = GlobalLocals(original.callback.__globals__)
+            scope = Scope(original.callback.__globals__)
             executor = Execute(
                 f"{script}\nreturn {ast_func.name}", scope, {"bot": self.bot} if original.cog is None else {}
             )

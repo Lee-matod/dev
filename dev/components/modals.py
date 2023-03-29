@@ -17,8 +17,9 @@ import discord
 
 from dev.converters import str_ints
 from dev.root import Plugin
+from dev.scope import Settings
 from dev.utils.functs import interaction_response
-from dev.utils.startup import Settings
+from dev.utils.utils import codeblock_wrapper, format_exception
 
 if TYPE_CHECKING:
     from dev.components.views import ModalSender
@@ -53,9 +54,17 @@ class SettingsEditor(discord.ui.Modal):
         self.add_item(self.item)
 
     async def on_submit(self, interaction: discord.Interaction, /) -> None:
-        if isinstance(self.setting_obj, set):
-            setattr(Settings, self.setting, set(str_ints(self.item.value)))
-        #  bool instances are toggleable buttons
-        else:
-            setattr(Settings, self.setting, self.item.value)
+        try:
+            if isinstance(self.setting_obj, set):
+                setattr(Settings, self.setting, set(str_ints(self.item.value)))
+            #  bool instances are toggleable buttons
+            else:
+                setattr(Settings, self.setting, self.item.value)
+        except Exception as exc:
+            return await interaction_response(
+                interaction,
+                discord.InteractionResponseType.channel_message,
+                f"Could not update option {self.setting} value.\n{codeblock_wrapper(format_exception(exc), 'py')}",
+                ephemeral=True,
+            )
         await interaction_response(interaction, discord.InteractionResponseType.message_update)
