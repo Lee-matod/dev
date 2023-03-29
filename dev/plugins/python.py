@@ -73,39 +73,8 @@ class RootPython(root.Plugin):
 
     def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
-        self.retain: bool = False
         self._vars: Scope | None = None
         self.last_output: Any = None
-
-    @property
-    def repl(self) -> Scope:
-        """Get the scope that a REPL session will use"""
-        if self.retain and self._vars is not None:
-            return self._vars
-        if self.retain and self._vars is None:
-            self._vars = Scope()
-            return self._vars
-        if not self.retain and self._vars is not None:
-            self._vars = None
-            return Scope()
-        return Scope()
-
-    @root.command("retain", parent="dev")
-    async def root_retain(self, ctx: commands.Context[types.Bot], toggle: bool | None = None):
-        """Toggle whether variables from REPL sessions should be kept for any future ones."""
-        if toggle is None:
-            translate_dict = {True: "enabled", False: "disabled"}
-            await send(ctx, f"Retention is currently {translate_dict[self.retain]}.")
-        elif toggle:
-            if self.retain is True:
-                return await send(ctx, "Retention is already enabled.")
-            self.retain = True
-            await send(ctx, "Retention has been enabled.")
-        else:
-            if self.retain is False:
-                return await send(ctx, "Retention is already disabled.")
-            self.retain = False
-            await send(ctx, "Retention has been disabled.")
 
     @root.command(
         "python",
@@ -146,7 +115,7 @@ class RootPython(root.Plugin):
                 await send(ctx, codeblock_wrapper(f"{exc_type.__name__}: {exc_val}", "py"))
 
         reader_task: asyncio.Task[None] = self.bot.loop.create_task(self._on_update(ctx, output))
-        executor = Execute(code, self.repl, args)
+        executor = Execute(code, self._get_scope(), args)
         stdout = RelativeStandard(callback=lambda s: output.append(s), filename=executor.filename)
         stderr = RelativeStandard(sys.__stderr__, lambda s: output.append(s), filename=executor.filename)
         try:
@@ -166,6 +135,18 @@ class RootPython(root.Plugin):
                 self.last_output = None
         finally:
             reader_task.cancel()
+
+    def _get_scope(self) -> Scope:
+        retention = Settings.RETAIN
+        if retention and self._vars is not None:
+            return self._vars
+        if retention and self._vars is None:
+            self._vars = Scope()
+            return self._vars
+        if not retention and self._vars is not None:
+            self._vars = None
+            return Scope()
+        return Scope()
 
     if _HASBLACK:
 

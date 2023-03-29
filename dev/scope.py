@@ -244,6 +244,8 @@ class Settings(metaclass=_SettingsMeta):
 
     PATH_TO_FILE: Annotated[str, _path_exists] = os.getcwd()
 
+    RETAIN: bool = False
+
     ROOT_FOLDER: Annotated[str, _path_exists] = ""
 
     VIRTUAL_VARS: str = "|%s|"
