@@ -16,19 +16,12 @@ from typing import TYPE_CHECKING, Any, Coroutine, Optional, Protocol, TypeVar, U
 import discord
 from discord.ext import commands
 
-__all__ = (
-    "Bot",
-    "Channel",
-    "Command",
-    "Invokeable",
-    "MessageContent",
-    "User",
-)
+__all__ = ("Bot", "Channel", "Command", "Invokeable", "MessageContent", "User")
 
 if TYPE_CHECKING:
     from typing import Sequence
 
-    from typing_extensions import Annotated  # pyright: ignore [reportUnusedImport]
+    from typing_extensions import Annotated
 
     from dev.root import Plugin
 
@@ -80,8 +73,14 @@ else:
     User = (discord.ClientUser, discord.Member, discord.User)
 
     class Annotated:
-        def __class_getitem__(cls, key: tuple[Any, ...]):
-            return key[1]
+        #  This doesn't need to be really complicated, just want to
+        #  save the typehint somewhere and metadata
+        def __init__(self, typehint: Any, *meta: Any) -> None:
+            self.typehint: Any = typehint
+            self.metadata: tuple[Any] = meta
+
+        def __class_getitem__(cls, key: tuple[Any, ...]) -> Annotated:
+            return cls(*key)
 
 
 T = TypeVar("T")
