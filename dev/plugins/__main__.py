@@ -141,8 +141,9 @@ class RootCommand(root.Plugin):
             if isinstance(prefix, list):
                 prefix = tuple(prefix)
             if before.content.startswith(prefix) and after.content.startswith(prefix):
-                if before.id in self.cached_messages:
-                    message = self.cached_messages.pop(before.id)
-                    self.cached_messages[after.id] = message
+                cached = discord.utils.get(root.Plugin.cached_messages, id=before.id)
+                if cached is not None:
+                    self.cached_messages.remove(cached)
+                    self.cached_messages.append(after)
                 await after.clear_reactions()
                 await self.bot.process_commands(after)
