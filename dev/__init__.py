@@ -35,7 +35,7 @@ from dev.utils.utils import *
 
 __all__ = (
     "AuthoredMixin",
-    "BoolInput",
+    "Prompt",
     "Dev",
     "ExceptionHandler",
     "Execute",

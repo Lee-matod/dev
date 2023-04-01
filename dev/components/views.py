@@ -18,7 +18,7 @@ import discord
 
 from dev import types
 
-__all__ = ("AuthoredMixin", "BoolInput", "ModalSender")
+__all__ = ("AuthoredMixin", "Prompt", "ModalSender")
 
 
 class AuthoredMixin(discord.ui.View):
@@ -90,7 +90,7 @@ class ModalSender(AuthoredMixin):
         await interaction.response.send_modal(self.modal)
 
 
-class BoolInput(AuthoredMixin):
+class Prompt(AuthoredMixin):
     """Allows the user to submit a true or false answer through buttons.
 
     If the user clicks on "Yes", a function is called and the view is removed.
@@ -103,7 +103,7 @@ class BoolInput(AuthoredMixin):
         # inside a command
         async def check():
             await ctx.send("We shall continue!")
-        await ctx.send("Would you like to continue?", view=BoolInput(ctx.author, check))
+        await ctx.send("Would you like to continue?", view=Prompt(ctx.author, check))
 
     Parameters
     ----------

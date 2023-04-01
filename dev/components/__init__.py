@@ -16,7 +16,7 @@ from dev.components.views import *
 
 __all__ = (
     "AuthoredMixin",
-    "BoolInput",
+    "Prompt",
     "ModalSender",
     "PermissionsSelector",
     "SearchCategory",
