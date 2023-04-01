@@ -251,13 +251,13 @@ class SyntheticInteraction(discord.Interaction):
         self._unknown_interaction: bool = False
         self.__context = context
         self.__app_command = command
-        super().__init__(data=payload, state=context._state)  # type: ignore
+        super().__init__(data=payload, state=context._state)
 
     async def invoke(
         self, context: commands.Context[types.Bot], /  # Match signature of commands.Command.invoke
     ) -> None:
         app_commands.Command
-        if not await self.__app_command._check_can_run(self):  # type: ignore
+        if not await self.__app_command._check_can_run(self):
             raise app_commands.CheckFailure(f"The check functions for command {self.__app_command.name!r} failed.")
         #  The only difference between these two methods is that reinvoke
         #  does not call checks, meanwhile invoke does
@@ -272,11 +272,11 @@ class SyntheticInteraction(discord.Interaction):
     ) -> None:
         context.bot.loop.create_task(self.__wait_for_response(context))
         transformed_values = await self.__app_command._transform_arguments(self, self.namespace)  # type: ignore
-        return await self.__app_command._do_call(self, transformed_values)  # type: ignore
+        return await self.__app_command._do_call(self, transformed_values)
 
     async def __wait_for_response(self, ctx: commands.Context[types.Bot]) -> None:
         await asyncio.sleep(3)  # simulate maximum of 3 seconds for a response
-        if self.response._response_type is None:  # type: ignore
+        if self.response._response_type is None:
             # The bot did not respond to the interaction, so we have to somehow tell the user that
             # it took too long.
             # By this time, the interaction would become unknown, so we have to simulate that too
@@ -319,16 +319,16 @@ class SyntheticWebhook:
     # invocation context, which is why most of these features do nothing.
     def __init__(self, interaction: SyntheticInteraction, /) -> None:
         ctx: commands.Context[types.Bot] = interaction._SyntheticInteraction__context  # type: ignore
-        http: HTTPClient = ctx.bot.http
+        http: HTTPClient = ctx.bot.http  # type: ignore
         self.id: int = discord.utils.time_snowflake(discord.utils.utcnow())
         self.type: discord.WebhookType = discord.WebhookType.application
-        self.channel_id: int | None = ctx.channel.id
-        self.guild_id: int | None = getattr(ctx.guild, "id", None)
-        self.name: str | None = ctx.me.name
+        self.channel_id: int | None = ctx.channel.id  # type: ignore
+        self.guild_id: int | None = getattr(ctx.guild, "id", None)  # type: ignore
+        self.name: str | None = ctx.me.name  # type: ignore
         self.auth_token: str | None = ""
         self.session: aiohttp.ClientSession = http._HTTPClient__session  # type: ignore
-        self.proxy: str | None = http.proxy
-        self.proxy_url: aiohttp.BasicAuth | None = http.proxy_auth
+        self.proxy: str | None = http.proxy  # type: ignore
+        self.proxy_url: aiohttp.BasicAuth | None = http.proxy_auth  # type: ignore
         self.token: str | None = ""
         self.user: discord.User | None = None
         self.source_channel: discord.PartialWebhookChannel | None = None
@@ -362,12 +362,12 @@ class SyntheticWebhook:
     @property
     def avatar(self) -> discord.Asset | None:
         if self._avatar is not None:
-            return discord.Asset._from_avatar(self._state, self.__context.me.id, self._avatar)  # type: ignore
+            return discord.Asset._from_avatar(self._state, self.__context.me.id, self._avatar)
         return None
 
     @property
     def default_avatar(self) -> discord.Asset:
-        return discord.Asset._from_default_avatar(self._state, 0)  # type: ignore
+        return discord.Asset._from_default_avatar(self._state, 0)
 
     @property
     def display_avatar(self) -> discord.Asset:
@@ -405,7 +405,7 @@ class SyntheticWebhook:
             self.name = name
         avatar = kwargs.get("avatar", MISSING)
         if avatar is not MISSING:
-            self._avatar = discord.utils._bytes_to_base64_data(avatar) if avatar is not None else None  # type: ignore
+            self._avatar = discord.utils._bytes_to_base64_data(avatar) if avatar is not None else None
         channel_id: discord.abc.Snowflake | None = kwargs.get("channel")
         if channel_id is not None:
             self.channel_id = channel_id.id
@@ -460,7 +460,7 @@ class InteractionResponse(discord.InteractionResponse):
             raise discord.NotFound(UnknownError, {"code": 10062, "message": "Unknown interaction"})  # type: ignore
         kwargs.pop("ephemeral", None)
         message = await self._parent._SyntheticInteraction__context.send(content, **kwargs)  # type: ignore
-        self._parent._original_response = message  # type: ignore
+        self._parent._original_response = message
         self._response_type = discord.InteractionResponseType.channel_message
 
     async def edit_message(self, **kwargs: Any) -> None:

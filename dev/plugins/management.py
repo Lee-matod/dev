@@ -131,7 +131,7 @@ class RootManagement(root.Plugin):
             skipped: set[int] = set()
             global_menus: list[app_commands.ContextMenu] = [
                 cmd
-                for menu, cmd in self.bot.tree._context_menus.items()  # pyright: ignore [reportPrivateUsage]
+                for menu, cmd in self.bot.tree._context_menus.items()
                 if menu[1] is None
             ]
             for guild_id in guilds:
@@ -139,7 +139,7 @@ class RootManagement(root.Plugin):
                 mapping.update(self.bot.tree._global_commands)  # type: ignore
                 local_menus: list[app_commands.ContextMenu] = [
                     cmd
-                    for menu, cmd in self.bot.tree._context_menus.items()  # pyright: ignore [reportPrivateUsage]
+                    for menu, cmd in self.bot.tree._context_menus.items()
                     if menu[1] is not None and menu[1] == guild_id
                 ]
                 if len(mapping) > 100 or len({*global_menus, *local_menus}) > 5:

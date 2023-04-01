@@ -50,7 +50,7 @@ class RootSearch(root.Plugin):
         select = SearchCategory(
             embed, cogs=cogs, cmds=cmds, channels=channels, emojis=emojis, members=members, roles=roles
         )
-        embed.description = select.mapping.get("all")
+        embed.description = select._mapping.get("all")
         await send(ctx, embed, AuthoredMixin(ctx.author, select))
 
 

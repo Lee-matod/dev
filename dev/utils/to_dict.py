@@ -41,12 +41,12 @@ def attachment(_attachment: discord.Attachment, /) -> dict[str, Any]:
 def user(_user: discord.User, /) -> dict[str, Any]:
     return {
         "username": _user.name,
-        "public_flags": _user._public_flags,  # type: ignore
+        "public_flags": _user._public_flags,
         "id": str(_user.id),
         "display_name": getattr(_user, "nick", None),
         "discriminator": _user.discriminator,
         "bot": _user.bot,
-        "avatar": _user._avatar,  # type: ignore
+        "avatar": _user._avatar,
         "avatar_decoration": None,
     }
 
@@ -55,16 +55,16 @@ def role(_role: discord.Role, /) -> dict[str, Any]:
     return {
         "unicode_emoji": _role.unicode_emoji,
         "position": _role.position,
-        "permissions": str(_role._permissions),  # type: ignore
+        "permissions": str(_role._permissions),
         "name": _role.name,
         "mentionable": _role.mentionable,
         "managed": _role.managed,
         "id": str(_role.id),
-        "icon": _role._icon,  # type: ignore
+        "icon": _role._icon,
         "hoist": _role.hoist,
         "flags": 0,
         "description": None,
-        "color": _role._colour,  # type: ignore
+        "color": _role._colour,
     }
 
 
@@ -76,13 +76,13 @@ def member(_member: discord.Member, /) -> dict[str, Any]:
         "nick": _member.nick,
         "joined_at": str(_member.joined_at),
         "is_pending": False,
-        "flags": _member._flags,  # type: ignore
+        "flags": _member._flags,
         "communication_disabled_until": str(_member.timed_out_until) if _member.timed_out_until else None,
-        "avatar": _member._avatar,  # type: ignore
-        "user": user(_member._user),  # type: ignore
+        "avatar": _member._avatar,
+        "user": user(_member._user),
     }
-    if _member._permissions is not None:  # type: ignore
-        payload["permissions"] = str(_member._permissions)  # type: ignore
+    if _member._permissions is not None:
+        payload["permissions"] = str(_member._permissions)
     return payload
 
 
@@ -95,7 +95,7 @@ def channel(_channel: discord.abc.GuildChannel, /, context: commands.Context[typ
         "id": str(_channel.id),
         "nsfw": _channel.nsfw,  # type: ignore
         "position": _channel.position,
-        "permission_overwrites": [overwrite._asdict() for overwrite in _channel._overwrites],  # type: ignore
+        "permission_overwrites": [overwrite._asdict() for overwrite in _channel._overwrites],
     }
     metadata: dict[str, Any] = {}
     if isinstance(_channel, discord.TextChannel):
@@ -120,7 +120,7 @@ def channel(_channel: discord.abc.GuildChannel, /, context: commands.Context[typ
                 "default_reaction_emoji": _channel.default_reaction_emoji.to_dict()
                 if _channel.default_reaction_emoji
                 else None,
-                "flags": _channel._flags,  # type: ignore
+                "flags": _channel._flags,
             }
         )
     elif isinstance(_channel, (discord.VoiceChannel, discord.StageChannel)):
@@ -146,12 +146,12 @@ def thread(_thread: discord.Thread, /, context: commands.Context[types.Bot]) -> 
         "parent_id": str(_thread.parent_id),
         "owner_id": str(_thread.owner_id),
         "name": _thread.name,
-        "type": _thread._type.value,  # type: ignore
+        "type": _thread._type.value,
         "last_message_id": _thread.last_message_id,
         "rate_limit_per_user": _thread.slowmode_delay,
         "message_count": _thread.message_count,
         "member_count": _thread.member_count,
-        "flags": _thread._flags,  # type: ignore
+        "flags": _thread._flags,
         "thread_metadata": {
             "archiver_id": _thread.archiver_id,
             "invitable": _thread.invitable,
@@ -168,7 +168,7 @@ def thread(_thread: discord.Thread, /, context: commands.Context[types.Bot]) -> 
             "id": me.id,
             "thread_id": payload["id"],
             "join_timestamp": str(me.joined_at),
-            "flags": me._flags,  # type: ignore
+            "flags": me._flags,
         }
     return payload
 

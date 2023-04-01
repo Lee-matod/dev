@@ -9,6 +9,7 @@ typeCheckingMode = "strict"
 
 reportImportCycles = false
 reportUnnecessaryIsInstance = false
+reportPrivateUsage = false
 
 reportCallInDefaultInitializer = "warning"
 reportUnnecessaryTypeIgnoreComment = "warning"
