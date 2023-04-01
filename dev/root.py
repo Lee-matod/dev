@@ -12,10 +12,11 @@ Command decorators and cogs used to register commands.
 from __future__ import annotations
 
 import logging
+import weakref
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable
 
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 from discord.utils import MISSING
 
 from dev.scope import Scope, Settings
@@ -104,7 +105,7 @@ class Plugin(commands.Cog):
     __plugin_commands__: list[commands.Command[Self, ..., Any]] = []
 
     scope: ClassVar[Scope] = Scope()
-    cached_messages: ClassVar[dict[int, discord.Message]] = {}
+    cached_messages: ClassVar[weakref.WeakValueDictionary[int, discord.Message]] = weakref.WeakValueDictionary()
 
     def __init__(self, bot: types.Bot) -> None:
         self.bot: types.Bot = bot
@@ -120,11 +121,6 @@ class Plugin(commands.Cog):
 
         Plugin.__plugin_commands__.extend(self.commands.values())
         self.__cog_commands__ = list({*self.commands.values(), *self.__cog_commands__})
-
-        self._clear_cached_messages.start()
-
-    async def cog_unload(self) -> None:
-        self._clear_cached_messages.cancel()
 
     async def _eject(self, bot: types.Bot, guild_ids: Iterable[int] | None) -> None:  # type: ignore
         await super()._eject(bot, guild_ids)
@@ -192,14 +188,3 @@ class Plugin(commands.Cog):
         if await self.bot.is_owner(ctx.author) and not Settings.OWNERS:
             return True
         raise commands.NotOwner("You have to own this bot to be able to use this command")
-
-    @tasks.loop(minutes=10)
-    async def _clear_cached_messages(self):
-        def function(msg_id: int) -> bool:
-            created_at = discord.utils.snowflake_time(msg_id).timestamp()
-            time_since_created = int(discord.utils.utcnow().timestamp() - created_at)
-            return time_since_created >= 120
-
-        message_ids: Iterable[int] = filter(function, Plugin.cached_messages.copy())
-        for _id in message_ids:
-            del Plugin.cached_messages[_id]
