@@ -12,8 +12,7 @@ Command decorators and cogs used to register commands.
 from __future__ import annotations
 
 import logging
-import collections
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Deque, Iterable
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable
 
 import discord
 from discord.ext import commands
@@ -105,7 +104,6 @@ class Plugin(commands.Cog):
     __plugin_commands__: list[commands.Command[Self, ..., Any]] = []
 
     scope: ClassVar[Scope] = Scope()
-    cached_messages: ClassVar[Deque[discord.Message]] = collections.deque(maxlen=50)
 
     def __init__(self, bot: types.Bot) -> None:
         self.bot: types.Bot = bot

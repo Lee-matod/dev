@@ -232,7 +232,7 @@ async def send(  # type: ignore
                 child.row = idx // 5 + 2  # move after 'Quit' and pagination buttons
                 pag_view.add_item(child)
         kwargs["content"] = pag_view.display_page
-    cached = discord.utils.get(root.Plugin.cached_messages, id=ctx.message.id)
+    cached = discord.utils.get(ctx.bot._connection._messages or [], id=ctx.message.id)
     if cached is not None and not forced:
         edit: dict[str, Any] = {
             "content": kwargs.get("content", None),
@@ -251,7 +251,6 @@ async def send(  # type: ignore
             message = await ctx.send(**kwargs)
     else:
         message = await ctx.send(**kwargs)
-    root.Plugin.cached_messages.append(message)
     if paginator is not MISSING:
         return message, ret_paginator
     return message
