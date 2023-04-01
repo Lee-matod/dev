@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 import discord
 
 from dev import root
-from dev.components import AuthoredView, SearchCategory
+from dev.components import AuthoredMixin, SearchCategory
 from dev.utils.functs import send
 
 if TYPE_CHECKING:
@@ -51,7 +51,7 @@ class RootSearch(root.Plugin):
             embed, cogs=cogs, cmds=cmds, channels=channels, emojis=emojis, members=members, roles=roles
         )
         embed.description = select.mapping.get("all")
-        await send(ctx, embed, AuthoredView(ctx.author, select))
+        await send(ctx, embed, AuthoredMixin(ctx.author, select))
 
 
 def _match(query: str, array: list[tuple[str, str]]) -> list[str]:

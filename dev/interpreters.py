@@ -25,7 +25,7 @@ from typing import IO, TYPE_CHECKING, Any, AsyncGenerator, Callable, NoReturn, T
 
 import discord
 
-from dev.components.views import AuthoredView
+from dev.components.views import AuthoredMixin
 from dev.pagination import Paginator
 from dev.utils.functs import interaction_response, send
 
@@ -63,7 +63,7 @@ POWERSHELL = pathlib.Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershel
 SHELL = os.getenv("SHELL") or "/bin/bash"
 
 
-class _SigKill(AuthoredView):
+class _SigKill(AuthoredMixin):
     def __init__(self, author: types.User | int, process: Process, /):
         super().__init__(author)
         self.session: ShellSession = process._Process__session  # type: ignore

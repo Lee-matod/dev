@@ -18,39 +18,41 @@ import discord
 
 from dev import types
 
-__all__ = ("AuthoredView", "BoolInput", "ModalSender")
+__all__ = ("AuthoredMixin", "BoolInput", "ModalSender")
 
 
-class AuthoredView(discord.ui.View):
-    """A :class:`discord.ui.View` wrapper that automatically adds an owner-only interaction check.
+class AuthoredMixin(discord.ui.View):
+    """A :class:`discord.ui.View` wrapper that optionally adds an owner-only interaction check.
 
     Parameters
     ----------
-    author: Union[types.User, :class:`int`]
+    author: Optional[Union[types.User, :class:`int`]]
         The only user that is allowed to interact with this view.
     components: :class:`discord.ui.Item`
         Components that will be automatically added to the view.
 
     Attributes
     ----------
-    author: :class:`int`
+    author: Optional[:class:`int`]
         The ID of the user that was passed to the constructor of this class.
     """
 
-    def __init__(self, author: types.User | int, *components: discord.ui.Item[AuthoredView]) -> None:
+    def __init__(self, author: types.User | int | None, *components: discord.ui.Item[AuthoredMixin]) -> None:
         super().__init__()
-        self.author: int = author.id if isinstance(author, types.User) else author  # type: ignore
+        self.author: int | None = getattr(author, "id", author)  # type: ignore
         for item in components:
             self.add_item(item)
 
     async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+        if self.author is None:
+            return True
         return interaction.user.id == self.author
 
 
-class ModalSender(AuthoredView):
+class ModalSender(AuthoredMixin):
     """A view that automatically creates a button that sends a modal.
 
-    Subclass of :class:`AuthoredView`.
+    Subclass of :class:`AuthoredMixin`.
 
     Parameters
     ----------
@@ -88,12 +90,12 @@ class ModalSender(AuthoredView):
         await interaction.response.send_modal(self.modal)
 
 
-class BoolInput(AuthoredView):
+class BoolInput(AuthoredMixin):
     """Allows the user to submit a true or false answer through buttons.
 
     If the user clicks on "Yes", a function is called and the view is removed.
 
-    Subclass of :class:`AuthoredView`.
+    Subclass of :class:`AuthoredMixin`.
 
     Examples
     --------

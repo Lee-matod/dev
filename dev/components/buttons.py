@@ -14,17 +14,17 @@ from __future__ import annotations
 import discord
 
 from dev.components.modals import SettingsEditor
-from dev.components.views import AuthoredView
+from dev.components.views import AuthoredMixin
 from dev.scope import Settings
 from dev.utils.functs import interaction_response
 
 __all__ = ("SettingsToggler",)
 
 
-class SettingsToggler(discord.ui.Button[AuthoredView]):
-    def __init__(self, setting: str, author: int, *, label: str) -> None:
+class SettingsToggler(discord.ui.Button[AuthoredMixin]):
+    def __init__(self, setting: str, author: int | None, *, label: str) -> None:
         super().__init__(label=label)
-        self.author: int = author
+        self.author: int | None = author
         self.setting: str = setting.upper().replace(" ", "_")
         self._boolean_options = [option.name for option in Settings.__options__.values() if option._type is bool]  # pyright: ignore [reportPrivateUsage]
         print(self.setting, self._boolean_options)
@@ -34,7 +34,7 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
             self.style = discord.ButtonStyle.blurple
 
     @classmethod
-    def from_view(cls, view: AuthoredView, /) -> None:
+    def from_view(cls, view: AuthoredMixin, /) -> None:
         for setting in Settings.__options__:
             fmt = " ".join(word.lower() if len(word) <= 2 else word.title() for word in setting.split("_"))
             view.add_item(cls(setting, view.author, label=fmt))
@@ -57,6 +57,6 @@ class SettingsToggler(discord.ui.Button[AuthoredView]):
         else:
             setattr(Settings, setting, True)
             self.style = discord.ButtonStyle.green
-        view = AuthoredView(self.author)
+        view = AuthoredMixin(self.author)
         self.from_view(view)
         await interaction_response(interaction, discord.InteractionResponseType.message_update, view)

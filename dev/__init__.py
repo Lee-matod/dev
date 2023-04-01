@@ -34,7 +34,7 @@ from dev.utils.startup import *
 from dev.utils.utils import *
 
 __all__ = (
-    "AuthoredView",
+    "AuthoredMixin",
     "BoolInput",
     "Dev",
     "ExceptionHandler",

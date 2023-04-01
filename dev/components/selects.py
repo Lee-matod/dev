@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 import discord
 
-from dev.components.views import AuthoredView
+from dev.components.views import AuthoredMixin
 
 if TYPE_CHECKING:
     from dev import types
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 __all__ = ("PermissionsSelector", "SearchCategory")
 
 
-class PermissionsSelector(discord.ui.Select[AuthoredView]):
+class PermissionsSelector(discord.ui.Select[AuthoredMixin]):
     OPTIONS: ClassVar[tuple[discord.SelectOption, ...]] = (
         discord.SelectOption(
             label="General",
@@ -93,7 +93,7 @@ class PermissionsSelector(discord.ui.Select[AuthoredView]):
         return perms_list
 
 
-class SearchCategory(discord.ui.Select[AuthoredView]):
+class SearchCategory(discord.ui.Select[AuthoredMixin]):
     OPTIONS: ClassVar[tuple[discord.SelectOption, ...]] = (
         discord.SelectOption(label="All", value="all", default=True),
         discord.SelectOption(label="Cogs", value="cogs"),

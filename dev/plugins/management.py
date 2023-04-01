@@ -20,7 +20,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from dev import root
-from dev.components import AuthoredView, PermissionsSelector, SettingsToggler
+from dev.components import AuthoredMixin, PermissionsSelector, SettingsToggler
 from dev.utils.functs import send
 from dev.utils.utils import codeblock_wrapper, escape, format_exception, plural
 
@@ -36,7 +36,7 @@ class RootManagement(root.Plugin):
     @root.command("settings", parent="dev")
     async def root_settings(self, ctx: commands.Context[types.Bot]):
         """Change or edit this extension's configuration."""
-        view = AuthoredView(ctx.author)
+        view = AuthoredMixin(ctx.author)
         SettingsToggler.from_view(view)
         await send(ctx, view)
 
@@ -53,7 +53,7 @@ class RootManagement(root.Plugin):
             discord.Embed(
                 description="\n".join(["```ansi", *select.sort_perms("general"), "```"]), color=discord.Color.blurple()
             ),
-            AuthoredView(ctx.author, select),
+            AuthoredMixin(ctx.author, select),
         )
 
     @root.command("load", parent="dev", aliases=["reload", "unload"])
