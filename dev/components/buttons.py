@@ -27,7 +27,7 @@ class SettingsToggler(discord.ui.Button[AuthoredMixin]):
         self.author: int | None = author
         self.setting: str = setting.upper().replace(" ", "_")
         self._boolean_options = [option.name for option in Settings.__options__.values() if option._type is bool]
-        if label in self._boolean_options:
+        if self.setting in self._boolean_options:
             self.style = discord.ButtonStyle.green if getattr(Settings, setting) else discord.ButtonStyle.red
         else:
             self.style = discord.ButtonStyle.blurple
