@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Literal
 from discord.ext import commands
 
 from dev import root
-from dev.components import ModalSender, VariableValueSubmitter
+from dev.components import ModalSender, EnvValueSubmitter
 from dev.utils.functs import send
 
 if TYPE_CHECKING:
@@ -50,7 +50,7 @@ class RootEnvironment(root.Plugin):
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
             if name in self.scope:
                 return await send(ctx, f"A variable called `{name}` already exists.")
-            await send(ctx, ModalSender(VariableValueSubmitter(name, True), ctx.author, label="Submit Variable Value"))
+            await send(ctx, ModalSender(EnvValueSubmitter(name, True), ctx.author, label="Submit Variable Value"))
 
         elif mode in ["delete", "del"]:
             if name is None:
@@ -68,7 +68,7 @@ class RootEnvironment(root.Plugin):
             await send(
                 ctx,
                 ModalSender(
-                    VariableValueSubmitter(name, False, self.scope[name]), ctx.author, label="Submit Variable Value"
+                    EnvValueSubmitter(name, False, self.scope[name]), ctx.author, label="Submit Variable Value"
                 ),
             )
 

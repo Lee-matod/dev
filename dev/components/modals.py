@@ -24,10 +24,10 @@ from dev.utils.utils import codeblock_wrapper, format_exception
 if TYPE_CHECKING:
     from dev.components.views import ModalSender
 
-__all__ = ("SettingsEditor", "VariableValueSubmitter")
+__all__ = ("SettingsEditor", "EnvValueSubmitter")
 
 
-class VariableValueSubmitter(discord.ui.Modal):
+class EnvValueSubmitter(discord.ui.Modal):
     value: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(label="Value", style=discord.TextStyle.paragraph)
 
     def __init__(self, name: str, new: bool, default: str | None = None) -> None:

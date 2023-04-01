@@ -33,10 +33,11 @@ class SettingsToggler(discord.ui.Button[AuthoredMixin]):
             self.style = discord.ButtonStyle.blurple
 
     @classmethod
-    def from_view(cls, view: AuthoredMixin, /) -> None:
+    def from_view(cls, view: AuthoredMixin, /) -> AuthoredMixin:
         for setting in Settings.__options__:
             fmt = " ".join(word.lower() if len(word) <= 2 else word.title() for word in setting.split("_"))
             view.add_item(cls(setting, view.author, label=fmt))
+        return view
 
     async def callback(self, interaction: discord.Interaction) -> None:
         if self.setting not in self._boolean_options:
