@@ -40,7 +40,7 @@ _log = logging.getLogger(__name__)
 class _DictDeque(OrderedDict[KT, VT]):
     def __init__(self, *args: Any, maxlen: int | None = None, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._maxlen: int | None = self._maxlen
+        self._maxlen: int | None = maxlen
 
     def __setitem__(self, key: KT, value: VT) -> None:
         super().__setitem__(key, value)
