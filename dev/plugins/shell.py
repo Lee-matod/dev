@@ -66,14 +66,7 @@ PYRIGHT_ARGS = (
     re.compile(r"(--pythonplatform) (Darwin|Linux|Windows)"),
     re.compile(r"(--pythonversion) (" + "|".join(rf"3\.{v}" for v in range(3, 12)) + ")"),
 )
-PYRIGHT_BOOLEANS = (
-    "--dependencies",
-    "--lib",
-    "--output-json",
-    "--skipunannotated",
-    "--stats",
-    "--warnings",
-)
+PYRIGHT_BOOLEANS = ("--dependencies", "--lib", "--output-json", "--skipunannotated", "--stats", "--warnings")
 
 
 class RootShell(root.Plugin):
