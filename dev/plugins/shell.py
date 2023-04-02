@@ -72,7 +72,6 @@ PYRIGHT_BOOLEANS = (
     "--output-json",
     "--skipunannotated",
     "--stats",
-    "--verbose",
     "--warnings",
 )
 
@@ -206,6 +205,7 @@ class RootShell(root.Plugin):
                 with session(full) as proc:
                     output = await proc.run_until_complete()
                     if output is not None:
+                        output = "\n".join(output.split("\n")[13:])  # ignore verbose stuff
                         await send(ctx, codeblock_wrapper(output, "py"))
 
     if shutil.which("black") and not _HASBLACK:
