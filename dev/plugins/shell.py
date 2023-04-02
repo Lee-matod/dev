@@ -184,7 +184,15 @@ class RootShell(root.Plugin):
                 pyproject.touch()
 
                 with main_tmp.open("w") as fp:
-                    fp.write(script)
+                    fp.write(
+                        "\n".join(
+                            (
+                                "from typing import *  # type: ignore",
+                                "from typing_extensions import *  # type: ignore",
+                                script,
+                            )
+                        )
+                    )
 
                 with pyproject.open("w") as fp:
                     pyproject_options = "\n".join(f"{name}={value}" for name, value in PYRIGHT_PYPROJ.findall(script))
