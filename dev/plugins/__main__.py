@@ -106,7 +106,7 @@ class RootCommand(root.Plugin):
         )
         translator = {True: "enabled", False: "disabled", None: "unknown"}
         intent_info: list[str] = []
-        for intent in ("Members", "message_content", "presence"):
+        for intent in ("Members", "message_content", "presences"):
             is_enabled = getattr(self.bot.intents, intent.lower(), None)
             intent_info.append(f"{intent.replace('_', ' ')} intent is {translator[is_enabled]}")
         brief.append(
