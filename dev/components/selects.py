@@ -30,7 +30,10 @@ _CATEGORIES = ("all", "cogs", "commands", "emojis", "text_channels", "members", 
 class PermissionsSelector(discord.ui.Select[AuthoredMixin]):
     OPTIONS: ClassVar[list[discord.SelectOption]] = [
         discord.SelectOption(
-            label=opt.title(), value=opt, description=f"All '{opt.title()}' permissions from the official Discord UI."
+            label=opt.title(),
+            value=opt,
+            description=f"All '{opt.title()}' permissions from the official Discord UI.",
+            default=opt == "general",
         )
         for opt in _PERMISSIONS
     ]
