@@ -46,7 +46,7 @@ class RootCommand(root.Plugin):
         super().__init__(bot)
         self.load_time: int = int(time.time())
 
-    @root.group("dev", global_use=True, invoke_without_command=True)
+    @root.group("dev", global_use=True, ignore_extra=False, invoke_without_command=True)
     async def root_(self, ctx: commands.Context[types.Bot]):
         """Root command for the `dev` extension.
         Gives a briefing of the dev extension, as well as process statistics.
