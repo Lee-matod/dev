@@ -141,5 +141,8 @@ class RootCommand(root.Plugin):
             if isinstance(prefix, list):
                 prefix = tuple(prefix)
             if before.content.startswith(prefix) and after.content.startswith(prefix):
+                if before.id in root.Plugin._messages:
+                    message = root.Plugin._messages.pop(before.id)
+                    root.Plugin._messages[after.id] = message
                 await after.clear_reactions()
                 await self.bot.process_commands(after)

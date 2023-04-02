@@ -12,7 +12,7 @@ Command decorators and cogs used to register commands.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, OrderedDict, TypeVar
 
 import discord
 from discord.ext import commands
@@ -31,7 +31,21 @@ if TYPE_CHECKING:
 
 __all__ = ("Plugin", "command", "group")
 
+KT = TypeVar("KT")
+VT = TypeVar("VT")
+
 _log = logging.getLogger(__name__)
+
+
+class _DictDeque(OrderedDict[KT, VT]):
+    def __init__(self, *args: Any, maxlen: int | None = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._maxlen: int | None = self._maxlen
+
+    def __setitem__(self, key: KT, value: VT) -> None:
+        super().__setitem__(key, value)
+        if self._maxlen is not None and len(self) > self._maxlen:
+            self.popitem(False)
 
 
 def command(
@@ -104,6 +118,7 @@ class Plugin(commands.Cog):
     __plugin_commands__: list[commands.Command[Self, ..., Any]] = []
 
     scope: ClassVar[Scope] = Scope()
+    _messages: _DictDeque[int, discord.Message] = _DictDeque(maxlen=50)
 
     def __init__(self, bot: types.Bot) -> None:
         self.bot: types.Bot = bot
