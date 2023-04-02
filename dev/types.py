@@ -79,6 +79,9 @@ else:
             self.typehint: Any = typehint
             self.metadata: tuple[Any] = meta
 
+        def __call__(self, *args: Any, **kwds: Any) -> Any:
+            return self.metadata[0](*args, **kwds)
+
         def __class_getitem__(cls, key: tuple[Any, ...]) -> Annotated:
             return cls(*key)
 
