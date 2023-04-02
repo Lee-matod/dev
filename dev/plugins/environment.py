@@ -30,7 +30,7 @@ class RootEnvironment(root.Plugin):
     async def root_environment(
         self,
         ctx: commands.Context[types.Bot],
-        mode: Literal["~", "all", "content", "create", "del", "delete", "edit", "exists", "new", "replace", "value",],
+        mode: Literal["all", "content", "create", "remove", "delete", "edit", "exists", "new", "replace", "value",],
         *,
         name: str | None = None,
     ):
@@ -42,7 +42,7 @@ class RootEnvironment(root.Plugin):
         `exists` = Check if a variable with the given name exists.
         `all` = Sends a list of all currently existing variable names.
         `edit`|`replace` = Edit the contents of an already existing variable.
-        `delete`|`del` = Delete an already existing variable.
+        `delete`|`remove` = Delete an already existing variable.
         `new`|`create` = Create a new variable.
         """
         if mode in ["new", "create"]:
@@ -52,7 +52,7 @@ class RootEnvironment(root.Plugin):
                 return await send(ctx, f"A variable called `{name}` already exists.")
             await send(ctx, ModalSender(EnvValueSubmitter(name, True), ctx.author, label="Submit Variable Value"))
 
-        elif mode in ["delete", "del"]:
+        elif mode in ["delete", "remove"]:
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
             if self.scope.get(name, False):
@@ -72,9 +72,11 @@ class RootEnvironment(root.Plugin):
                 ),
             )
 
-        elif mode in ["all", "~"]:
-            variables = "\n".join(f"+ {var}" for var in self.scope.keys()) if self.scope else "- No variables found."
-            await send(ctx, f"```diff\n{variables}\n```")
+        elif mode in ["all"]:
+            variables = self.scope.keys()
+            if not variables:
+                return await send(ctx, "No variables have been created yet.")
+            await send(ctx, f"\n".join(variables))
 
         elif mode == "exists":
             if name is None:
