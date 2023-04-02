@@ -80,7 +80,10 @@ else:
             self.metadata: tuple[Any] = meta
 
         def __call__(self, *args: Any, **kwds: Any) -> Any:
-            return self.metadata[0](*args, **kwds)
+            callback = self.metadata[0]
+            if callable(callback):
+                return self.metadata[0](*args, **kwds)
+            return callback
 
         def __class_getitem__(cls, key: tuple[Any, ...]) -> Annotated:
             return cls(*key)
