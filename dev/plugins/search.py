@@ -48,7 +48,7 @@ class RootSearch(root.Plugin):
         embed = discord.Embed(title=f"Query {query} returned...", color=discord.Color.blurple())
         embed.set_footer(text="Category: All")
         select = SearchCategory(
-            embed, cogs=cogs, cmds=cmds, channels=channels, emojis=emojis, members=members, roles=roles
+            embed, cogs=cogs, commands=cmds, text_channels=channels, emojis=emojis, members=members, roles=roles
         )
         embed.description = select._mapping.get("all")
         await send(ctx, embed, AuthoredMixin(ctx.author, select))

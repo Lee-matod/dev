@@ -72,18 +72,19 @@ class PermissionsSelector(discord.ui.Select[AuthoredMixin]):
 
 class SearchCategory(discord.ui.Select[AuthoredMixin]):
     OPTIONS: ClassVar[list[discord.SelectOption]] = [
-        discord.SelectOption(label=cat.replace("_", " ").title(), value=cat) for cat in _CATEGORIES
+        discord.SelectOption(label=cat.replace("_", " ").title(), value=cat, default=cat == "all") for cat in sorted(_CATEGORIES)
     ]
 
     def __init__(self, embed: discord.Embed, /, **categories: list[str]):
+        categories = dict(sorted([(k, v) for k, v in categories.items() if v], key=lambda x: x[0]))
         options: list[discord.SelectOption] = [
-            option for option, value in zip(self.OPTIONS, (True, categories.values())) if value
+            option for option in self.OPTIONS if option.value in categories or option.value == "all"
         ]
         super().__init__(options=options)
         self.embed: discord.Embed = embed
         self._mapping: dict[str, str] = {
             "all": "\n".join(list(itertools.chain(*[v[:3] for v in categories.values()]))[:10]),
-            **{k: "\n".join(v) for k, v in categories.items()},
+            **{k: "\n".join(v) for k, v in categories.items() if v},
         }
 
     async def callback(self, interaction: discord.Interaction) -> None:
