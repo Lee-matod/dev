@@ -76,7 +76,7 @@ version_info = VersionInfo(major=2, minor=0, micro=0, releaselevel="alpha", seri
 async def setup(bot: commands.Bot) -> None:
     _log = await enforce_owner(bot)
     await bot.add_cog(Dev(bot))
-    _log.info("Dev cog has been successfully loaded")
+    _log.info("cog has been successfully loaded")
 
 
 del Literal, NamedTuple, commands

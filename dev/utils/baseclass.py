@@ -139,7 +139,7 @@ class BaseCommand(Generic[CogT, P, T]):
 
 
 class Command(BaseCommand[CogT, ..., Any]):
-    """A class that simulates :class:`commands.Command`.
+    """A class that simulates :class:`discord.ext.commands.Command`.
 
     This class is used to keep track of which functions should be commands,
     and it shouldn't get called manually.

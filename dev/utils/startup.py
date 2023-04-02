@@ -12,9 +12,9 @@ Extension loading function and settings checker.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
-from discord.utils import MISSING, stream_supports_colour
+from discord.utils import MISSING, _ColourFormatter, stream_supports_colour
 
 from dev.scope import Settings
 
@@ -22,42 +22,6 @@ if TYPE_CHECKING:
     from dev import types
 
 __all__ = ("enforce_owner", "setup_logging")
-
-
-class _DefaultFormatter(logging.Formatter):
-    def format(self, record: logging.LogRecord) -> str:
-        fmt = logging.Formatter("[%(asctime)s] [%(levelname)s] BLANK%(name)s: %(message)s", "%Y/%m/%d %H:%M:%S")
-        output = fmt.format(record)
-        return output.replace("BLANK", " " * (8 - len(record.levelname)), 1)
-
-
-class _ColoredFormatter(logging.Formatter):
-    LEVELS: ClassVar[list[tuple[int, str]]] = [
-        (logging.DEBUG, "\x1b[32m"),
-        (logging.INFO, "\x1b[36;1m"),
-        (logging.WARNING, "\x1b[33m"),
-        (logging.ERROR, "\x1b[31;1m"),
-        (logging.CRITICAL, "\x1b[41;1m"),
-    ]
-
-    FORMATTERS: ClassVar[dict[int, logging.Formatter]] = {
-        level: logging.Formatter(
-            f"\x1b[30m%(asctime)s\x1b[0m {color}[%(levelname)s]\x1b[0m BLANK"
-            f"\x1b[35m%(name)s:\x1b[0m \x1b[97;1m%(message)s\x1b[0m",
-            "%Y/%m/%d %H:%M:%S",
-        )
-        for level, color in LEVELS
-    }
-
-    def format(self, record: logging.LogRecord) -> str:
-        fmt = self.FORMATTERS.get(record.levelno)
-        if fmt is None:
-            fmt = self.FORMATTERS[logging.DEBUG]
-
-        output = fmt.format(record)
-        output = output.replace("BLANK", " " * (8 - len(record.levelname)), 1)
-        record.exc_text = None
-        return output
 
 
 def setup_logging(
@@ -68,9 +32,9 @@ def setup_logging(
 
     if formatter is MISSING:
         formatter = (
-            _ColoredFormatter()
+            _ColourFormatter()
             if isinstance(handler, logging.StreamHandler) and stream_supports_colour(handler.stream)  # type: ignore
-            else _DefaultFormatter()
+            else logging.Formatter("[{asctime}] [{levelname:<8}] {name}: {message}", "%Y-%m-%d %H:%M:%S", style="{")
         )
 
     lib, _, _ = __name__.partition(".")
