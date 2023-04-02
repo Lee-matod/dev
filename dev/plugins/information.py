@@ -12,6 +12,7 @@ Command information features.
 from __future__ import annotations
 
 import inspect
+import textwrap
 from typing import TYPE_CHECKING
 
 import discord
@@ -86,4 +87,4 @@ class RootInformation(root.Plugin):
             source = inspect.getsource(command.callback)
         except OSError:
             return await send(ctx, f"Couldn't get source lines for the command `{command_string}`.")
-        await send(ctx, codeblock_wrapper(source, "py"))
+        await send(ctx, codeblock_wrapper(textwrap.dedent(source), "py"))
