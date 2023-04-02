@@ -82,7 +82,7 @@ class TimedInfo:
     def __str__(self) -> str:
         mins, secs = divmod(self.duration, 60)
         hrs, mins = divmod(mins, 60)
-        return f"{int(hrs)}:{int(mins)}:{secs:.3}"
+        return f"{int(hrs) or '00'}:{int(mins) or '00'}:{secs:.3}"
 
     def __enter__(self) -> Self:
         self.start = time.perf_counter()
