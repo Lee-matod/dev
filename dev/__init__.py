@@ -35,7 +35,6 @@ from dev.utils.utils import *
 
 __all__ = (
     "AuthoredMixin",
-    "Prompt",
     "Dev",
     "ExceptionHandler",
     "Execute",
@@ -43,6 +42,7 @@ __all__ = (
     "MessageCodeblock",
     "ModalSender",
     "Process",
+    "Prompt",
     "Scope",
     "Settings",
     "ShellSession",
