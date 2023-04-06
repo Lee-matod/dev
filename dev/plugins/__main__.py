@@ -39,7 +39,7 @@ def _as_readable(percent: float, bytes_size: int) -> str:
         return "0B"
     units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
     power = math.floor(math.log(abs(bytes_size), 1024))
-    return f"{round(bytes_size / (1024 ** power), 2)} {units[power]} ({percent * 100:.2f}%)"
+    return f"{round(bytes_size / (1024 ** power), 2)} {units[power]} ({percent:.2f}%)"
 
 
 class RootCommand(root.Plugin):
@@ -62,7 +62,7 @@ class RootCommand(root.Plugin):
         #  Extension info
         brief = [
             f"dev {import_meta.version('dev')} was loaded {load_time} with a total of "
-            f"{plural(len(self.commands), 'command')} which are unique to this extension.",
+            f"{plural(len(self.bot.commands), 'command')}, {len(self.commands)} of which are unique to this extension.",
             "",
         ]
         with process.oneshot():
