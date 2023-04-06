@@ -42,7 +42,19 @@ class RootOverride(root.Plugin):
     async def root_override(
         self, ctx: commands.Context[types.Bot], *, command_code: Annotated[MessageCodeblock, codeblock_converter]
     ):
-        """Override the current callback and attributes of a command."""
+        """Override the current callback and attributes of a command.
+
+        Similar to `dev overwrite`, but this temporarily changes the callback of the command.
+
+        The arguments of this command should consist of two parts:
+        1. The qualified name of the command to override.
+        2. The new callback of the command surrounded in a codeblock. Decorators should be included.
+
+        Parameters
+        ----------
+        command_code: :class:`MessageCodeblock`
+            The qualified name of the command and its new callback.
+        """
         command_string, script = command_code.content, command_code.codeblock
         if not command_string or not script:
             return await send(ctx, "Malformed arguments were given.")
@@ -103,7 +115,19 @@ class RootOverride(root.Plugin):
     async def root_overwrite(
         self, ctx: commands.Context[types.Bot], *, command_code: Annotated[MessageCodeblock, codeblock_converter]
     ):
-        """Overwrite the source code of a command."""
+        """Overwrite the source code of a command.
+
+        Similar to `dev override`, but this edits the source code of the command.
+
+        The arguments of this command should consist of two parts:
+        1. The qualified name of the command to override.
+        2. The new callback of the command surrounded in a codeblock. Decorators should be included.
+
+        Parameters
+        ----------
+        command_code: :class:`MessageCodeblock`
+            The qualified name of the command and its new callback.
+        """
         command_string, script = command_code.content, command_code.codeblock
         if not command_string or not script:
             return await send(ctx, "Malformed arguments were given.")

@@ -41,13 +41,19 @@ class RootManagement(root.Plugin):
         await send(ctx, view)
 
     @root.command("permissions", parent="dev", aliases=["perms"])
-    async def root_permissions(self, ctx: commands.Context[types.Bot], channel: discord.TextChannel | None = None):
+    async def root_permissions(
+        self, ctx: commands.Context[types.Bot], channel: discord.abc.GuildChannel | discord.Thread | None = None
+    ):
         """Show which permissions the bot has.
-        A text channel may be optionally passed to check for permissions in the given channel.
+
+        A channel may be optionally passed to check for permissions there.
+
+        channel: Optional[Union[:class:`discord.abc.GuildChannel`, :class:`discord.Thread`]]
+            The specific channel to check the permissions for.
         """
         if ctx.guild is None:
             return await send(ctx, "Please execute this command in a guild.")
-        select = PermissionsSelector(target=ctx.guild.me, channel=channel)
+        select = PermissionsSelector(target=ctx.guild.me, channel=channel)  # type: ignore
         await send(
             ctx,
             discord.Embed(
@@ -59,9 +65,13 @@ class RootManagement(root.Plugin):
     @root.command("load", parent="dev", aliases=["reload", "unload"])
     async def root_load(self, ctx: commands.Context[types.Bot], *extensions: str):
         r"""Load, reload, or unload a set of extensions.
-        To prevent noisy errors, extensions are checked if they currently exist when loading or unloading.
-        - Use '~' to reference all currently loaded extensions.
+        - Use '\~' to reference all currently loaded extensions.
         - Use 'module.\*' to include all extensions in 'module'.
+
+        Parameters
+        ----------
+        extensions: :class:`str`
+            The name of the extensions to take action on.
         """
         invoked_with: Literal["load", "reload", "unload"] = ctx.invoked_with  # type: ignore
         if not extensions:
@@ -95,17 +105,21 @@ class RootManagement(root.Plugin):
     async def root_sync(
         self, ctx: commands.Context[types.Bot], target: Literal[".", "*", "~.", "~*", "~"] | None, *guilds: int
     ):
-        """Sync this bot's application command tree with Discord.
-        Omit modes to sync globally.
-        **Modes**
-        `.`: Sync the current guild.
-        `*`: Copy all global commands to the current guild and sync.
-        `~`: Inverts the current mode.
+        r"""Sync this bot's application command tree with Discord.
+        Omit targets to sync globally.
 
-        Using the inverter causes the following change in behavoir:
-        `~` clears all global commands or local commands from the given guilds.
-        `~.` clears all commands from the current guild.
-        `~*` copies all global commands to the given guilds.
+        Using the inverter (\~) causes the following change in behavoir:
+        - *\~* clears all global commands or from the given guilds.
+        - *\~.* clears all commands from the current guild.
+        - *\~\** copes all global commands to the given guilds.
+
+        Parameters
+        ----------
+        target: Literal[".", "*", "~.", "~*", "~"]
+            How to sync. *\.* syncs to the current guild. *\** copies all global commands to the current guild and syncs.
+            *\~* inverts the current mode.
+        guilds: :class:`int`
+            The guilds to sync the tree to. Not always necessary.
         """
         if not self.bot.application_id:
             return await send(ctx, "Unable to sync. Application information has not been fetched.")
@@ -130,9 +144,7 @@ class RootManagement(root.Plugin):
                 return await send(ctx, "Cannot copy globals to guilds because no guilds were given.")
             skipped: set[int] = set()
             global_menus: list[app_commands.ContextMenu] = [
-                cmd
-                for menu, cmd in self.bot.tree._context_menus.items()
-                if menu[1] is None
+                cmd for menu, cmd in self.bot.tree._context_menus.items() if menu[1] is None
             ]
             for guild_id in guilds:
                 mapping: dict[int, dict[str, app_commands.Command[Any, ..., Any] | app_commands.Group]] = self.bot.tree._guild_commands.get(guild_id, {}).copy()  # type: ignore

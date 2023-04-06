@@ -63,12 +63,19 @@ class RootHTTP(root.Plugin):
         *,
         options: str | None = None,
     ):
-        """Send an HTTP GET request to *url*.
-        *options* should be written in valid JSON format.
-        **Modes:**
-        `json` = Converts the response to JSON. This isn't always available.
-        `read` = Read the response and return it.
-        `status` = Return the status code of the website.
+        """Send an HTTP GET request to a given URL.
+
+        Parameters
+        ----------
+        url: :class:`str`
+            The URL to send the request to.
+        mode: Literal["json", "read", "status"]
+            What should be done with the request. *json* converts the response to JSON.
+            *read* sends the raw response. *status* returns the status code of the URL.
+        allow_redirects: :class:`bool`
+            Whether to allow redirects when requesting to the URL. Defaults to `False`.
+        options: Optional[:class:`str`]
+            Additional argument that will be directly passed to `get`. Should be valid JSON.
         """
         #  Perhaps '>' is a needed literal in a parameter, so we shouldn't remove it
         #  if not necessary

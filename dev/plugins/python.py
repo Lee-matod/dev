@@ -77,17 +77,18 @@ class RootPython(root.Plugin):
         self.last_output: Any = None
 
     @root.command(
-        "python",
-        parent="dev",
-        root_placeholder=True,
-        virtual_vars=True,
-        aliases=["py"],
-        require_var_positional=False,
+        "python", parent="dev", root_placeholder=True, virtual_vars=True, aliases=["py"], require_var_positional=False
     )
     async def root_python(self, ctx: commands.Context[types.Bot], *, code: str | None = None):
         """Evaluate or execute Python code.
-        Just like in any REPL session, you can use the '_' to gain access to the
-        last value outputed by the previous session.
+
+        Just like in any REPL session, you can use '_' to gain access to the last value evaluated.
+        Sending a file instead is also supported.
+
+        Parameters
+        ----------
+        code: Optional[:class:`str`]
+            The code to evaluate. If this is not given, then a file is expected.
         """
         assert ctx.command is not None
         if code is None and ctx.message.attachments:
@@ -154,17 +155,20 @@ class RootPython(root.Plugin):
         async def root_black(self, ctx: commands.Context[types.Bot], *, code: Annotated[str, clean_code]):
             """Format a piece of code using the uncompromising black formatter.
 
-            Adjust the formatter to your liking by using comments as shown in the
-            example below.
-            ```
+            Adjust the formatter to your liking by using comments as shown in the example below.
             # black: enable=magic-trailing-comma
             # black: disable=string-normalization
             # black: line-length=120
             # black: target-version=39
-            ```
+
             Enabling or disabling multiple settings in a single comment is not supported.
 
             This feature is only available if the black module is installed and detected.
+
+            Parameters
+            ----------
+            code: :class:`str`
+                The code to format.
             """
             fm = black.FileMode()
             pyversion = _BLACK_PYVERSION.search(code)

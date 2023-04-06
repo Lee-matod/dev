@@ -141,20 +141,21 @@ class RootShell(root.Plugin):
         async def root_pyright(
             self, ctx: commands.Context[types.Bot], *, code: Annotated[MessageCodeblock, codeblock_converter]
         ):
-            """Run pyright with the provided code.
+            """Run Pyright with the provided code.
 
-            Invokes the system shell. Arguments that are before the codeblock will be
-            forwarded to pyright's executable options.
+            Arguments that are before the codeblock will be forwarded to Pyright's executable options.
 
-            Adjust a temporary `pyproject.toml` file to your liking by using comments as
-            shown in the example below.
-            ```
+            Adjust a temporary `pyproject.toml` file to your liking by using comments as shown below.
             # pyproject: typeCheckingMode="strict"
             # pyproject: pythonVersion="3.9"
             # pyproject: reportUnnecessaryTypeIgnoreComment=true
-            ```
 
-            This feature is only available if the pyright executable is detected.
+            Invokes the system shell. This feature is only available if the pyright executable is detected.
+
+            Parameters
+            ----------
+            code: :class:`MessageCodeblock`
+                Pyright arguments and code to type check.
             """
             cmd_args = code.content
             script = code.codeblock
@@ -209,10 +210,14 @@ class RootShell(root.Plugin):
         ):
             """Format a piece of code using the uncompromising black formatter.
 
-            Invokes the system shell. Arguments that are before the codeblock will be
-            forwarded to black's executable options.
+            Arguments that are before the codeblock will be forwarded to black's executable options.
 
-            This feature is only available if the black executable is detected.
+            Invokes the system shell. This feature is only available if the black executable is detected.
+
+            Parameters
+            ----------
+            code: :class:`MessageCodeblock`
+                Black arguments and code to format.
             """
             cmd_args = code.content
             script = code.codeblock

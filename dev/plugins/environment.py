@@ -30,20 +30,21 @@ class RootEnvironment(root.Plugin):
     async def root_environment(
         self,
         ctx: commands.Context[types.Bot],
-        mode: Literal["all", "content", "create", "remove", "delete", "edit", "exists", "new", "replace", "value",],
+        mode: Literal["all", "content", "create", "delete", "edit", "exists", "new", "remove", "replace", "value",],
         *,
         name: str | None = None,
     ):
-        """A virtual environment scope manager.
+        """A virtual environment variable manager.
+
         This allows you to create temporary variables that can later be used as placeholder texts.
         Note that all variables created using this manager will later be destroyed.
-        **Modes:**
-        `content|value` = View the value of the given variable.
-        `exists` = Check if a variable with the given name exists.
-        `all` = Sends a list of all currently existing variable names.
-        `edit`|`replace` = Edit the contents of an already existing variable.
-        `delete`|`remove` = Delete an already existing variable.
-        `new`|`create` = Create a new variable.
+
+        Parameters
+        ----------
+        mode: Literal["all", "content", "delete", "edit", "exists", "new", "remove", "replace", "value"]
+            What should be done with the given variable name, if any.
+        name: Optional[:class:`str`]
+            The name of the variable to edit. `all` does not require this parameter to be given.
         """
         if mode in ["new", "create"]:
             if name is None:

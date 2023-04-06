@@ -32,7 +32,13 @@ class RootSearch(root.Plugin):
     @root.command("search", parent="dev", require_var_positional=True, global_use=True)
     async def root_search(self, ctx: commands.Context[types.Bot], *, query: str):
         """Search for different items given a query.
+
         Items include cogs, command names, channels, emojis, members, and roles.
+
+        Parameters
+        ----------
+        query: :class:`str`
+            The string to match the items with.
         """
         if ctx.guild is not None:
             channels = _match(query, [(channel.name, channel.mention) for channel in ctx.guild.channels])

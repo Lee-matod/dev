@@ -32,7 +32,13 @@ class RootInformation(root.Plugin):
     @root.command("inspect", parent="dev", global_use=True, require_var_positional=True)
     async def root_inspect(self, ctx: commands.Context[types.Bot], *, command_string: str):
         """Inspect a command.
-        Receive command signature, aliases, and some other useful information.
+
+        Show the command's signature, aliases, cog, module, and some other useful information.
+
+        Parameters
+        ----------
+        command_string: :class:`str`
+            The qualified name of the command to inspect.
         """
         command = self.bot.get_command(command_string)
         if not command:
@@ -76,8 +82,14 @@ class RootInformation(root.Plugin):
 
     @root.command("source", parent="dev", aliases=["src"], require_var_positional=True)
     async def root_source(self, ctx: commands.Context[types.Bot], *, command_string: str):
-        """View the source code of a command.
+        """View the source code of a command if available.
+
         The token of the bot will be hidden as `[token]` if it is found within the source code.
+
+        Parameters
+        ----------
+        command_string: :class:`str`
+            The qualified name of the command to get the source code from.
         """
         command = self.bot.get_command(command_string)
         if not command:
