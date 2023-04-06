@@ -12,6 +12,7 @@ Root command and other that do not fall under any other category.
 from __future__ import annotations
 
 import asyncio
+import logging
 import math
 import sys
 import time
@@ -29,6 +30,8 @@ from dev.utils.utils import plural
 
 if TYPE_CHECKING:
     from dev import types
+
+_log = logging.getLogger(__name__)
 
 
 def _as_readable(percent: float, bytes_size: int) -> str:
@@ -117,16 +120,21 @@ class RootCommand(root.Plugin):
     @root.command("exit", parent="dev", aliases=["quit", "close"])
     async def root_exit(self, ctx: commands.Context[types.Bot]):
         """Exit the whole code at once, or close the bot.
+
         If the bot does not close within 5 seconds, `sys.exit()` is called regardless.
         """
         status = 0
         await ctx.message.add_reaction("\U0001f44b")
         if ctx.invoked_with == "close":
+            _log.info("Closing the bot now...")
             await self.bot.close()
             await asyncio.sleep(5)
             if self.bot.is_closed():
                 return
             status = -1
+        if status == -1:
+            _log.debug("Bot failed to close within 5 seconds")
+        _log.info("Forcing shutdown by exiting the program...")
         sys.exit(status)
 
     @commands.Cog.listener()
