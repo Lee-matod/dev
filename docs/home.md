@@ -21,7 +21,7 @@ To specify a slash command instead of a message command, prefix the command's na
 fully qualified name of the command (just like with normal prefix commands).
 
 When specifying arguments, you must provide them in a new line as name-value pairs, where each pair is separated by the
-[Settings.flag_delimiter](https://github.com/Lee-matod/dev#settings) character sequence.
+[Settings.flag_delimiter](https://github.com/Lee-matod/dev#settings) character.
 
 As an example, I will create an application command that looks a bit like this:
 
@@ -46,8 +46,6 @@ After syncing this command with Discord, I will invoke it using the `dev exec` c
 
 ![Lee_ executing ?dev exec /example in discord](https://user-images.githubusercontent.com/89663192/212227121-8b8e28a8-1613-41d1-b6ae-6d09be68edf3.png)
 
-Removed timestamps to make image clearer
-
 The first thing that you might notice when viewing this image, is that the order of the parameters does not matter, and
 this is thanks to the way in which each parameter name and value are parsed (see notes below for a more in-depth
 explanation).  
@@ -62,39 +60,37 @@ sure to report any bugs in the [issue tracker](https://github.com/Lee-matod/dev/
 > At the time of writing this, an application command's interface does not support new lines without doing some
 > wacky stuff. This is why I opted for each argument to be in a separate line rather than parsing a whole single line of
 > arguments.
->
-> Additionally, (as noted by Gorialis in
-> [this issue comment](https://github.com/Gorialis/jishaku/issues/185#issuecomment-1329579269)) an application command's
-> parameter can perfectly accept `""""` as an argument, which makes parsing a lot more complicated than it has to be.
 
 ### Can I add my own commands?
 
 Yes! This extension is fully extendable. To create your own cogs, you must
 use [Container](https://github.com/Lee-matod/dev/wiki/cogs#class-devrootcontainerbot) instead
-of [discord.ext.commands.Cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Cog)
-as the cog's parent class, and use [commands](https://github.com/Lee-matod/dev/wiki/registrations#devrootcommandnamemissing-kwargs) to
-register your commands. Apart from that, it is as simple as creating any other extension.  
-**Note:** When creating subcommands, do not do `@parent_command.command()` (like with normal commands) as this decorator
-does not exist. Instead, use `@root.command(...)` and set the `parent` key word argument to the fully qualified name of
+of [discord.ext.commands.Cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Cog),
+and use [commands](https://github.com/Lee-matod/dev/wiki/registrations#devrootcommandnamemissing-kwargs) to
+register your commands. Besides that, it is as simple as creating any other cog.  
+**Note:** When creating subcommands, do not do `@parent_command.command()` as this decorator does not exist.
+Instead, use `@root.command(...)` and set the `parent` key word argument to the fully qualified name of
 the parent command.
 
 ```python
-#  cog.py
+# ~/cog.py
 from dev import root
 from discord.ext import commands
 
 
-class MyDevCog(root.Container):
-    #  The 'parent' keyword argument is optional. If you don't set it, 
-    #  it will mean that the cog loader should treat the command as if 
-    #  it is part of the 'Dev' cog, but it is not a subcommand of 'dev'.
-    #  For the purpose of this example though, we are going to be adding 
-    #  these custom commands as subcommands of 'dev'.
+class MyDevCog(root.Plugin):
+    # The 'parent' keyword argument is optional. For the purpose of this
+    # example though, we are going to be adding these custom commands as
+    # subcommands of 'dev'.
 
+    # 'parent' is the only public additional argument that can be
+    # added to the decorator. Everything else is passed directly to the
+    # command constructor.
     @root.group(name="custom_group", parent="dev", invoke_without_command=True)
     async def my_custom_group(self, ctx: commands.Context) -> None:
         await ctx.send("This is a custom group!")
 
+    # Note that we are using the qualified name of the parent:
     @root.command(name="custom_subcommand", parent="dev custom_group")
     async def my_custom_subcommand(self, ctx: commands.Context) -> None:
         await ctx.send("This is a custom subcommand!")
@@ -104,31 +100,32 @@ class MyDevCog(root.Container):
         await ctx.send("This is a custom command!")
 
 
-#  This part is mandatory just like with any other cog.
+# This part is mandatory just like with any other extension.
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(MyDevCog(bot))
 ```
 
-Once you have created your custom cog, you have to load it like you would with any other extension.
+Once you have created your custom cog, you load it like you would with any other extension.
 
 ```python
-#  __main__.py
+# ~/__main__.py
 import discord
 from discord.ext import commands
 
 intents = discord.Intents.default()
-#  Message content intent is required to be able to use message/prefix commands. 
-#  Alternatively, set the bot's prefix to its mention.
+# Message content intent is required to be able to use message/prefix commands. 
+# Alternatively, set the bot's prefix to its mention.
 intents.message_content = True
 bot = commands.Bot(command_prefix="?", intents=intents)
 
 
 @bot.event
 async def setup_hook():
-    #  When adding **other custom commands**, the order in which you 
-    #  load the extension does not matter.
-    await bot.load_extension("cog")
+    # Sometimes the order of this matters.
+    # If your custom cog interacts in any way with the extension,
+    # you should load dev first, and then your cog.
     await bot.load_extension("dev")
+    await bot.load_extension("cog")
 
 
 bot.run("[token]")
@@ -138,72 +135,69 @@ Congratulations! You have your very own custom command. You can now access these
 running `?dev custom_command`, `?dev custom_group`, or `?dev custom_group custom_subcommand`.  
 This also means that all 3 custom commands are bound to the owner-only check.
 
-This is also compatible with
-the [discord.ext.commands](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html) framework.
+It is worth mentioning that using the [discord.ext.commands](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html)
+framework is also supported and commands registered this way will work as if the cog where normal.
 
 ### Can I override a root command?
 
-Sure can do! The steps are pretty similar on adding custom commands too. You just have to make sure that you load your
-custom cog with the override *after* you load the dev extension, otherwise your commands won't get overridden.  
+This is also possible! The steps are pretty similar on adding custom commands too.
 To override a command, you just have to copy the qualified name and use it as your command's name.
 
 ```python
-#  override.py
+#  ~/override.py
 from dev import root
 from discord.ext import commands
 
 
-class MyDevCog(root.Container):
-    #  Be careful what type of command you use when overriding commands.
-    #  If you use `root.command` with an expected group command, you will
-    #  get an error!
+class MyDevCog(root.Plugin):
+    # Be careful what type of command you use when overriding commands.
+    # If you use `root.command` with an expected group command, you will
+    # get an error!
 
-    #  We are going to override the root command here.
-    #  Remember that if we don't set `invoke_without_command`,
-    #  this command will be invoked when using its subcommands.
+    # We are going to override the root command here.
+    # Remember that if we don't set `invoke_without_command`,
+    # this command will be invoked when using its subcommands.
     @root.group(name="dev", invoke_without_command=True)
     async def my_custom_group(self, ctx: commands.Context) -> None:
         await ctx.send("No more system information for you!")
 
-    #  And let's override the 'dev override command' command.
-    @root.command(name="command", parent="dev override")
+    # And let's override the 'dev override' command too.
+    # You can of course change command attributes, signature,
+    # and functionality. But for the sake of simplicity, I will just
+    # send a message and make the command essentially useless.
+    @root.command(name="override", parent="dev")
     async def my_custom_subcommand(self, ctx: commands.Context) -> None:
-        await ctx.send("Well this is ironic... can't override commands anymore!")
+        await ctx.send("Well this is ironic...")
 
-#  This part is mandatory just like with any other cog.
+# This part is mandatory just like with any other extension.
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(MyDevCog(bot))
 ```
 
-Maybe you still need the default functionality of a command, but just want to add a bit of logging. Wait! don't copy and
-paste the implementation of the command. Instead, subclass the Root cog of the command, and override the method of the
-command.  
-Root cogs are not documented, so if for whatever reason you want to do this, you will have to look for the name of the
-class yourself. Root commands aren't registered in `dev.__all__` either, so you have to get them through the module.  
-Each module is inside a package that includes the cogs in their respective `__all__` (except for `dev.__main__`), so you
-can use either the full namespace, or just the package namespace.
+Maybe you still need the default functionality of a command, but just want to add a bit of logging to it. You don't
+have to copy and paste the implementation of the whole command. Instead, subclass the Root cog of the command, and
+override the method of the command.  
+Root cogs are not documented and aren't in `dev.__all__`, but they can be found under the `plugins` package.
 
 ```python
-#  new_python.py
+#  ~/logged_python.py
 import logging
 
-from dev import root
-from dev.experimental import RootPython
-#  from dev.experimental.python import RootPython  # Can also use the full namespace
+from dev import root, plugins
 from discord.ext import commands
 
 _log = logging.getLogger(__name__)
 
 
-class MyRootPython(RootPython):
-    #  Since we are technically just overriding a method,
-    #  the name of the method should be exactly the same.
+class MyRootPython(plugins.RootPython):
+    # Since we are technically just overriding a method,
+    # the name of the method should be exactly the same.
     
     @root.command(name="python", parent="dev", aliases=["py"])
     async def root_python(self, ctx: commands.Context, *, code: str) -> None:
-        _log.info("Command 'dev python' called by %s", ctx.author)
+        _log.info("Command '%s' called by %s", ctx.command.qualified_name, ctx.author)
         await super().root_python(ctx, code=code)
-        _log.info("Command 'dev python' finished executing")
+        _log.info("Command '%s' finished executing", ctx.command.qualified_name)
 
 
 async def setup(bot: commands.Bot) -> None:
@@ -214,28 +208,34 @@ Now that we have overridden a few root commands and added some extra implementat
 main file.
 
 ```python
-#  __main__.py
+# ~/__main__.py
 import discord
 from discord.ext import commands
 
 intents = discord.Intents.default()
-#  Message content intent is required to be able to use message/prefix commands. 
-#  Alternatively, set the bot's prefix to its mention.
+# Message content intent is required to be able to use message/prefix commands. 
+# Alternatively, set the bot's prefix to its mention.
 intents.message_content = True
 bot = commands.Bot(command_prefix="?", intents=intents)
 
 
 @bot.event
 async def setup_hook():
-    #  REMEMBER! When overriding commands, you must **always**
-    #  load the custom cog **after** you load the dev extension.
-    #  This is due to how subclassing and registering works.
+    # Both of these custom extensions interact with the dev cog,
+    # so (as mentioned above), they must be after the extension.
     await bot.load_extension("dev")
     await bot.load_extension("override")
-    await bot.load_extension("new_python")
+    await bot.load_extension("logged_python")
 
 
 bot.run("[token]")
 ```
 
-Congratulations, you have your very own `dev`, `dev python|py` and `dev override command` commands!
+If you happen to unload an extension, all of the commands that override any other command will be removed and replaced
+with a previous version of it until it reaches the root command.  
+As an example, if you override the command `dev` in a cog called `DevOverride`, when you add the cog, the root `dev`
+command will be overridden with the new implementation of `DevOverride`. However, when you remove the cog, the command
+of `DevOverride` will be removed and the original `dev` command will take its place.
+
+With that little note out of the way, congratulations! You have your very own `dev`, `dev python|py` and
+`dev override` commands!

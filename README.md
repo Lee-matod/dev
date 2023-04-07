@@ -62,33 +62,36 @@ below as well as what they do.
 
 ```python
 from dev import Settings
-Settings.owners = {1234567890}
-Settings.invoke_on_edit = True
-Settings.virtual_vars = "-%s-"
+Settings.OWNERS = {1234567890}
+Settings.INVOKE_ON_EDIT = True
+Settings.VIRTUAL_VARS = "-%s-"
 ```
 
 ```python
-allow_global_uses: bool = False
-flag_delimiter: str = "="
-invoke_on_edit: bool = False
-owners: set[int] = {}
-path_to_file: str = os.getcwd()
-root_folder: str = ""
-virtual_vars: str = "|%s|"
-locale: str = "en-US"
+GLOBAL_USE: bool = False
+FLAG_DELIMITER: str = "="
+INVOKE_ON_EDIT: bool = False
+LOCALE: str = "en-US"
+OWNERS: set[int] = {}
+PATH_TO_FILE: str = os.getcwd()
+RETAIN: bool = False
+ROOT_FOLDER: str = ""
+VIRTUAL_VARS: str = "|%s|"
 ```
 
-* **allow_global_uses:** Commands that have their `global_use` property set True are allowed to be invoked by any user.
+* **GLOBAL_USE:** Commands that have their `global_use` property set to True are allowed to be invoked by any user.
   Defaults to `False`.
-* **flag_delimiter:** The characters that determines when to separate a key from its value when parsing strings to
+* **FLAG_DELIMITER:** The characters that determines when to separate a key from its value when parsing strings to
   dictionaries. Defaults to `=`.
-* **invoke_on_edit:** Whenever a message that invoked a command is edited to another command, the bot will try to invoke
+* **INVOKE_ON_EDIT:** Whenever a message that invoked a command is edited to another command, the bot will try to invoke
   the new command. Defaults to `False`.
-* **owners:** A set of user IDs that override bot ownership IDs. If specified, users that are only found in the
-  ownership ID list will not be able to use this extension.
-* **path_to_file:** A path directory that will be removed if found inside a message. This will typically be used in
+* **LOCALE:** The default guild and user locale to use whenever emulating a Discord object. Defaults to `en-US`.
+* **OWNERS:** A set of user IDs that override bot ownership IDs. If specified, users that are only found in the
+  ownership ID list will be able to use this extension.
+* **PATH_TO_FILE:** A directory that will be removed if found inside a message. This will typically be used in
   tracebacks. Defaults to the current working directory. This must be a valid path.
-* **root_folder:** The path that will replace the `|root|` text placeholder. This must be a valid path.
-* **virtual_vars:** The format in which virtual variables are expected to be formatted. The actual place where the
-  variable's name will be should be defined as `%s`. Defaults to `|%s|`.
-* **locale:** Locale that will be used whenever emulating a Discord object. Defaults to `en-US`.
+* **RETAIN:** Whether REPL sessions should retain their scope. This is only used in the `dev python` command. Defaults
+  to `False`.
+* **ROOT_FOLDER:** The path that will replace the `|root|` text placeholder. This must be a valid path.
+* **VIRTUAL_VARS:** The format in which environment variables are expected to be defined. The actual place where the
+  variable's name will be should be `%s`. Defaults to `|%s|`.

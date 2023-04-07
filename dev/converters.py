@@ -35,10 +35,6 @@ T = TypeVar("T")
 
 
 class GlobalTextChannelConverter(commands.TextChannelConverter):
-    """Similar to :class:`discord.ext.commands.TextChannelConverter`, but convert channels client-wide instead of
-    guild-wide.
-    """
-
     async def convert(self, ctx: commands.Context[types.Bot], argument: str) -> discord.TextChannel:
         try:
             channel = await super().convert(ctx, argument)

@@ -105,7 +105,7 @@ class Plugin(commands.Cog):
     Parameters
     ----------
     bot: :class:`discord.ext.commands.Bot`
-        The bot instance that gets passed to :meth:`discord.ext.commands.Bot.add_cog`.
+        The bot that this cog should belong to.
 
     Attributes
     ----------

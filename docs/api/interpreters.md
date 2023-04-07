@@ -5,7 +5,7 @@ As of right now, the only interpreters that are available are Python and system 
 
 ***
 
-### `class` *async for ... in* dev.interpreters.Execute(code, global_locals, args)
+### `class` *async for ... in* dev.interpreters.Execute(code, scope, args)
 
 Evaluate and execute Python code.
 
@@ -13,7 +13,7 @@ If the last couple of lines are expressions, yields are automatically prepended.
 
 #### Parameters
 - code([str](https://docs.python.org/3/library/stdtypes.html#str)) – The code that should be evaluated and executed.
-- global_locals([GlobalLocals](https://github.com/Lee-matod/dev/wiki/utils#class-devhandlersgloballocals__globalsnone-__localsnone-)) –
+- scope([Scope](https://github.com/Lee-matod/dev/wiki/utils#class-devhandlersgloballocals__globalsnone-__localsnone-)) –
 The scope that will get updated once the given code has finished executing.
 - args(Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), Any]) – An additional mapping of values that
   will be forwarded to the scope of the evaluation.
@@ -23,14 +23,14 @@ The scope that will get updated once the given code has finished executing.
 ```py
 code = "for _ in range(3): print(i)"
 #  Prints 'Hello World' 3 times
-async for expr in Execute(code, GlobalLocals(), {"i": "Hello World"}):
+async for expr in Execute(code, Scope(), {"i": "Hello World"}):
     print(expr)
 
 code = "1 + 1" \
        "2 + 2" \
        "3 + 3"
 #  Yields the result of each statement
-async for expr in Execute(code, GlobalLocals(), {}):
+async for expr in Execute(code, Scope(), {}):
     print(expr)
 ```
 

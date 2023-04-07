@@ -41,7 +41,7 @@ def _path_exists(path: str) -> str:
 
 
 class Scope:
-    """Allows variables to be stored within a class instance, instead of a global scope or a dictionary.
+    """Represents a Python scope with global and local variables.
 
     Parameters
     ----------
@@ -65,9 +65,11 @@ class Scope:
         return f"<{type(self).__name__} globals={self.globals} locals={self.locals}"
 
     def __bool__(self) -> bool:
+        """Whether both global and local dictionaries are not empty."""
         return bool(self.globals or self.locals)
 
     def __delitem__(self, key: Any) -> None:
+        """Deletes `y` from the global scope, local scope, or both.  """
         glob_exc, loc_ext = False, False
         try:
             del self.globals[key]
@@ -81,12 +83,14 @@ class Scope:
             raise KeyError(key)
 
     def __getitem__(self, item: Any) -> Any:
+        """Gets the global or local value of `y`.  """
         try:
             return self.globals[item]
         except KeyError:
             return self.locals[item]
 
     def __len__(self) -> int:
+        """Returns the added length of both global and local dictionaries."""
         return len(self.globals) + len(self.locals)
 
     def items(self) -> tuple[tuple[Any, Any], ...]:
@@ -120,10 +124,10 @@ class Scope:
         return tuple(itertools.chain(self.globals.values(), self.locals.values()))
 
     def get(self, item: Any, default: T | None = None) -> Any | None | T:
-        """Get an item from either the global scope or the locals scope.
+        """Get an item from either the global or local scope.
 
-        Global scope will be searched first, then local scope and if no item is found, the default will be returned.
-        It's best to use this when you are just trying to get a value without worrying about the scope.
+        If no item is found, the default will be returned.
+        It is best to use this when you are just trying to get a value without worrying about the scope.
 
         Parameters
         ----------
@@ -135,7 +139,7 @@ class Scope:
         Returns
         -------
         Any
-            The value of the item that was found, if it was found.
+            The value of the item that was found, if any.
         """
         try:
             res = self.globals[item]

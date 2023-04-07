@@ -21,46 +21,6 @@ highlightjs(Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)]
 
 ***
 
-### `class` dev.converters.LiteralModes(modes, case_sensitive)
-
-A custom converter that checks if a given argument falls under
-a [typing.Literal](https://docs.python.org/3/library/typing.html#typing.Literal) list.
-
-Subclass
-of [discord.ext.commands.Converter](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Converter).
-
-#### Example Usage
-
-```python
-@bot.command()
-async def foo(ctx: commands.Context, arg: LiteralModes[typing.Literal["bar", "ABC"], True]):
-     ...
-
-@bot.command()
-async def bar(ctx: commands.Context, arg: LiteralModes[typing.Literal["foo"]]):
-     ...
-```
-
-#### Parameters
-
-- modes(Literal[[str](https://docs.python.org/3/library/stdtypes.html#str)]) – The list of strings that should be
-  accepted.
-- case_sensitive([bool](https://docs.python.org/3/library/functions.html#bool)) – Whether the modes are
-  case-sensitive. Defaults to `False`.
-
-> ### *await* convert(ctx, mode)
-> The method that converts the argument passed in.
-> #### Parameters
-> - ctx([discord.ext.commands.Context](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Context)) –
-> The invocation context in which the argument is being using on.
-> - mode([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should get checked if it falls
-    > under any of the specified modes.
-> #### Returns
-> Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)] – The mode that was accepted, if it falls under
-> any of the specified modes.
-
-***
-
 ### dev.converters.codeblock_converter(content)
 
 A custom converter that identifies and separates normal string arguments from codeblocks.
@@ -118,58 +78,3 @@ Integer separation is determined whenever a non-numeric character appears when i
 #### Returns
 
 List[[int](https://docs.python.org/3/library/functions.html#int)] – A list of the integers found in the string.
-
-***
-
-### dev.utils.utils.clean_code(content)
-
-Removes any leading and trailing back ticks from a string.
-
-#### Parameters
-
-- content([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should be parsed.
-
-#### Returns
-
-[str](https://docs.python.org/3/library/stdtypes.html#str) – The cleaned up string without any leading or trailing
-backticks.
-
-***
-
-### dev.utils.utils.codeblock_wrapper(content, highlight_language="")
-
-Add leading and trailing backticks to the given string.
-
-You can optionally add a highlight language, as well as change the highlight language if `content` were to be
-wrapped in backticks.
-
-#### See Also
-
-https://highlightjs.org/
-
-#### Parameters
-
-- content([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should get wrapped inside
-  backticks.
-- highlight_language([str](https://docs.python.org/3/library/stdtypes.html#str)) – The highlight language that should
-  be used.
-
-#### Returns
-
-[str](https://docs.python.org/3/library/stdtypes.html#str) – The parsed codeblock.
-
-***
-
-### dev.utils.utils.escape(content)
-
-A helper function that combines
-both [discord.utils.escape_markdown](https://discordpy.readthedocs.io/en/latest/api.html#discord.utils.escape_markdown)
-and [discord.utils.escape_mentions](https://discordpy.readthedocs.io/en/latest/api.html#discord.utils.escape_mentions)
-
-#### Parameters
-
-- content([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should be escaped.
-
-#### Returns
-
-[str](https://docs.python.org/3/library/stdtypes.html#str) – The cleaned up string without any markdowns or mentions.

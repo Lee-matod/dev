@@ -5,15 +5,15 @@ reacting.
 
 ***
 
-### `class` dev.components.views.AuthoredView(author, *components)
+### `class` dev.components.views.AuthoredMixin(author, *components)
 
 A [discord.ui.View](https://discordpy.readthedocs.io/en/latest/interactions/api.html#discord.ui.View) wrapper that
-automatically adds an owner-only interaction check.
+optionally adds an owner-only interaction check.
 
 #### Parameters
 
-- author(Union[types.User, [int](https://docs.python.org/3/library/functions.html#int)]) – The only user that is allowed
-  to interact with this view.
+- author(Optional[Union[types.User, [int](https://docs.python.org/3/library/functions.html#int)]]) – The only user
+  that is allowed to interact with this view.
 - components([discord.ui.Item](https://discordpy.readthedocs.io/en/latest/interactions/api.html#discord.ui.Item)) –
   Components that will be automatically added to the view.
 
@@ -29,7 +29,7 @@ automatically adds an owner-only interaction check.
 A view that automatically creates a button that sends a modal.
 
 Subclass
-of [AuthoredView](https://github.com/Lee-matod/dev/wiki/api#class-devcomponentsviewsauthoredviewauthor-components).
+of [AuthoredMixin](https://github.com/Lee-matod/dev/wiki/api#class-devcomponentsviewsauthoredmixinauthor-components).
 
 #### Parameters
 
@@ -118,10 +118,13 @@ The pagination instance that was passed to the constructor.
 - author([int](https://docs.python.org/3/library/functions.html#int)) – The ID of the user that is able to interact
   with this paginator. This is the result of the user ID or object that was passed to the constructor.
 
-> #### `property` display_page
-> [str](https://docs.python.org/3/library/stdtypes.html#str) – Returns the current page of the paginator.
+> #### reset()
+> Resets the entire interface, setting the current page to the last one.
 
-> #### `property` current_page
+> #### `property` display_page
+> [str](https://docs.python.org/3/library/stdtypes.html#str) – Returns the current page of the paginator..
+
+> #### `property` page_num
 > [int](https://docs.python.org/3/library/functions.html#int) – Returns the current page number of the paginator.
 
 ***

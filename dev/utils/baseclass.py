@@ -127,8 +127,8 @@ class BaseCommand(Generic[CogT, P, T]):
             return f"{self.parent} {self.name}"
         return self.name
 
-    def to_instance(self, bot: types.Bot, command_mapping: dict[str, types.Command] | None = None, /) -> types.Command:
-        raise NotImplementedError
+    def to_instance(self, mixin: commands.GroupMixin[Any], command_mapping: dict[str, types.Command] | None = None, /) -> types.Command:
+        raise NotImplementedError()
 
     def error(
         self, func: Callable[[CogT, commands.Context[types.Bot], commands.CommandError], Coro[Any],]
@@ -146,11 +146,13 @@ class Command(BaseCommand[CogT, ..., Any]):
     Instead, consider using :meth:`root.command` to instantiate this class.
     """
 
-    def to_instance(self, bot: types.Bot, command_mapping: dict[str, types.Command] | None = None, /) -> commands.Command[CogT, ..., Any]:
+    def to_instance(self, mixin: commands.GroupMixin[Any], command_mapping: dict[str, types.Command] | None = None, /) -> commands.Command[CogT, ..., Any]:
         """Converts this class to an instance of its respective simulation.
 
         Parameters
         ----------
+        mixin: :class:`discord.ext.commands.GroupMixin`
+            Where the command mapping should be obtained, and where to remove redifined commands from.
         command_mapping: Dict[str, types.Command]
             A mapping of commands from which this command will get their corresponding parents from.
 
@@ -160,7 +162,7 @@ class Command(BaseCommand[CogT, ..., Any]):
             The command class made using the given attributes of this temporary class.
         """
         if command_mapping is None:
-            command_mapping = {c.qualified_name: c for c in bot.commands}
+            command_mapping = {c.qualified_name: c for c in mixin.commands}
         if self.parent:
             command = command_mapping.get(self.parent)
             if not command:
@@ -170,7 +172,7 @@ class Command(BaseCommand[CogT, ..., Any]):
             command.remove_command(self.name)
             deco = command.command
         else:
-            bot.remove_command(self.name)
+            mixin.remove_command(self.name)
             deco = commands.command
         cmd: commands.Command[CogT, ..., Any] = deco(name=self.name, cls=DiscordCommand, **self.kwargs)(self.callback)
         if self.on_error:
@@ -186,12 +188,14 @@ class Group(BaseCommand[CogT, ..., Any]):
     Instead, consider using :meth:`root.group` to instantiate this class.
     """
 
-    def to_instance(self, bot: types.Bot, command_mapping: dict[str, types.Command] | None = None, /) -> commands.Group[CogT, ..., Any]:
+    def to_instance(self, mixin: commands.GroupMixin[Any], command_mapping: dict[str, types.Command] | None = None, /) -> commands.Group[CogT, ..., Any]:
         """Converts this class to an instance of its respective simulation.
 
         Parameters
         ----------
-        command_mapping: Dict[str, types.Command]
+        mixin: :class:`discord.ext.commands.GroupMixin`
+            Where the command mapping should be obtained, and where to remove redifined commands from.
+        command_mapping: Optional[Dict[str, types.Command]]
             A mapping of commands from which this group will get their corresponding parents from.
 
         Returns
@@ -200,7 +204,7 @@ class Group(BaseCommand[CogT, ..., Any]):
             The group class made using the given attributes of this temporary class.
         """
         if command_mapping is None:
-            command_mapping = {c.qualified_name: c for c in bot.commands}
+            command_mapping = {c.qualified_name: c for c in mixin.commands}
         children: set[commands.Command[Any, ..., Any]] = set()
         if self.parent:
             command = command_mapping.get(self.parent)
@@ -213,7 +217,7 @@ class Group(BaseCommand[CogT, ..., Any]):
                 children.update(old_command.commands)
             deco = command.group
         else:
-            old_command = bot.remove_command(self.name)
+            old_command = mixin.remove_command(self.name)
             if old_command is not None and isinstance(old_command, commands.Group):
                 children.update(old_command.commands)
             deco = commands.group

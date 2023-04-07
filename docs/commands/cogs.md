@@ -1,6 +1,6 @@
 # cogs
 
-### `class` dev.root.Container(bot)
+### `class` dev.root.Plugin(bot)
 
 A cog subclass that implements a global check and some default functionality that the dev extension should have.
 
@@ -14,8 +14,7 @@ of [discord.ext.commands.Cog](https://discordpy.readthedocs.io/en/stable/ext/com
 ### Parameters
 
 - bot([discord.ext.commands.Bot](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Bot)) –
-The bot instance that gets passed
-to [discord.ext.commands.Bot.add_cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Bot.add_cog).
+    The bot that this cog should belong to.
 
 > ### bot
 > The bot instance that was passed to the constructor of this class.
@@ -26,11 +25,6 @@ to [discord.ext.commands.Bot.add_cog](https://discordpy.readthedocs.io/en/latest
 > A dictionary that stores all dev commands.
 > #### Type
 > Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), types.Command]
-
-> ### registrations
-> A dictionary that stores all modifications made in the `dev override`/`dev overwrite` commands.
-> #### Type
-> Dict[[int](https://docs.python.org/3/library/functions.html#int), Union[CommandRegistration, SettingRegistration]]
 
 > ### *await* cog_check(ctx)
 > A check that is called every time a dev command is invoked. 

@@ -38,9 +38,6 @@ __all__ = ("flag_parser", "generate_ctx", "generate_table", "interaction_respons
 def flag_parser(string: str, delimiter: str) -> dict[str, Any]:
     """Converts a string into a dictionary.
 
-    This works similarly to :class:`discord.ext.commands.FlagConverter`, only that it can
-    take an arbitrary number of flags and prefixes aren't supported.
-
     Examples
     --------
     .. codeblock:: python3
@@ -424,18 +421,16 @@ async def interaction_response(  # type: ignore
 async def generate_ctx(ctx: commands.Context[types.Bot], **kwargs: Any) -> commands.Context[types.Bot]:
     """Create a custom context with changeable attributes.
 
+    When specifying a new guild, it may not always get updated. This is mainly controlled
+    by the message's text channel.
+    There might be a few other really specific cases in which it may not get updated.
+
     Parameters
     ----------
     ctx: :class:`commands.Context`
         The invocation context in which the command was invoked.
     kwargs:
         Any attributes that the generated context should have.
-
-    Notes
-    -----
-    When specifying a new guild, it may not always get updated. This is mainly controlled
-    by the message's text channel.
-    There might be a few other really specific cases in which it may not get updated.
 
     Returns
     -------

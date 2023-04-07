@@ -29,11 +29,13 @@ This class is used to keep track of which functions be groups, and it shouldn't 
 Instead, consider
 using [group](https://github.com/Lee-matod/dev/blob/main/docs/commands/registration.md#devrootgroupnamemissing-kwargs) to
 instantiate this class.
-> ### to_instance(command_mapping, /)
+> ### to_instance(mixin, command_mapping, /)
 > Converts this class to an instance of its respective simulation.
 > #### Parameters
-> - command_mapping(Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), types.Command]) – A mapping of
-    > commands from which this group will get their corresponding parents from.
+> - mixin([GroupMixin](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.GroupMixin)) –
+> Where the command mapping should be obtained, and where to remove redifined commands from.
+> - command_mapping(Optional[Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), types.Command]]) – A mapping of 
+>   commands from which this group will get their corresponding parents from.
 > #### Returns
 > [discord.ext.commands.Group](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Group) –
 > The group class made using the given attributes of this temporary class.
@@ -49,11 +51,13 @@ This class is used to keep track of which functions should be commands, and it s
 Instead, consider
 using [command](https://github.com/Lee-matod/dev/blob/main/docs/commands/registration.md#devrootcommandnamemissing-kwargs)
 to instantiate this class.
-> ### to_instance(command_mapping, /)
+> ### to_instance(mixin, command_mapping, /)
 > Converts this class to an instance of its respective simulation.
 > #### Parameters
-> - command_mapping(Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), types.Command]) – A mapping of
-    > commands from which this command will get their corresponding parents from.
+> - mixin([GroupMixin](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.GroupMixin)) –
+> Where the command mapping should be obtained, and where to remove redifined commands from.
+> - command_mapping(Optional[Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), types.Command]]) – A mapping of
+> commands from which this command will get their corresponding parents from.
 > #### Returns
 > [discord.ext.commands.Command](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.Command) –
 > The command class made using the given attributes of this temporary class.

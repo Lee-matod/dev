@@ -573,7 +573,7 @@ class Execute:
     ----------
     code: :class:`str`
         The code that should be evaluated and executed.
-    global_locals: :class:`GlobalLocals`
+    scope: :class:`Scope`
         The scope that will get updated once the given code has finished executing.
     args: Dict[:class:`str`, Any]
         An additional mapping of values that will be forwarded to the scope of the evaluation.
@@ -583,14 +583,14 @@ class Execute:
     .. codeblock:: python3
         code = "for _ in range(3): print(i)"
         #  Prints 'Hello World' 3 times
-        async for expr in Execute(code, GlobalLocals(), {"i": "Hello World"}):
+        async for expr in Execute(code, Scope(), {"i": "Hello World"}):
             print(expr)
 
         code = "1 + 1" \
                "2 + 2" \
                "3 + 3"
         #  Yields the result of each statement
-        async for expr in Execute(code, GlobalLocals(), {}):
+        async for expr in Execute(code, Scope(), {}):
             print(expr)
     """
 
