@@ -29,7 +29,7 @@ optionally adds an owner-only interaction check.
 A view that automatically creates a button that sends a modal.
 
 Subclass
-of [AuthoredMixin](https://github.com/Lee-matod/dev/wiki/api#class-devcomponentsviewsauthoredmixinauthor-components).
+of [AuthoredMixin](https://github.com/Lee-matod/dev/blob/main/docs/api/interactions.md#class-devcomponentsviewsauthoredmixinauthor-components).
 
 #### Parameters
 
@@ -88,7 +88,7 @@ Replaces any instance of virtual variables with their respective values and retu
 #### Parameters
 
 - string([str](https://docs.python.org/3/library/stdtypes.html#str)) – The string that should get converted.
-- scope([LocalGlobals](https://github.com/Lee-matod/dev/blob/main/docs/utils.md#class-devhandlersgloballocals__globalsnone-__localsnone-)) –
+- scope([Scope](https://github.com/Lee-matod/dev/blob/main/docs/utils.md#class-devscopescope__globalsnone-__localsnone-)) –
 The scope that will be used when dealing with variables.
 
 #### Returns
@@ -196,7 +196,7 @@ The interaction that should be responded to.
 
 #### Returns
 
-Optional[[Paginator](https://github.com/Lee-matod/dev/wiki/api#class-devpaginationpaginatorpaginator_type--prefix-suffix-max_size2000-linesepn)] –
+Optional[[Paginator](https://github.com/Lee-matod/dev/blob/main/docs/api/interactions.md#class-devpaginationpaginator)] –
 The paginator that is being used in the first message if `forced_paginator` was set to `False` and the function decided
 to enable pagination for the response.
 
@@ -242,7 +242,7 @@ The invocation context in which the command was invoked.
 #### Returns
 
 Tuple[[discord.Message](https://discordpy.readthedocs.io/en/latest/api.html#discord.Message),
-Optional[[Paginator](https://github.com/Lee-matod/dev/wiki/api#class-devpaginationpaginatorpaginator_type--prefix-suffix-max_size2000-linesepn)]] –
+Optional[[Paginator](https://github.com/Lee-matod/dev/blob/main/docs/api/interactions.md#class-devpaginationpaginator)]] –
 The message that was sent and the paginator if `forced_pagination` was set to `False`.
 
 #### Raises

@@ -215,7 +215,7 @@ def replace_vars(string: str, scope: Scope) -> str:
     ----------
     string: :class:`str`
         The string that should get converted.
-    scope: :class:`GlobalLocals`
+    scope: :class:`Scope`
         The scope that will be used when dealing with variables.
 
     Returns

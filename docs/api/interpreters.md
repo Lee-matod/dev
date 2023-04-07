@@ -13,7 +13,7 @@ If the last couple of lines are expressions, yields are automatically prepended.
 
 #### Parameters
 - code([str](https://docs.python.org/3/library/stdtypes.html#str)) – The code that should be evaluated and executed.
-- scope([Scope](https://github.com/Lee-matod/dev/wiki/utils#class-devhandlersgloballocals__globalsnone-__localsnone-)) –
+- scope([Scope](https://github.com/Lee-matod/dev/blob/main/docs/utils.md#class-devscopescope__globalsnone-__localsnone-)) –
 The scope that will get updated once the given code has finished executing.
 - args(Dict[[str](https://docs.python.org/3/library/stdtypes.html#str), Any]) – An additional mapping of values that
   will be forwarded to the scope of the evaluation.
@@ -41,12 +41,12 @@ async for expr in Execute(code, Scope(), {}):
 A class that wraps a [subprocess.Popen](https://docs.python.org/3/library/subprocess.html#subprocess.Popen) process
 
 It is not recommended to instantiate this class. You should instead get an instance
-through [ShellSession.\_\_call\_\_](https://github.com/Lee-matod/dev/wiki/api#__call__script).
+through [ShellSession.\_\_call\_\_](https://github.com/Lee-matod/dev/blob/main/docs/api/interpreters.md#__call__script).
 It is also recommended to use this class as a context manager to ensure proper process killing handling.
 
 #### Parameters
 
-- session([ShellSession](https://github.com/Lee-matod/dev/wiki/api#class-devinterpretersshellsession)) – The current
+- session([ShellSession](https://github.com/Lee-matod/dev/blob/main/docs/api/interpreters.md#class-devinterpretersshellsession)) – The current
   session that this process will be bound to.
 - cwd([str](https://docs.python.org/3/library/stdtypes.html#str)) – The current working directory that this process will
   be in.
@@ -74,9 +74,9 @@ The invocation context in which the function should send the output to. If not g
 string when the subprocess is completed.
 > #### Returns
 > Tuple[[discord.Message](https://discordpy.readthedocs.io/en/stable/api.html#discord.Message),
-> Optional[[Paginator](https://github.com/Lee-matod/dev/wiki/api#class-devpaginationpaginator)]] –
+> Optional[[Paginator](https://github.com/Lee-matod/dev/blob/main/docs/api/interactions.md#class-devpaginationpaginator)]] –
 > If *context* is given, then the message that was sent and paginator are returned. These are the return values from
-> [send](https://github.com/Lee-matod/dev/wiki/interactions#await-devutilsfunctssendctx-args-options).  
+> [send](https://github.com/Lee-matod/dev/blob/main/docs/api/interactions.md#await-devutilsfunctssendctx-args-options).  
 > Usually, you shouldn't need these objects  
 > Optional[[str](https://docs.python.org/3/library/stdtypes.html#str)] –
 > If *context* was not given, then the full output of the subprocess is returned.
@@ -85,7 +85,7 @@ string when the subprocess is completed.
 > Tries to get the output of the subprocess within a 60-second time frame.
 >
 > You should let this function get called automatically
-by [run_until_complete](https://github.com/Lee-matod/dev/wiki/api#await-run_until_completecontextnone---firstfalse).
+by [run_until_complete](https://github.com/Lee-matod/dev/blob/main/docs/api/interpreters.md#await-run_until_completecontextnone-).
 > #### Returns
 > [str](https://docs.python.org/3/library/stdtypes.html#str) – The current lines that were outputted by the subprocess.
 > #### Raises
@@ -106,7 +106,7 @@ A system shell session.
 
 To create a process, you must call an instance of this class with the command that you want to execute.
 This will return
-a [Process](https://github.com/Lee-matod/dev/wiki/api#class-with-devinterpretersprocesssession-cwd-cmd-) object which
+a [Process](https://github.com/Lee-matod/dev/blob/main/docs/api/interpreters.md#class-with-devinterpretersprocesssession-cwd-cmd-) object which
 you can use inside a context manager to handle the subprocess.  
 It is recommended that you always use the process class inside a context manager so that it can be properly handled.
 
@@ -151,7 +151,7 @@ print(result)  # If on a unix system, it will print Desktop as your current work
 > - script([str](https://docs.python.org/3/library/stdtypes.html#str)) – The command that should be executed in the
     subprocess.
 > #### Returns
-> [Process](https://github.com/Lee-matod/dev/wiki/api#class-with-devinterpretersprocesssession-cwd-cmd-) – The process
+> [Process](https://github.com/Lee-matod/dev/blob/main/docs/api/interpreters.md#class-with-devinterpretersprocesssession-cwd-cmd-) – The process
 that wraps the executed command.
 > #### Raises
 > - [ConnectionRefusedError](https://docs.python.org/3/library/exceptions.html?highlight=timeouterror#ConnectionRefusedError) –
@@ -165,8 +165,8 @@ that wraps the executed command.
 > [str](https://docs.python.org/3/library/stdtypes.html#str) – The full formatted message.
 
 > ### set_exit_message(msg, /)
-> This is a shorthand to [add_line](https://github.com/Lee-matod/dev/wiki/api#add_lineline) followed by
-setting [terminated](https://github.com/Lee-matod/dev/wiki/api#property-terminated) to `True`.
+> This is a shorthand to [add_line](https://github.com/Lee-matod/dev/blob/main/docs/api/interpreters.md#add_lineline) followed by
+setting [terminated](https://github.com/Lee-matod/dev/blob/main/docs/api/interpreters.md#property-terminated) to `True`.
 > #### Parameters
 > - msg([str](https://docs.python.org/3/library/stdtypes.html#str)) – The last message that should get added to the
     interface of the current session.
@@ -174,7 +174,7 @@ setting [terminated](https://github.com/Lee-matod/dev/wiki/api#property-terminat
 > [str](https://docs.python.org/3/library/stdtypes.html#str) – The full formatted message.
 
 > ### `property` paginator
-> Optional[[Paginator](https://github.com/Lee-matod/dev/wiki/api#class-devpaginationpaginator)] – The current paginator
+> Optional[[Paginator](https://github.com/Lee-matod/dev/blob/main/docs/api/interactions.md#class-devpaginationpaginator)] – The current paginator
 instance that is being used for this session, if any.
 
 > ### `property` terminated
