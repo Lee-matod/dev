@@ -20,7 +20,7 @@ from dev import root
 from dev.converters import GlobalTextChannelConverter
 from dev.handlers import ExceptionHandler, TimedInfo
 from dev.interactions import SyntheticInteraction, get_app_command, get_parameters
-from dev.types import Annotated, Invokeable
+from dev.types import Annotated
 from dev.utils.functs import generate_ctx, send
 
 if TYPE_CHECKING:
@@ -150,13 +150,16 @@ class RootInvoke(root.Plugin):
         await self._execute_invokable(*args)
 
     async def _execute_invokable(
-        self, command: Invokeable, ctx: commands.Context[types.Bot], action: Literal["invoke", "reinvoke"] = "invoke"
+        self,
+        command: SyntheticInteraction | types.Command,
+        ctx: commands.Context[types.Bot],
+        action: Literal["invoke", "reinvoke"] = "invoke",
     ) -> None:
-        await (getattr(command, action)(ctx))
+        await getattr(command, action)(ctx)
 
     async def _get_invokable(
         self, ctx: commands.Context[types.Bot], content: str, kwargs: dict[str, Any]
-    ) -> tuple[Invokeable, commands.Context[types.Bot]] | None:
+    ) -> tuple[SyntheticInteraction | types.Command, commands.Context[types.Bot]] | None:
         if content.startswith("/"):
             app_commands = self.bot.tree.get_commands(type=discord.AppCommandType.chat_input)
             app_command = get_app_command(content[1:].split("\n")[0], app_commands.copy())  # type: ignore

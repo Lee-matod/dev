@@ -11,12 +11,12 @@ Type shortcuts used for type hinting and type checking as well as enums.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Coroutine, Optional, Protocol, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Coroutine, Optional, TypeVar, Union
 
 import discord
 from discord.ext import commands
 
-__all__ = ("Bot", "Channel", "Command", "Invokeable", "MessageContent", "User")
+__all__ = ("Bot", "Channel", "Command", "MessageContent", "User")
 
 if TYPE_CHECKING:
     from typing import Sequence
@@ -92,11 +92,3 @@ else:
 T = TypeVar("T")
 Coro = Coroutine[Any, Any, T]
 CogT = TypeVar("CogT", bound="Optional[Plugin]")
-
-
-class Invokeable(Protocol):
-    async def invoke(self, context: commands.Context[Bot], /) -> None:
-        ...
-
-    async def reinvoke(self, context: commands.Context[Bot], /, *, call_hooks: bool = False) -> None:
-        ...
