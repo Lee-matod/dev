@@ -189,7 +189,7 @@ class Option(Generic[T]):
 
     def convert(self, argument: Any, /) -> T:
         if self.converter is not None:
-            converted = self.converter(argument)
+            converted = self.converter(str(argument))
         else:
             converted = argument
         if not isinstance(converted, get_origin(self._type) or self._type):
