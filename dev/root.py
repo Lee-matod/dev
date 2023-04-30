@@ -191,7 +191,7 @@ class Plugin(commands.Cog):
         """
         assert ctx.command is not None
 
-        if not isinstance(ctx.command.cog, type(self.bot.get_cog("Dev"))):
+        if not isinstance(ctx.command.cog, type(self)):
             return True
         if isinstance(ctx.command, (DiscordCommand, DiscordGroup)):
             if ctx.command.global_use and Settings.GLOBAL_USE:

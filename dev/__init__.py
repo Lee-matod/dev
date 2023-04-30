@@ -74,9 +74,17 @@ version_info = VersionInfo(major=2, minor=0, micro=0, releaselevel="candidate", 
 
 
 async def setup(bot: commands.Bot) -> None:
-    _log = await enforce_owner(bot)
+    _log = setup_logging()
     await bot.add_cog(Dev(bot))
-    _log.info("cog has been successfully loaded")
+    if Settings.OWNERS:
+        owners = ", ".join(map(str, Settings.OWNERS))
+    elif bot.owner_id:
+        owners = str(bot.owner_id)
+    elif bot.owner_ids:
+        owners = ", ".join(map(str, bot.owner_ids))
+    else:
+        owners = "None"
+    _log.info("cog has been successfully loaded. Owner(s): %s", owners)
 
 
 del Literal, NamedTuple, commands
