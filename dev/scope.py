@@ -37,7 +37,7 @@ def _path_exists(path: str) -> str:
     _dir = pathlib.Path(path)
     if not _dir.exists() or not _dir.is_dir():
         raise NotADirectoryError(path)
-    return path
+    return str(_dir.absolute())  # ensures that the path does not end in a slash
 
 
 class Scope:
@@ -236,6 +236,8 @@ class _SettingsMeta(type):
 
 
 class Settings(metaclass=_SettingsMeta):
+    CWD: Annotated[str, _path_exists] = os.getcwd()
+
     GLOBAL_USE: bool = False
 
     FLAG_DELIMITER: str = "="
@@ -246,10 +248,8 @@ class Settings(metaclass=_SettingsMeta):
 
     OWNERS: Annotated[set[int], lambda x: set(str_ints(x))] = set()  # type: ignore
 
-    PATH_TO_FILE: Annotated[str, _path_exists] = os.getcwd()
-
     RETAIN: bool = False
 
-    ROOT_FOLDER: Annotated[str, _path_exists] = ""
+    ROOT_FOLDER: Annotated[str, _path_exists] = os.getcwd()
 
     VIRTUAL_VARS: str = "|%s|"
