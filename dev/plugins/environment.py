@@ -11,12 +11,12 @@ A virtual environment variable manager directly implemented to this extension.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Optional
 
 from discord.ext import commands
 
 from dev import root
-from dev.components import ModalSender, EnvValueSubmitter
+from dev.components import EnvValueSubmitter, ModalSender
 from dev.utils.functs import send
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ class RootEnvironment(root.Plugin):
         ctx: commands.Context[types.Bot],
         mode: Literal["all", "content", "create", "delete", "edit", "exists", "new", "remove", "replace", "value",],
         *,
-        name: str | None = None,
+        name: Optional[str] = None,
     ):
         """A virtual environment variable manager.
 

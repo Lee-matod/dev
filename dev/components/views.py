@@ -12,7 +12,7 @@ All :class:`discord.ui.View` related classes.
 from __future__ import annotations
 
 import inspect
-from typing import Any, Callable
+from typing import Any, Callable, Optional, Union
 
 import discord
 
@@ -37,7 +37,7 @@ class AuthoredMixin(discord.ui.View):
         The ID of the user that was passed to the constructor of this class.
     """
 
-    def __init__(self, author: types.User | int | None, *components: discord.ui.Item[AuthoredMixin]) -> None:
+    def __init__(self, author: Optional[Union[types.User, int]], *components: discord.ui.Item[AuthoredMixin]) -> None:
         super().__init__()
         self.author: int | None = getattr(author, "id", author)  # type: ignore
         for item in components:
@@ -74,7 +74,7 @@ class ModalSender(AuthoredMixin):
         The button that handles sending the given modal.
     """
 
-    def __init__(self, modal: discord.ui.Modal, /, author: types.User | int, **kwargs: Any) -> None:
+    def __init__(self, modal: discord.ui.Modal, /, author: Union[types.User, int], **kwargs: Any) -> None:
         super().__init__(author)
         self.modal: discord.ui.Modal = modal
         self.sender.label = kwargs.pop("label", None)
@@ -114,10 +114,10 @@ class Prompt(AuthoredMixin):
         This function cannot have arguments.
     """
 
-    def __init__(self, author: types.User | int, func: Callable[[], Any] | None = None) -> None:
+    def __init__(self, author: Union[types.User, int], func: Optional[Callable[[], Any]] = None) -> None:
         super().__init__(author)
-        self.func: Callable[[], Any] | None = func
-        self.author: int = author.id if isinstance(author, types.User) else author  # type: ignore
+        self.func: Optional[Callable[[], Any]] = func
+        self.author: int = author.id if isinstance(author, types.User) else author
 
     @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
     async def yes_button(self, interaction: discord.Interaction, _) -> None:

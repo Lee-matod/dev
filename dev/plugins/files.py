@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 import pathlib
 import shutil
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord.ext import commands
@@ -33,9 +33,9 @@ class RootFiles(root.Plugin):
     """File, folder, and directory management"""
 
     @root.group("explorer", parent="dev", aliases=["explr", "explorer!", "explr!"], invoke_without_command=True)
-    async def root_explorer(self, ctx: commands.Context[types.Bot], *, path: pathlib.Path | None = None):
+    async def root_explorer(self, ctx: commands.Context[types.Bot], *, path: Optional[pathlib.Path] = None):
         """View the tree of a directory or send a file.
-        
+
         Parameters
         ----------
         path: Optional[:class:`pathlib.Path`]
@@ -66,9 +66,9 @@ class RootFiles(root.Plugin):
         )
 
     @root.command("mkdir", parent="dev explorer", aliases=["touch"])
-    async def root_explorer_mkdir(self, ctx: commands.Context[types.Bot], *, path: pathlib.Path | None = None):
+    async def root_explorer_mkdir(self, ctx: commands.Context[types.Bot], *, path: Optional[pathlib.Path] = None):
         """Create a new file or directory. Use touch or mkdir respectively.
-        
+
         If attachments are provided, they will be uploaded to the given directory.
 
         Parameters
@@ -114,9 +114,11 @@ class RootFiles(root.Plugin):
         await ctx.message.add_reaction("\u2611")
 
     @root.command("move", parent="dev explorer", aliases=["mv"], require_var_positional=True)
-    async def root_explorer_move(self, ctx: commands.Context[types.Bot], target: pathlib.Path, *, destination: pathlib.Path):
+    async def root_explorer_move(
+        self, ctx: commands.Context[types.Bot], target: pathlib.Path, *, destination: pathlib.Path
+    ):
         """Move an item from one directory to another.
-        
+
         Parameters
         ----------
         target: :class:`pathlib.Path`
@@ -153,7 +155,7 @@ class RootFiles(root.Plugin):
     @root.command("rename", parent="dev explorer", require_var_positional=True)
     async def root_explorer_rename(self, ctx: commands.Context[types.Bot], origin: pathlib.Path, *, name: str):
         """Rename a given item. The new name should be provided without any parent directories.
-        
+
         Parameters
         ----------
         origin: :class:`pathlib.Path`
@@ -178,7 +180,7 @@ class RootFiles(root.Plugin):
     )
     async def root_explorer_delete(self, ctx: commands.Context[types.Bot], *, path: pathlib.Path):
         """Delete a file or directory. For security reasons, current working directory is blacklisted.
-        
+
         Parameters
         ----------
         path: :class:`pathlib.Path`

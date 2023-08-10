@@ -21,7 +21,7 @@ import queue
 import subprocess
 import sys
 import time
-from typing import IO, TYPE_CHECKING, Any, AsyncGenerator, Callable, NoReturn, TypeVar, overload
+from typing import IO, TYPE_CHECKING, Any, AsyncGenerator, Callable, Dict, Optional, Tuple, TypeVar, Union, overload
 
 import discord
 
@@ -64,7 +64,7 @@ SHELL = os.getenv("SHELL") or "/bin/bash"
 
 
 class _SigKill(AuthoredMixin):
-    def __init__(self, author: types.User | int, process: Process, /):
+    def __init__(self, author: Union[types.User, int], process: Process, /):
         super().__init__(author)
         self.session: ShellSession = process._Process__session  # type: ignore
         self.process: Process = process
@@ -140,7 +140,7 @@ class Process:
             cwd=cwd,
         )
         self.queue: queue.Queue[str] = queue.Queue()
-        self.stdout_task: asyncio.Task[str | None] | None = (
+        self.stdout_task: Optional[asyncio.Task[Optional[str]]] = (
             self.start_reading(
                 self.subprocess.stdout,
                 lambda b: self.queue.put(b.decode("utf-8").replace("``", "`\u200b`").strip("\n")),
@@ -148,7 +148,7 @@ class Process:
             if self.subprocess.stdout
             else None
         )
-        self.stderr_task: asyncio.Task[str | None] | None = (
+        self.stderr_task: Optional[asyncio.Task[Optional[str]]] = (
             self.start_reading(
                 self.subprocess.stderr,
                 lambda b: self.queue.put(b.decode("utf-8").replace("``", "`\u200b`").strip("\n")),
@@ -163,8 +163,8 @@ class Process:
                 if b.strip().startswith("exit"):
                     self.__session.terminated = True
                     break
-        self.close_code: int | None = None
-        self._message: discord.Message | None = None
+        self.close_code: Optional[int] = None
+        self._message: Optional[discord.Message] = None
 
     def __repr__(self) -> str:
         return (
@@ -183,29 +183,29 @@ class Process:
         self.subprocess.terminate()
         self.close_code = self.subprocess.wait(timeout=0.5)
 
-    def _get_view(self, author: types.User | int) -> _SigKill | None:
+    def _get_view(self, author: Union[types.User, int]) -> Optional[_SigKill]:
         if self.is_alive:
             return _SigKill(author, self)
         return None
 
     @property
-    def message(self) -> discord.Message | None:
+    def message(self) -> Optional[discord.Message]:
         """Optional[:class:`discord.Message`]
         The Discord message that is being used as a terminal, if any.
         """
         return self._message
 
     @overload
-    async def run_until_complete(self, /) -> str | None:
+    async def run_until_complete(self, /) -> Optional[str]:
         ...
 
     @overload
     async def run_until_complete(
         self, context: commands.Context[types.Bot], /
-    ) -> tuple[discord.Message, Paginator | None]:
+    ) -> Tuple[discord.Message, Optional[Paginator]]:
         ...
 
-    async def run_until_complete(self, context: commands.Context[types.Bot] | None = None, /) -> Any:
+    async def run_until_complete(self, context: Optional[commands.Context[types.Bot]] = None, /) -> Any:
         """Continues executing the current subprocess until it has finished or is forcefully terminated.
 
         Parameters
@@ -304,7 +304,7 @@ class Process:
         if context is None:
             return stdout
 
-    def start_reading(self, stream: IO[bytes], callback: Callable[[bytes], Any]) -> asyncio.Task[str | None]:
+    def start_reading(self, stream: IO[bytes], callback: Callable[[bytes], Any]) -> asyncio.Task[Optional[str]]:
         return self.loop.create_task(self.in_executor(self.reader, stream, callback))
 
     async def in_executor(self, func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
@@ -314,7 +314,7 @@ class Process:
         for line in iter(stream.readline, b""):
             self.loop.call_soon_threadsafe(callback, line)
 
-    def get_next_line(self) -> str | NoReturn:
+    def get_next_line(self) -> Optional[str]:
         """Tries to get the output of the subprocess within a 60-second time frame.
 
         You should let this function get called automatically by :meth:`run_until_complete`.
@@ -368,7 +368,7 @@ class Process:
         """
         return self.subprocess.poll() is None or not self.queue.empty()
 
-    def _determine_cwd(self, maybe_cwd: str, /) -> str | None:
+    def _determine_cwd(self, maybe_cwd: str, /) -> Optional[str]:
         cwd = ""
         for maybe_path in reversed(maybe_cwd.split()):
             cwd = (maybe_path + " " + cwd).strip()
@@ -422,7 +422,7 @@ class ShellSession:
 
     def __init__(self) -> None:
         self.cwd: str = os.getcwd()
-        self.paginator: Paginator | None = None
+        self.paginator: Optional[Paginator] = None
         self._previous_processes: list[str] = []
         self.__terminate: bool = False
 
@@ -531,7 +531,7 @@ class ShellSession:
         return "; pwd"
 
     @property
-    def prefix(self) -> tuple[str, ...]:
+    def prefix(self) -> Tuple[str, ...]:
         """Tuple[:class:`str`, ...]
         Gets the executable that will be used to process commands.
         """
@@ -596,15 +596,15 @@ class Execute:
 
     __slots__ = ("args_name", "args_value", "code", "vars", "_executor")
 
-    def __init__(self, code: str, scope: Scope, args: dict[str, Any]) -> None:
+    def __init__(self, code: str, scope: Scope, args: Dict[str, Any]) -> None:
         self.code: str = code
         self.vars: Scope = scope
         self.args_name: list[str] = ["_self_variables", *args.keys()]
         self.args_value: list[Any] = [scope, *args.values()]
-        self._executor: Callable[..., AsyncGenerator[Any, Any] | Coro[Any]] | None = None
+        self._executor: Optional[Callable[..., Union[AsyncGenerator[Any, Any], Coro[Any]]]] = None
 
     @property
-    def function(self) -> Callable[..., AsyncGenerator[Any, Any] | Coro[Any]]:
+    def function(self) -> Callable[..., Union[AsyncGenerator[Any, Any], Coro[Any]]]:
         if self._executor is not None:
             return self._executor
         exec(compile(self.wrapper(), "<repl>", "exec"), self.vars.globals, self.vars.locals)

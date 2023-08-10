@@ -12,7 +12,7 @@ Global search command.
 from __future__ import annotations
 
 import difflib
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Tuple
 
 import discord
 
@@ -60,7 +60,7 @@ class RootSearch(root.Plugin):
         await send(ctx, embed, AuthoredMixin(ctx.author, select))
 
 
-def _match(query: str, array: list[tuple[str, str]]) -> list[str]:
+def _match(query: str, array: List[Tuple[str, str]]) -> List[str]:
     results: list[str] = []
     for match in difflib.get_close_matches(query, [item[0] for item in array], 10, 0.5):
         results.append([item[1] for item in array][[item[0] for item in array].index(str(match))])

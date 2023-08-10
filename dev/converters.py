@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import collections
 import re
-from typing import TYPE_CHECKING, Deque, TypeVar
+from typing import TYPE_CHECKING, Deque, List, Optional, TypeVar
 
 import discord
 from discord.ext import commands
@@ -23,13 +23,7 @@ from dev.utils.utils import clean_code, codeblock_wrapper
 if TYPE_CHECKING:
     from dev import types
 
-__all__ = (
-    "GlobalTextChannelConverter",
-    "MessageCodeblock",
-    "codeblock_converter",
-    "str_bool",
-    "str_ints",
-)
+__all__ = ("GlobalTextChannelConverter", "MessageCodeblock", "codeblock_converter", "str_bool", "str_ints")
 
 T = TypeVar("T")
 
@@ -64,10 +58,10 @@ class MessageCodeblock:
         The highlight language of the codeblock, if any.
     """
 
-    def __init__(self, content: str, codeblock: str | None, highlightjs: str | None) -> None:
+    def __init__(self, content: str, codeblock: Optional[str], highlightjs: Optional[str]) -> None:
         self.content: str = content
-        self.codeblock: str | None = clean_code(codeblock) if codeblock is not None else None
-        self.lang: str | None = highlightjs
+        self.codeblock: Optional[str] = clean_code(codeblock) if codeblock is not None else None
+        self.lang: Optional[str] = highlightjs
 
     def __str__(self) -> str:
         """Returns a completed string with all components of the message combined."""
@@ -89,8 +83,8 @@ def codeblock_converter(content: str) -> MessageCodeblock:
     MessageCodeblock
         The divided message as a useful pythonic object.
     """
-    start: int | None = None
-    lang: int | None = None
+    start: Optional[int] = None
+    lang: Optional[int] = None
     last_seen: Deque[str] = collections.deque(maxlen=3)
 
     for idx, char in enumerate(content):
@@ -106,8 +100,8 @@ def codeblock_converter(content: str) -> MessageCodeblock:
             #  everything else is of no use to us.
             lang = idx
             break
-    hljs: str | None = None
-    codeblock: str | None = None
+    hljs: Optional[str] = None
+    codeblock: Optional[str] = None
     if start is not None and lang is not None:
         hljs = content[start + 3 : lang].strip()
     if lang is not None:
@@ -117,7 +111,7 @@ def codeblock_converter(content: str) -> MessageCodeblock:
     return MessageCodeblock(content[:start].strip(), codeblock, hljs)
 
 
-def str_ints(content: str) -> list[int]:
+def str_ints(content: str) -> List[int]:
     """Converts a string to a list of integers.
     Integer separation is determined whenever a non-numeric character appears when iterating through the characters of
     `content`.
@@ -147,10 +141,10 @@ def str_ints(content: str) -> list[int]:
 
 def str_bool(
     content: str,
-    default: bool | None = None,
+    default: Optional[bool] = None,
     *,
-    additional_true: list[str] | None = None,
-    additional_false: list[str] | None = None,
+    additional_true: Optional[List[str]] = None,
+    additional_false: Optional[List[str]] = None,
 ) -> bool:
     """Similar to the :class:`bool` type hint in commands, this converts a string to a boolean with the added
     functionality of optionally appending new true/false statements.

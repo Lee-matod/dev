@@ -16,7 +16,7 @@ import contextlib
 import re
 import sys
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List, Optional, Type
 
 import discord
 from discord.ext import commands
@@ -73,13 +73,13 @@ class RootPython(root.Plugin):
 
     def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
-        self._vars: Scope | None = None
+        self._vars: Optional[Scope] = None
         self.last_output: Any = None
 
     @root.command(
         "python", parent="dev", root_placeholder=True, virtual_vars=True, aliases=["py"], require_var_positional=False
     )
-    async def root_python(self, ctx: commands.Context[types.Bot], *, code: str | None = None):
+    async def root_python(self, ctx: commands.Context[types.Bot], *, code: Optional[str] = None):
         """Evaluate or execute Python code.
 
         Just like in any REPL session, you can use '_' to gain access to the last value evaluated.
@@ -108,7 +108,7 @@ class RootPython(root.Plugin):
         output: list[str] = []
 
         async def on_error(
-            exc_type: type[Exception] | None, exc_val: Exception | None, exc_tb: TracebackType | None
+            exc_type: Optional[Type[Exception]], exc_val: Optional[Exception], exc_tb: Optional[TracebackType]
         ) -> None:
             if handler.debug or exc_type is None or exc_val is None or exc_tb is None:
                 return
@@ -196,7 +196,7 @@ class RootPython(root.Plugin):
                 return await send(ctx, f"Syntax error: {exc}")
             await send(ctx, codeblock_wrapper(formatted, "py"))
 
-    async def _on_update(self, ctx: commands.Context[types.Bot], view: list[str], /) -> None:
+    async def _on_update(self, ctx: commands.Context[types.Bot], view: List[str], /) -> None:
         current = len(view)
         if view:
             await send(ctx, "[stdout/stderr]\n" + codeblock_wrapper("".join(view).strip("\n"), "py"))

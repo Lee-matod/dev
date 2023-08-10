@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import io
 import json
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 import aiohttp
 import discord
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
     from dev import types
 
-CONTENT_TYPES: dict[str, str] = {
+CONTENT_TYPES: Dict[str, str] = {
     "application/zip": "zip",
     "application/xml": "xml",
     "application/json": "json",
@@ -61,7 +61,7 @@ class RootHTTP(root.Plugin):
         mode: Literal["json", "read", "status"],
         allow_redirects: bool = False,
         *,
-        options: str | None = None,
+        options: Optional[str] = None,
     ):
         """Send an HTTP GET request to a given URL.
 

@@ -20,4 +20,4 @@ reportPropertyTypeMismatch = "error"
 profile = "black"
 combine_as_imports = true
 combine_star = true
-line_length = 125
+line_length = 120

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import ast
 import inspect
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from discord.ext import commands
 
@@ -58,7 +58,7 @@ class RootOverride(root.Plugin):
         command_string, script = command_code.content, command_code.codeblock
         if not command_string or not script:
             return await send(ctx, "Malformed arguments were given.")
-        original: types.Command | None = self.bot.get_command(command_string)
+        original: Optional[types.Command] = self.bot.get_command(command_string)
         if original is None:
             return await send(ctx, f"Command `{command_string}` not found.")
         original_kwargs = original.__original_kwargs__
@@ -131,7 +131,7 @@ class RootOverride(root.Plugin):
         command_string, script = command_code.content, command_code.codeblock
         if not command_string or not script:
             return await send(ctx, "Malformed arguments were given.")
-        origin: types.Command | None = self.bot.get_command(command_string)
+        origin: Optional[types.Command] = self.bot.get_command(command_string)
         if origin is None:
             return await send(ctx, f"Command `{command_string}` not found.")
         directory = inspect.getsourcefile(origin.callback)

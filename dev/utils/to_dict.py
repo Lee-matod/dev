@@ -11,19 +11,18 @@ Discord objects and their respective payload types.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Dict
 
 import discord
 from discord.ext import commands
 
 if TYPE_CHECKING:
-
     from dev import types
 
 __all__ = ("REQUIRES_CTX", "TYPE_MAPPING", "attachment", "channel", "member", "role", "thread", "user")
 
 
-def attachment(_attachment: discord.Attachment, /) -> dict[str, Any]:
+def attachment(_attachment: discord.Attachment, /) -> Dict[str, Any]:
     return {
         "id": _attachment.id,
         "filename": _attachment.filename,
@@ -38,7 +37,7 @@ def attachment(_attachment: discord.Attachment, /) -> dict[str, Any]:
     }
 
 
-def user(_user: discord.User, /) -> dict[str, Any]:
+def user(_user: discord.User, /) -> Dict[str, Any]:
     return {
         "username": _user.name,
         "public_flags": _user._public_flags,
@@ -51,7 +50,7 @@ def user(_user: discord.User, /) -> dict[str, Any]:
     }
 
 
-def role(_role: discord.Role, /) -> dict[str, Any]:
+def role(_role: discord.Role, /) -> Dict[str, Any]:
     return {
         "unicode_emoji": _role.unicode_emoji,
         "position": _role.position,
@@ -68,7 +67,7 @@ def role(_role: discord.Role, /) -> dict[str, Any]:
     }
 
 
-def member(_member: discord.Member, /) -> dict[str, Any]:
+def member(_member: discord.Member, /) -> Dict[str, Any]:
     payload = {
         "roles": list(map(lambda r: str(r.id), _member._roles)),  # type: ignore
         "premium_since": str(_member.premium_since) if _member.premium_since else None,
@@ -86,7 +85,7 @@ def member(_member: discord.Member, /) -> dict[str, Any]:
     return payload
 
 
-def channel(_channel: discord.abc.GuildChannel, /, context: commands.Context[types.Bot]) -> dict[str, Any]:
+def channel(_channel: discord.abc.GuildChannel, /, context: commands.Context[types.Bot]) -> Dict[str, Any]:
     payload: dict[str, Any] = {
         "type": _channel.type.value,
         "permissions": str(context.permissions.value),
@@ -140,7 +139,7 @@ def channel(_channel: discord.abc.GuildChannel, /, context: commands.Context[typ
     return payload
 
 
-def thread(_thread: discord.Thread, /, context: commands.Context[types.Bot]) -> dict[str, Any]:
+def thread(_thread: discord.Thread, /, context: commands.Context[types.Bot]) -> Dict[str, Any]:
     payload: dict[str, Any] = {
         "id": str(_thread.id),
         "parent_id": str(_thread.parent_id),

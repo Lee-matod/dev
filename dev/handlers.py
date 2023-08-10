@@ -17,7 +17,7 @@ import inspect
 import io
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Callable, TextIO, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, TextIO, Tuple, Type, TypeVar
 
 import discord
 from discord.ext import commands
@@ -41,19 +41,19 @@ class RelativeStandard(io.StringIO):
     def __init__(
         self,
         origin: TextIO = sys.__stdout__,
-        callback: Callable[[str], Any] | None = None,
+        callback: Optional[Callable[[str], Any]] = None,
         *,
-        initial_value: str | None = None,
-        newline: str | None = None,
-        filename: str | None = None,
+        initial_value: Optional[str] = None,
+        newline: Optional[str] = None,
+        filename: Optional[str] = None,
     ):
         super().__init__(initial_value, newline)
         self.origin: TextIO = origin
-        self.callback: Callable[[str], Any] | None = callback
-        self.filename: str | None = filename
+        self.callback: Optional[Callable[[str], Any]] = callback
+        self.filename: Optional[str] = filename
 
     def write(self, __s: str) -> int:
-        stack: inspect.FrameInfo | None = discord.utils.get(inspect.stack(), filename=self.filename)
+        stack: Optional[inspect.FrameInfo] = discord.utils.get(inspect.stack(), filename=self.filename)
         if stack:
             if self.callback is not None:
                 self.callback(__s)
@@ -65,10 +65,10 @@ class RelativeStandard(io.StringIO):
 class TimedInfo:
     """Helper class that deals with timing processes."""
 
-    def __init__(self, *, timeout: float | None = None) -> None:
-        self.timeout: float | None = timeout
-        self.start: float | None = None
-        self.end: float | None = None
+    def __init__(self, *, timeout: Optional[float] = None) -> None:
+        self.timeout: Optional[float] = timeout
+        self.start: Optional[float] = None
+        self.end: Optional[float] = None
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} start={self.start} end={self.end} timeout={self.timeout}>"
@@ -99,7 +99,7 @@ class TimedInfo:
             raise ValueError("End time has not been set")
         return self.end - self.start
 
-    async def wait_for(self, coro: Coro[T], /) -> T | None:
+    async def wait_for(self, coro: Coro[T], /) -> Optional[T]:
         """Wait for the timeout to end. If timeout is reached and :attr:`end` is not set, react to the given message.
 
         This function should be called as a task.
@@ -117,12 +117,12 @@ class ExceptionHandler:
     If any exceptions are raised during the process' lifetime, the bot will try to add reactions depending on the
     exception value.
 
-    💢 – Syntax errors (EOFError, IndentationError).
-    ⏰ – Timeout errors (asyncio.TimeoutError, TimeoutError).
-    ❓ – Reference errors (ImportError, NameError).
-    ❗ – Runtime errors (IndexError, KeyError, TypeError, ValueError).
-    ⁉ – Arithmatic errors (ZeroDivisionError, FloatingPointError).
-    ‼ – Any other errors that don't fall under any of the previous categories.
+    💢 - Syntax errors (EOFError, IndentationError).
+    ⏰ - Timeout errors (asyncio.TimeoutError, TimeoutError).
+    ❓ - Reference errors (ImportError, NameError).
+    ❗ - Runtime errors (IndexError, KeyError, TypeError, ValueError).
+    ⁉ - Arithmatic errors (ZeroDivisionError, FloatingPointError).
+    ‼ - Any other errors that don't fall under any of the previous categories.
 
     Parameters
     ----------
@@ -136,18 +136,22 @@ class ExceptionHandler:
         Defaults to `False`.
     """
 
-    error: list[tuple[str, str]] = []
+    error: List[Tuple[str, str]] = []
     debug: bool = False
 
     def __init__(
         self,
         message: discord.Message,
         /,
-        on_error: Callable[[type[Exception] | None, Exception | None, TracebackType | None], Any] | None = None,
+        on_error: Optional[
+            Callable[[Optional[Type[Exception]], Optional[Exception], Optional[TracebackType]], Any]
+        ] = None,
         save_traceback: bool = False,
     ) -> None:
         self.message: discord.Message = message
-        self.on_error: Callable[[type[Exception] | None, Exception | None, TracebackType | None], Any] | None = on_error
+        self.on_error: Optional[
+            Callable[[Optional[Type[Exception]], Optional[Exception], Optional[TracebackType]], Any]
+        ] = on_error
         if save_traceback:
             ExceptionHandler.debug = True
 
@@ -155,7 +159,7 @@ class ExceptionHandler:
         return self
 
     async def __aexit__(
-        self, exc_type: type[Exception] | None, exc_val: Exception | None, exc_tb: TracebackType | None
+        self, exc_type: Optional[Type[Exception]], exc_val: Optional[Exception], exc_tb: Optional[TracebackType]  # type: ignore
     ) -> bool:
         if exc_val is None:
             if not self.debug:
@@ -182,7 +186,7 @@ class ExceptionHandler:
                 ),
             ):
                 if isinstance(exc_val, commands.CommandInvokeError):
-                    exc_val = getattr(exc_val, "original", exc_val)
+                    exc_val: Exception = getattr(exc_val, "original", exc_val)
                     exc_tb = exc_val.__traceback__
                 await self.message.add_reaction("\u2757")
             elif isinstance(exc_val, ArithmeticError):
@@ -223,6 +227,6 @@ def replace_vars(string: str, scope: Scope) -> str:
     :class:`str`
         The converted string with the values of the virtual variables.
     """
-    for (key, value) in scope.items():
+    for key, value in scope.items():
         string = string.replace(Settings.VIRTUAL_VARS % key, value)
     return string

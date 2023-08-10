@@ -9,7 +9,6 @@ Where all containers are united to a single master cog.
 :copyright: Copyright 2022-present Lee (Lee-matod)
 :license: MIT, see LICENSE for more details.
 """
-
 from dev.plugins.__main__ import RootCommand
 from dev.plugins.environment import RootEnvironment
 from dev.plugins.files import RootFiles

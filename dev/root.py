@@ -12,7 +12,7 @@ Command decorators and cogs used to register commands.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, OrderedDict, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Iterable, List, Optional, OrderedDict, TypeVar, Union
 
 import discord
 from discord.ext import commands
@@ -38,9 +38,9 @@ _log = logging.getLogger(__name__)
 
 
 class _DictDeque(OrderedDict[KT, VT]):
-    def __init__(self, *args: Any, maxlen: int | None = None, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, maxlen: Optional[int] = None, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._maxlen: int | None = maxlen
+        self._maxlen: Optional[int] = maxlen
 
     def __setitem__(self, key: KT, value: VT) -> None:
         super().__setitem__(key, value)
@@ -115,15 +115,15 @@ class Plugin(commands.Cog):
         A dictionary that stores all dev commands.
     """
 
-    __plugin_commands__: list[commands.Command[Self, ..., Any]] = []
+    __plugin_commands__: List[commands.Command[Self, ..., Any]] = []
 
     scope: ClassVar[Scope] = Scope()
     _messages: _DictDeque[int, discord.Message] = _DictDeque(maxlen=50)
 
     def __init__(self, bot: types.Bot) -> None:
         self.bot: types.Bot = bot
-        self.commands: dict[str, types.Command] = {}
-        root_commands: list[Command[Plugin] | Group[Plugin]] = list(self.__get_commands())
+        self.commands: Dict[str, types.Command] = {}
+        root_commands: List[Union[Command[Plugin], Group[Plugin]]] = list(self.__get_commands())
         root_commands.sort(key=lambda c: c.level)
         for command in root_commands:
             command = command.to_instance(
@@ -150,8 +150,8 @@ class Plugin(commands.Cog):
             if second_command is not None:
                 add_command(second_command)
 
-    def __get_commands(self) -> list[Command[Plugin] | Group[Plugin]]:
-        cmds: dict[str, Command[Plugin] | Group[Plugin]] = {}
+    def __get_commands(self) -> List[Union[Command[Plugin], Group[Plugin]]]:
+        cmds: Dict[str, Union[Command[Plugin], Group[Plugin]]] = {}
         for kls in reversed(type(self).__mro__):
             if issubclass(kls, Plugin):
                 _log.debug("Loading Plugin class %r", kls)

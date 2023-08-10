@@ -12,7 +12,7 @@ All :class:`discord.ui.Select` related classes.
 from __future__ import annotations
 
 import itertools
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, List, Optional
 
 import discord
 
@@ -28,7 +28,7 @@ _CATEGORIES = ("all", "cogs", "commands", "emojis", "text_channels", "members", 
 
 
 class PermissionsSelector(discord.ui.Select[AuthoredMixin]):
-    OPTIONS: ClassVar[list[discord.SelectOption]] = [
+    OPTIONS: ClassVar[List[discord.SelectOption]] = [
         discord.SelectOption(
             label=opt.title(),
             value=opt,
@@ -38,10 +38,10 @@ class PermissionsSelector(discord.ui.Select[AuthoredMixin]):
         for opt in _PERMISSIONS
     ]
 
-    def __init__(self, *, target: discord.Member, channel: types.Channel | None = None) -> None:
+    def __init__(self, *, target: discord.Member, channel: Optional[types.Channel] = None) -> None:
         super().__init__(options=list(self.OPTIONS))
         self.target: discord.Member = target
-        self.channel: types.Channel | None = channel
+        self.channel: Optional[types.Channel] = channel
 
     async def callback(self, interaction: discord.Interaction) -> None:
         selected = discord.utils.get(self.options, default=True)
@@ -55,7 +55,7 @@ class PermissionsSelector(discord.ui.Select[AuthoredMixin]):
             embed=discord.Embed(description="\n".join(permissions), color=discord.Color.blurple()), view=self.view
         )
 
-    def sort_perms(self, permission: str) -> list[str]:
+    def sort_perms(self, permission: str) -> List[str]:
         perms = getattr(discord.Permissions, permission)()
         perms_list: list[str] = []
         for perm, value in perms:
@@ -71,11 +71,11 @@ class PermissionsSelector(discord.ui.Select[AuthoredMixin]):
 
 
 class SearchCategory(discord.ui.Select[AuthoredMixin]):
-    OPTIONS: ClassVar[list[discord.SelectOption]] = [
+    OPTIONS: ClassVar[List[discord.SelectOption]] = [
         discord.SelectOption(label=cat.replace("_", " ").title(), value=cat, default=cat == "all") for cat in sorted(_CATEGORIES)
     ]
 
-    def __init__(self, embed: discord.Embed, /, **categories: list[str]):
+    def __init__(self, embed: discord.Embed, /, **categories: List[str]):
         categories = dict(sorted([(k, v) for k, v in categories.items() if v], key=lambda x: x[0]))
         options: list[discord.SelectOption] = [
             option for option in self.OPTIONS if option.value in categories or option.value == "all"

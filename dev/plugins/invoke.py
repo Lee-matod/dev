@@ -11,7 +11,7 @@ Alterable command invocations.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
 from discord.ext import commands
@@ -33,7 +33,7 @@ class RootInvoke(root.Plugin):
     """Invoke commands with some additional diagnostics and debugging abilities."""
 
     @root.command("timeit", parent="dev", require_var_positional=True)
-    async def root_timeit(self, ctx: commands.Context[types.Bot], timeout: float | None, *, command_name: str):
+    async def root_timeit(self, ctx: commands.Context[types.Bot], timeout: Optional[float], *, command_name: str):
         """Invoke a command and measure how long it takes to finish.
 
         If a timeout is set, the command's invocation will not be canceled.
@@ -108,7 +108,7 @@ class RootInvoke(root.Plugin):
     async def root_execute(
         self,
         ctx: commands.Context[types.Bot],
-        attrs: Annotated[list[_DiscordObjects], commands.Greedy[_DiscordObjects]],
+        attrs: Annotated[List[_DiscordObjects], commands.Greedy[_DiscordObjects]],
         *,
         command_name: str,
     ):
@@ -135,8 +135,8 @@ class RootInvoke(root.Plugin):
             elif isinstance(attr, (discord.TextChannel, discord.Thread)):
                 kwargs["channel"] = attr
         #  Try to upgrade to a Member using the given guild
-        guild: discord.Guild | None = kwargs.get("guild")
-        author: discord.User | None = kwargs.get("author")
+        guild: Optional[discord.Guild] = kwargs.get("guild")
+        author: Optional[discord.User] = kwargs.get("author")
         if guild is not None and author is not None:
             kwargs["author"] = guild.get_member(author.id) or author
         elif guild is None and author is not None and ctx.guild is not None:
@@ -151,15 +151,15 @@ class RootInvoke(root.Plugin):
 
     async def _execute_invokable(
         self,
-        command: SyntheticInteraction | types.Command,
+        command: Union[SyntheticInteraction[types.Bot], types.Command],
         ctx: commands.Context[types.Bot],
         action: Literal["invoke", "reinvoke"] = "invoke",
     ) -> None:
         await getattr(command, action)(ctx)
 
     async def _get_invokable(
-        self, ctx: commands.Context[types.Bot], content: str, kwargs: dict[str, Any]
-    ) -> tuple[SyntheticInteraction | types.Command, commands.Context[types.Bot]] | None:
+        self, ctx: commands.Context[types.Bot], content: str, kwargs: Dict[str, Any]
+    ) -> Optional[Tuple[Union[SyntheticInteraction[types.Bot], types.Command], commands.Context[types.Bot]]]:
         if content.startswith("/"):
             app_commands = self.bot.tree.get_commands(type=discord.AppCommandType.chat_input)
             app_command = get_app_command(content[1:].split("\n")[0], app_commands.copy())  # type: ignore

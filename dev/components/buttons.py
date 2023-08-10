@@ -11,6 +11,8 @@ All :class:`discord.ui.Button` related classes.
 """
 from __future__ import annotations
 
+from typing import Optional
+
 import discord
 
 from dev.components.modals import SettingsEditor
@@ -22,9 +24,9 @@ __all__ = ("SettingsToggler",)
 
 
 class SettingsToggler(discord.ui.Button[AuthoredMixin]):
-    def __init__(self, setting: str, author: int | None, *, label: str) -> None:
+    def __init__(self, setting: str, author: Optional[int], *, label: str) -> None:
         super().__init__(label=label)
-        self.author: int | None = author
+        self.author: Optional[int] = author
         self.setting: str = setting.upper().replace(" ", "_")
         self._boolean_options = [option.name for option in Settings.__options__.values() if option._type is bool]
         if self.setting in self._boolean_options:

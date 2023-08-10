@@ -15,7 +15,7 @@ import itertools
 import os
 import pathlib
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar, get_origin
+from typing import TYPE_CHECKING, Any, Callable, Dict, Generic, Optional, Tuple, Type, TypeVar, Union, get_origin
 
 import discord
 
@@ -25,13 +25,10 @@ from dev.types import Annotated
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-__all__ = (
-    "Option",
-    "Scope",
-    "Settings",
-)
+__all__ = ("Option", "Scope", "Settings")
 
 T = TypeVar("T")
+
 
 def _path_exists(path: str) -> str:
     _dir = pathlib.Path(path)
@@ -57,7 +54,9 @@ class Scope:
     When getting items, the global scope is prioritized over the local scope.
     """
 
-    def __init__(self, __globals: dict[str, Any] | None = None, __locals: dict[str, Any] | None = None, /) -> None:
+    def __init__(
+        self, __globals: Optional[Dict[str, Any]] = None, __locals: Optional[Dict[str, Any]] = None, /
+    ) -> None:
         self.globals: dict[str, Any] = __globals or {}
         self.locals: dict[str, Any] = __locals or {}
 
@@ -69,7 +68,7 @@ class Scope:
         return bool(self.globals or self.locals)
 
     def __delitem__(self, key: Any) -> None:
-        """Deletes `y` from the global scope, local scope, or both.  """
+        """Deletes `y` from the global scope, local scope, or both."""
         glob_exc, loc_ext = False, False
         try:
             del self.globals[key]
@@ -83,7 +82,7 @@ class Scope:
             raise KeyError(key)
 
     def __getitem__(self, item: Any) -> Any:
-        """Gets the global or local value of `y`.  """
+        """Gets the global or local value of `y`."""
         try:
             return self.globals[item]
         except KeyError:
@@ -93,7 +92,7 @@ class Scope:
         """Returns the added length of both global and local dictionaries."""
         return len(self.globals) + len(self.locals)
 
-    def items(self) -> tuple[tuple[Any, Any], ...]:
+    def items(self) -> Tuple[Tuple[Any, Any], ...]:
         """Returns a tuple of all global and local scopes with their respective key-value pairs.
 
         Returns
@@ -103,7 +102,7 @@ class Scope:
         """
         return tuple(itertools.chain(self.globals.items(), self.locals.items()))
 
-    def keys(self) -> tuple[Any, ...]:
+    def keys(self) -> Tuple[Any, ...]:
         """Returns a tuple of keys of all global and local scopes.
 
         Returns
@@ -113,7 +112,7 @@ class Scope:
         """
         return tuple(itertools.chain(self.globals.keys(), self.locals.keys()))
 
-    def values(self) -> tuple[Any, ...]:
+    def values(self) -> Tuple[Any, ...]:
         """Returns a tuple of values of all global and local scopes.
 
         Returns
@@ -123,7 +122,7 @@ class Scope:
         """
         return tuple(itertools.chain(self.globals.values(), self.locals.values()))
 
-    def get(self, item: Any, default: T | None = None) -> Any | None | T:
+    def get(self, item: Any, default: Optional[T] = None) -> Optional[Union[T, Any]]:
         """Get an item from either the global or local scope.
 
         If no item is found, the default will be returned.
@@ -151,7 +150,7 @@ class Scope:
         return res
 
     def update(
-        self, __new_globals: dict[str, Any] | None = None, __new_locals: dict[str, Any] | None = None, /
+        self, __new_globals: Optional[Dict[str, Any]] = None, __new_locals: Optional[Dict[str, Any]] = None, /
     ) -> None:
         """Update the current instance of variables with new ones.
 
@@ -171,9 +170,9 @@ class Scope:
 @dataclass
 class Option(Generic[T]):
     name: str
-    converter: Callable[[Any], T] | None
-    value: T | None
-    _type: type[T]
+    converter: Optional[Callable[[Any], T]]
+    value: Optional[T]
+    _type: Type[T]
 
     def fetch(self) -> T:
         from_env = os.getenv(f"DEV_{self.name.upper()}", "").strip()
@@ -198,9 +197,9 @@ class Option(Generic[T]):
 
 
 class _SettingsMeta(type):
-    __options__: dict[str, Option[Any]]
+    __options__: Dict[str, Option[Any]]
 
-    def __new__(cls, name: str, base: tuple[type[Any]], attrs: dict[str, Any]) -> Self:
+    def __new__(cls, name: str, base: Tuple[Type[Any]], attrs: Dict[str, Any]) -> Self:
         attrs["__options__"] = {}
 
         for name, _annot in attrs["__annotations__"].items():

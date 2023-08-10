@@ -12,7 +12,7 @@ Base command classes used within the dev extension.
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Dict, Generic, Optional, Set, TypeVar
 
 from discord.ext import commands
 
@@ -33,7 +33,7 @@ T = TypeVar("T")
 __all__ = ("Command", "DiscordCommand", "DiscordGroup", "Group")
 
 
-def copy_commands_to(group: commands.Group[Any, ..., Any], cmds: set[commands.Command[Any, ..., Any]], /) -> None:
+def copy_commands_to(group: commands.Group[Any, ..., Any], cmds: Set[commands.Command[Any, ..., Any]], /) -> None:
     for child in cmds:
         try:
             group.add_command(child)
@@ -42,12 +42,12 @@ def copy_commands_to(group: commands.Group[Any, ..., Any], cmds: set[commands.Co
 
 
 class _DiscordMixin:
-    __global_use__: bool | None
+    __global_use__: Optional[bool]
     __virtual_vars__: bool
     __root_placeholder__: bool
 
     @property
-    def global_use(self) -> bool | None:
+    def global_use(self) -> Optional[bool]:
         """:class:`bool`:
         Check whether this command is allowed to be invoked by any user.
         """
@@ -78,7 +78,7 @@ class _DiscordMixin:
 
 class DiscordCommand(commands.Command[CogT, ..., Any], _DiscordMixin):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.__global_use__: bool | None = kwargs.pop("global_use", None)
+        self.__global_use__: Optional[bool] = kwargs.pop("global_use", None)
         self.__virtual_vars__: bool = kwargs.pop("virtual_vars", False)
         self.__root_placeholder__: bool = kwargs.pop("root_placeholder", False)
         super().__init__(*args, **kwargs)
@@ -86,7 +86,7 @@ class DiscordCommand(commands.Command[CogT, ..., Any], _DiscordMixin):
 
 class DiscordGroup(commands.Group[CogT, ..., Any], _DiscordMixin):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.__global_use__: bool | None = kwargs.pop("global_use", None)
+        self.__global_use__: Optional[bool] = kwargs.pop("global_use", None)
         self.__virtual_vars__: bool = kwargs.pop("virtual_vars", False)
         self.__root_placeholder__: bool = kwargs.pop("root_placeholder", False)
         super().__init__(*args, **kwargs)
@@ -103,15 +103,15 @@ class BaseCommand(Generic[CogT, P, T]):
             raise TypeError("Name of a command must be a string.")
         self.name: str = name
         self.callback: Callable[Concatenate[CogT, commands.Context[types.Bot], P], Coro[T]] = func
-        self.parent: str | None = kwargs.pop("parent", None)
+        self.parent: Optional[str] = kwargs.pop("parent", None)
         self.kwargs: dict[str, Any] = kwargs
 
         self.level: int = 0
         if self.parent:
             self.level = len(self.parent.split())
 
-        self.on_error: Callable[[CogT, commands.Context[types.Bot], commands.CommandError], Coro[Any],] | None = None
-        self.cog: CogT | None = None
+        self.on_error: Optional[Callable[[CogT, commands.Context[types.Bot], commands.CommandError], Coro[Any]]] = None
+        self.cog: Optional[CogT] = None
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} name={self.name}>"
@@ -127,12 +127,14 @@ class BaseCommand(Generic[CogT, P, T]):
             return f"{self.parent} {self.name}"
         return self.name
 
-    def to_instance(self, mixin: commands.GroupMixin[Any], command_mapping: dict[str, types.Command] | None = None, /) -> types.Command:
+    def to_instance(
+        self, mixin: commands.GroupMixin[Any], command_mapping: Optional[Dict[str, types.Command]] = None, /
+    ) -> types.Command:
         raise NotImplementedError()
 
     def error(
-        self, func: Callable[[CogT, commands.Context[types.Bot], commands.CommandError], Coro[Any],]
-    ) -> Callable[[CogT, commands.Context[types.Bot], commands.CommandError], Coro[Any],]:
+        self, func: Callable[[CogT, commands.Context[types.Bot], commands.CommandError], Coro[Any]]
+    ) -> Callable[[CogT, commands.Context[types.Bot], commands.CommandError], Coro[Any]]:
         """Set a local error handler"""
         self.on_error = func
         return func
@@ -146,7 +148,9 @@ class Command(BaseCommand[CogT, ..., Any]):
     Instead, consider using :meth:`root.command` to instantiate this class.
     """
 
-    def to_instance(self, mixin: commands.GroupMixin[Any], command_mapping: dict[str, types.Command] | None = None, /) -> commands.Command[CogT, ..., Any]:
+    def to_instance(
+        self, mixin: commands.GroupMixin[Any], command_mapping: Optional[Dict[str, types.Command]] = None, /
+    ) -> commands.Command[CogT, ..., Any]:
         """Converts this class to an instance of its respective simulation.
 
         Parameters
@@ -188,7 +192,9 @@ class Group(BaseCommand[CogT, ..., Any]):
     Instead, consider using :meth:`root.group` to instantiate this class.
     """
 
-    def to_instance(self, mixin: commands.GroupMixin[Any], command_mapping: dict[str, types.Command] | None = None, /) -> commands.Group[CogT, ..., Any]:
+    def to_instance(
+        self, mixin: commands.GroupMixin[Any], command_mapping: Optional[Dict[str, types.Command]] = None, /
+    ) -> commands.Group[CogT, ..., Any]:
         """Converts this class to an instance of its respective simulation.
 
         Parameters

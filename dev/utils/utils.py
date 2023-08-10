@@ -12,12 +12,13 @@ Basic utilities used within the dev extension.
 from __future__ import annotations
 
 import traceback
+from typing import Dict
 
 from discord.utils import escape_markdown, escape_mentions
 
 __all__ = ("clean_code", "codeblock_wrapper", "escape", "format_exception", "plural", "responses")
 
-responses: dict[str, str] = {
+responses: Dict[str, str] = {
     "1": "Informational response",
     "2": "Successful response",
     "3": "Redirection response",

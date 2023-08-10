@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pathlib
 import time
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Optional, Set, Tuple, Union
 
 import discord
 from discord import app_commands
@@ -42,7 +42,9 @@ class RootManagement(root.Plugin):
 
     @root.command("permissions", parent="dev", aliases=["perms"])
     async def root_permissions(
-        self, ctx: commands.Context[types.Bot], channel: discord.abc.GuildChannel | discord.Thread | None = None
+        self,
+        ctx: commands.Context[types.Bot],
+        channel: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
     ):
         """Show which permissions the bot has.
 
@@ -103,7 +105,7 @@ class RootManagement(root.Plugin):
 
     @root.command("sync", parent="dev")
     async def root_sync(
-        self, ctx: commands.Context[types.Bot], target: Literal[".", "*", "~.", "~*", "~"] | None, *guilds: int
+        self, ctx: commands.Context[types.Bot], target: Optional[Literal[".", "*", "~.", "~*", "~"]], *guilds: int
     ):
         r"""Sync this bot's application command tree with Discord.
         Omit targets to sync globally.
@@ -124,7 +126,7 @@ class RootManagement(root.Plugin):
         if not self.bot.application_id:
             return await send(ctx, "Unable to sync. Application information has not been fetched.")
 
-        syncing_guild: discord.Guild | None = ctx.guild
+        syncing_guild: Optional[discord.Guild] = ctx.guild
         if target in {".", "*", "~."}:
             if ctx.guild is None:
                 return await send(ctx, "This mode is only available when used in a guild.")
@@ -176,7 +178,7 @@ class RootManagement(root.Plugin):
             else:
                 for guild_id in guilds:
                     self.bot.tree.clear_commands(guild=discord.Object(guild_id))
-        guild_set: set[discord.abc.Snowflake | None] = set(map(discord.Object, guilds))
+        guild_set: Set[Optional[discord.abc.Snowflake]] = set(map(discord.Object, guilds))
         if not guilds:
             if target is None:
                 syncing_guild = None
@@ -205,7 +207,7 @@ class RootManagement(root.Plugin):
             forced=True,
         )
 
-    def _resolve_extensions(self, extensions: tuple[str, ...], /) -> set[str]:
+    def _resolve_extensions(self, extensions: Tuple[str, ...], /) -> Set[str]:
         all_extensions: set[str] = set()
         for ext in extensions:
             if ext == "~":

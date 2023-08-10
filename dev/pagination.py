@@ -12,6 +12,7 @@ Pagination interface and objects.
 from __future__ import annotations
 
 from textwrap import wrap
+from typing import Union
 
 import discord
 from discord.ext import commands
@@ -97,7 +98,7 @@ class Interface(discord.ui.View):
         This is the result of the user ID or object that was passed to the constructor.
     """
 
-    def __init__(self, paginator: commands.Paginator, author: types.User | int) -> None:
+    def __init__(self, paginator: commands.Paginator, author: Union[types.User, int]) -> None:
         super().__init__()
         self.author: int = getattr(author, "id", author)  # type: ignore
         self.paginator: commands.Paginator = paginator

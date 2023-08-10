@@ -15,7 +15,7 @@ import io
 import json
 from collections.abc import Iterable
 from copy import copy
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, TypeVar, Union, overload
 
 import discord
 from discord.ext import commands
@@ -35,7 +35,7 @@ T = TypeVar("T")
 __all__ = ("flag_parser", "generate_ctx", "generate_table", "interaction_response", "send")
 
 
-def flag_parser(string: str, delimiter: str) -> dict[str, Any]:
+def flag_parser(string: str, delimiter: str) -> Dict[str, Any]:
     """Converts a string into a dictionary.
 
     Examples
@@ -81,7 +81,7 @@ def flag_parser(string: str, delimiter: str) -> dict[str, Any]:
     return dict(zip(keys, values))
 
 
-def generate_table(**label_rows: list[str]) -> str:
+def generate_table(**label_rows: List[str]) -> str:
     table: dict[str, list[str]] = {}
 
     def fmt(s: str, pad: int) -> str:
@@ -114,8 +114,11 @@ def generate_table(**label_rows: list[str]) -> str:
 
 @overload
 async def send(
-    ctx: commands.Context[types.Bot], *args: types.MessageContent, paginator: Paginator | Literal[None], **options: Any
-) -> tuple[discord.Message, Paginator | None]:
+    ctx: commands.Context[types.Bot],
+    *args: types.MessageContent,
+    paginator: Union[Paginator, Literal[None]],
+    **options: Any,
+) -> Tuple[discord.Message, Optional[Paginator]]:
     ...
 
 
@@ -167,14 +170,13 @@ async def send(  # type: ignore
     forced: bool = options.pop("forced", False)
     forced_pagination: bool = options.pop("forced_pagination", True)
 
-    ret_paginator: Paginator | None = None
-    last_message: discord.Message | None = None
+    ret_paginator: Optional[Paginator] = None
+    last_message: Optional[discord.Message] = None
 
-    token = ctx.bot.http.token
-    assert token is not None
+    token: str = ctx.bot.http.token  # type: ignore
 
     kwargs: dict[str, Any] = {}
-    pag_view: Interface | None = None
+    pag_view: Optional[Interface] = None
     iterable_items: list[str] = []
     for item in args:
         if isinstance(item, discord.File):
@@ -220,7 +222,7 @@ async def send(  # type: ignore
     kwargs.update(_check_kwargs(options))
     if not kwargs and last_message is not None:
         return last_message
-    view: discord.ui.View | None = kwargs.get("view")
+    view: Optional[discord.ui.View] = kwargs.get("view")
     if not forced_pagination and pag_view is not None:
         if view is not None:
             if len(view.children) > 15:
@@ -257,10 +259,10 @@ async def send(  # type: ignore
 async def interaction_response(
     interaction: discord.Interaction,
     response_type: discord.InteractionResponseType,
-    *args: str | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | Sequence[Any],
-    paginator: Paginator | Literal[None],
+    *args: Union[str, discord.Embed, discord.File, discord.ui.View, discord.ui.Modal, Sequence[Any]],
+    paginator: Union[Paginator, Literal[None]],
     **options: Any,
-) -> Paginator | None:
+) -> Optional[Paginator]:
     ...
 
 
@@ -268,7 +270,7 @@ async def interaction_response(
 async def interaction_response(  # type: ignore
     interaction: discord.Interaction,
     response_type: discord.InteractionResponseType,
-    *args: str | discord.Embed | discord.File | discord.ui.View | discord.ui.Modal | Sequence[Any],
+    *args: Union[str, discord.Embed, discord.File, discord.ui.View, discord.ui.Modal, Sequence[Any]],
     **options: Any,
 ) -> None:
     ...
@@ -344,7 +346,7 @@ async def interaction_response(  # type: ignore
     else:
         raise TypeError("Invalid response type")
 
-    ret_paginator: Paginator | None = None
+    ret_paginator: Optional[Paginator] = None
     token = interaction.client.http.token
     assert token is not None
 
@@ -353,7 +355,7 @@ async def interaction_response(  # type: ignore
     paginators: list[Interface] = []
 
     kwargs: dict[str, Any] = {}
-    pag_view: Interface | None = None
+    pag_view: Optional[Interface] = None
     iterable_items: list[str] = []
     for item in args:
         if isinstance(item, discord.File):
@@ -394,7 +396,7 @@ async def interaction_response(  # type: ignore
                     kwargs["content"] = content
 
     kwargs = _check_kwargs(kwargs)
-    view: discord.ui.View | None = kwargs.get("view")
+    view: Optional[discord.ui.View] = kwargs.get("view")
     if view is not None and len(view.children) <= 15 and not forced_pagination and pag_view is not None:
         child: discord.ui.Item[discord.ui.View]
         for idx, child in enumerate(view.children):
@@ -450,7 +452,7 @@ async def generate_ctx(ctx: commands.Context[types.Bot], **kwargs: Any) -> comma
     return await ctx.bot.get_context(message, cls=type(ctx))
 
 
-def _get_highlight_lang(content: str) -> tuple[str | None, str]:
+def _get_highlight_lang(content: str) -> Tuple[Optional[str], str]:
     if content.startswith("```") and content.endswith("```"):
         lines = content.split("\n")
         highlight = lines[0][3:]
@@ -460,7 +462,7 @@ def _get_highlight_lang(content: str) -> tuple[str | None, str]:
     return None, content
 
 
-def _check_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
+def _check_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     _kwargs = {
         "content": kwargs.pop("content", MISSING),
         "stickers": kwargs.pop("stickers", MISSING),
@@ -471,7 +473,7 @@ def _check_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in _kwargs.items() if v is not MISSING}
 
 
-def _try_add(key: str, value: T, dictionary: dict[str, list[T]]) -> None:
+def _try_add(key: str, value: T, dictionary: Dict[str, List[T]]) -> None:
     try:
         dictionary[key].append(value)
     except KeyError:
@@ -509,7 +511,7 @@ def _replace(string: str, token: str, /, *, path: bool) -> str:
     return string
 
 
-def _check_length(content: str) -> Paginator | str:
+def _check_length(content: str) -> Union[Paginator, str]:
     if len(content) > 2000:
         highlight_lang = ""
         string = content
@@ -524,6 +526,6 @@ def _check_length(content: str) -> Paginator | str:
 
 
 def _revert_virtual_var_value(string: str) -> str:
-    for (name, value) in root.Plugin.scope.items():
+    for name, value in root.Plugin.scope.items():
         string = string.replace(value, name)
     return string
