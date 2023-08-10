@@ -103,7 +103,7 @@ class RootShell(root.Plugin):
 
             while not shell.terminated and not process.is_alive:
                 try:
-                    message: discord.Message = await self.bot.wait_for(  # type: ignore
+                    message: discord.Message = await self.bot.wait_for(
                         "message", check=check, timeout=30
                     )
                 except asyncio.TimeoutError:
