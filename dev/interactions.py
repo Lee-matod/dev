@@ -12,7 +12,7 @@ Discord interaction wrappers.
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union, cast
 
 import discord
 from discord import app_commands
@@ -40,15 +40,6 @@ if TYPE_CHECKING:
 
     from dev import types
 
-    InteractionChannel = Union[
-        discord.VoiceChannel,
-        discord.StageChannel,
-        discord.TextChannel,
-        discord.ForumChannel,
-        discord.CategoryChannel,
-        discord.Thread,
-        discord.PartialMessageable,
-    ]
     PartialMessageableChannel = Union[
         discord.TextChannel,
         discord.VoiceChannel,
@@ -185,7 +176,7 @@ async def _multiple_converters(
 
 
 def _append_snowflake(
-    dictionary: ResolvedData, name: str, snowflake: discord.abc.Snowflake, as_dict: Dict[str, Any], /
+    dictionary: ResolvedData, name: str, snowflake: to_dict.PayloadTypes, as_dict: to_dict.Payloads, /
 ) -> None:
     previous = dictionary.get(name)
     if previous is not None:
@@ -250,6 +241,7 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
         command: app_commands.Command[Any, ..., Any],
         parameters: Dict[app_commands.Parameter, Any],
     ) -> None:
+        assert not isinstance(context.channel, discord.PartialMessageable)
         #  Application command synthetic payload
         data: ApplicationCommandData = {"type": 1, "name": getattr(command.root_parent, "name", command.name), "id": 0}
         resolved: ResolvedData = {}
@@ -257,15 +249,12 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
         #  Populate resolved data and command options
         for param, obj in parameters.items():
             value = obj
-            converter = to_dict.TYPE_MAPPING.get(type(obj))
+            converter: Optional[Callable[[to_dict.PayloadTypes], to_dict.Payloads]] = to_dict.TYPE_MAPPING.get(type(obj))  # type: ignore
             if converter is not None:
-                if type(obj) in to_dict.REQUIRES_CTX:
-                    _append_snowflake(resolved, "channels", obj, converter(obj, context))  # type: ignore
-                else:
-                    name = converter.__name__ + "s"
-                    _append_snowflake(resolved, name, obj, converter(obj))  # type: ignore
-                    if name == "members":
-                        _append_snowflake(resolved, "users", obj, to_dict.user(obj._user))
+                name = converter.__name__ + "s"
+                _append_snowflake(resolved, name, obj, converter(obj))
+                if name == "members":
+                    _append_snowflake(resolved, "users", obj, to_dict.user(obj._user))
             command_parameters.append(
                 {"type": param.type.value, "name": param.display_name, "value": value}  # type: ignore
             )
@@ -280,6 +269,12 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
                 data["options"] = subcommand_options
             else:
                 data["options"] = [{"type": 2, "options": subcommand_options, "name": command.root_parent.name}]
+        # DMChannel causes problems here, because it's techincally InteractionDMChannel
+        channel: Union[
+            to_dict.GuildChannelPayload, to_dict.InteractionDMChannelPayload, to_dict.GroupDMChannelPayload
+        ] = to_dict.channel(
+            context.channel
+        )  # type: ignore
         payload: InteractionPayload = {
             "version": 1,
             "type": 2,
@@ -290,6 +285,7 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
             "channel_id": context.channel.id,
             "application_id": context.me.id,
             "data": data,
+            "channel": channel,
             "app_permissions": str(context.me.guild_permissions.value)
             if isinstance(context.me, discord.Member)
             else "0",
@@ -362,19 +358,6 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
             options = []
 
         return app_commands.Namespace(self, data.get("resolved", {}), options)
-
-    @discord.utils.cached_slot_property("_cs_channel")
-    def channel(self) -> Optional[InteractionChannel]:
-        guild = self.guild
-        channel = guild and guild._resolve_channel(self.channel_id)
-        if channel is None:
-            if self.channel_id is not None:
-                type = discord.ChannelType.text if self.guild_id is not None else discord.ChannelType.private
-                return discord.PartialMessageable(
-                    state=self._state, guild_id=self.guild_id, id=self.channel_id, type=type
-                )
-            return None
-        return channel
 
     async def original_response(self) -> discord.InteractionMessage:
         if self._original_response is not None:
