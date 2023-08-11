@@ -11,7 +11,7 @@ Alterable command invocations.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Tuple, Union
 
 import discord
 from discord.ext import commands
@@ -20,7 +20,6 @@ from dev import root
 from dev.converters import GlobalTextChannelConverter
 from dev.handlers import ExceptionHandler, TimedInfo
 from dev.interactions import SyntheticInteraction, get_app_command, get_parameters
-from dev.types import Annotated
 from dev.utils.functs import generate_ctx, send
 
 if TYPE_CHECKING:
@@ -108,7 +107,7 @@ class RootInvoke(root.Plugin):
     async def root_execute(
         self,
         ctx: commands.Context[types.Bot],
-        attrs: Annotated[List[_DiscordObjects], commands.Greedy[_DiscordObjects]],
+        attrs: commands.Greedy[_DiscordObjects],
         *,
         command_name: str,
     ):
