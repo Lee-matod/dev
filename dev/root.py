@@ -135,7 +135,7 @@ class Plugin(commands.Cog):
         Plugin.__plugin_commands__.extend(self.commands.values())
         self.__cog_commands__ = list({*self.commands.values(), *self.__cog_commands__})
 
-    async def _eject(self, bot: types.Bot, guild_ids: Iterable[int] | None) -> None:  # type: ignore
+    async def _eject(self, bot: types.Bot, guild_ids: Optional[Iterable[int]]) -> None:  # type: ignore
         await super()._eject(bot, guild_ids)
         for command in self.commands.values():
             Plugin.__plugin_commands__.remove(command)

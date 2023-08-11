@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 import pathlib
 import shutil
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import discord
 from discord.ext import commands
@@ -48,8 +48,8 @@ class RootFiles(root.Plugin):
             return await send(ctx, "File or directory not found.")
         if path.is_file():
             return await send(ctx, discord.File(path))
-        folders: list[str] = []
-        files: list[str] = []
+        folders: List[str] = []
+        files: List[str] = []
         for item in path.iterdir():
             if item.is_dir():
                 folders.append("\N{FILE FOLDER} " + escape(str(item.absolute())))
@@ -83,7 +83,7 @@ class RootFiles(root.Plugin):
         assert ctx.invoked_with is not None
         assert ctx.command is not None
 
-        attachments: list[discord.Attachment] = ctx.message.attachments
+        attachments = ctx.message.attachments
         if path is None:
             path = pathlib.Path(Settings.CWD)
             if not attachments:
@@ -91,7 +91,7 @@ class RootFiles(root.Plugin):
                 raise commands.MissingRequiredArgument(ctx.command.params["name"])
         if path.exists():
             if path.is_dir() and attachments:
-                skipped: list[pathlib.Path] = []
+                skipped: List[pathlib.Path] = []
                 for attach in attachments:
                     content = await attach.read()
                     as_path = path / attach.filename

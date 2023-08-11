@@ -104,7 +104,7 @@ class BaseCommand(Generic[CogT, P, T]):
         self.name: str = name
         self.callback: Callable[Concatenate[CogT, commands.Context[types.Bot], P], Coro[T]] = func
         self.parent: Optional[str] = kwargs.pop("parent", None)
-        self.kwargs: dict[str, Any] = kwargs
+        self.kwargs: Dict[str, Any] = kwargs
 
         self.level: int = 0
         if self.parent:
@@ -211,7 +211,7 @@ class Group(BaseCommand[CogT, ..., Any]):
         """
         if command_mapping is None:
             command_mapping = {c.qualified_name: c for c in mixin.commands}
-        children: set[commands.Command[Any, ..., Any]] = set()
+        children: Set[commands.Command[Any, ..., Any]] = set()
         if self.parent:
             command = command_mapping.get(self.parent)
             if not command:

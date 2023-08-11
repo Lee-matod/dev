@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import inspect
 import textwrap
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import discord
 from discord.ext import commands
@@ -43,7 +43,7 @@ class RootInformation(root.Plugin):
         command = self.bot.get_command(command_string)
         if not command:
             return await send(ctx, f"Command `{command_string}` not found.")
-        params: list[str] = []
+        params: List[str] = []
         for name, param in command.clean_params.items():
             fmt = ""
             if param.kind is inspect.Parameter.KEYWORD_ONLY:

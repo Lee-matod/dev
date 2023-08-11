@@ -57,8 +57,8 @@ def flag_parser(string: str, delimiter: str) -> Dict[str, Any]:
     Dict[:class:`str`, Any]
         The parsed string dictionary.
     """
-    keys: list[str] = []
-    values: list[str] = []
+    keys: List[str] = []
+    values: List[str] = []
     temp_string = ""
     searching_for_value = False
     for char in string:
@@ -82,7 +82,7 @@ def flag_parser(string: str, delimiter: str) -> Dict[str, Any]:
 
 
 def generate_table(**label_rows: List[str]) -> str:
-    table: dict[str, list[str]] = {}
+    table: Dict[str, List[str]] = {}
 
     def fmt(s: str, pad: int) -> str:
         if len(s) > 13:
@@ -100,14 +100,14 @@ def generate_table(**label_rows: List[str]) -> str:
             table[label] = row + [""] * extra
         else:
             table[fmt(label, padding)] = [fmt(r, padding) for r in row] + [""] * extra
-    ordered: list[list[str]] = []
+    ordered: List[List[str]] = []
     for idx in range(longest):
-        row_values: list[str] = []
+        row_values: List[str] = []
         for row_idx in range(len(table.values())):
             row_values.append(tuple(table.values())[row_idx][idx])
         ordered.append(row_values)
     splitter = "+".join("-" * (len(lab) + (1 if idx == 0 else 2)) for idx, lab in enumerate(table))
-    rendered: list[str] = [" | ".join(table), splitter.replace("-", "=")]
+    rendered: List[str] = [" | ".join(table), splitter.replace("-", "=")]
     rendered.extend(" | ".join(r) + "\n" + splitter for r in ordered)
     return "\n".join(rendered)
 
@@ -175,9 +175,9 @@ async def send(  # type: ignore
 
     token: str = ctx.bot.http.token  # type: ignore
 
-    kwargs: dict[str, Any] = {}
+    kwargs: Dict[str, Any] = {}
     pag_view: Optional[Interface] = None
-    iterable_items: list[str] = []
+    iterable_items: List[str] = []
     for item in args:
         if isinstance(item, discord.File):
             _try_add("files", _check_file(item, token, replace_path_to_file), kwargs)
@@ -232,7 +232,7 @@ async def send(  # type: ignore
                 pag_view.add_item(child)
         kwargs["content"] = pag_view.display_page
     if ctx.message.id in root.Plugin._messages and not forced:
-        edit: dict[str, Any] = {
+        edit: Dict[str, Any] = {
             "content": kwargs.get("content", None),
             "embeds": kwargs.get("embeds", []),
             "attachments": kwargs.get("files", []),
@@ -352,11 +352,11 @@ async def interaction_response(  # type: ignore
 
     replace_path_to_file: bool = options.pop("path_to_file", True)
     forced_pagination: bool = options.pop("forced_paginator", True)
-    paginators: list[Interface] = []
+    paginators: List[Interface] = []
 
-    kwargs: dict[str, Any] = {}
+    kwargs: Dict[str, Any] = {}
     pag_view: Optional[Interface] = None
-    iterable_items: list[str] = []
+    iterable_items: List[str] = []
     for item in args:
         if isinstance(item, discord.File):
             _try_add("files", _check_file(item, token, replace_path_to_file), kwargs)

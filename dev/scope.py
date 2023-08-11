@@ -15,7 +15,7 @@ import itertools
 import os
 import pathlib
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, Generic, Optional, Tuple, Type, TypeVar, Union, get_origin
+from typing import TYPE_CHECKING, Any, Callable, Dict, Generic, Optional, Set, Tuple, Type, TypeVar, Union, get_origin
 
 import discord
 
@@ -57,8 +57,8 @@ class Scope:
     def __init__(
         self, __globals: Optional[Dict[str, Any]] = None, __locals: Optional[Dict[str, Any]] = None, /
     ) -> None:
-        self.globals: dict[str, Any] = __globals or {}
-        self.locals: dict[str, Any] = __locals or {}
+        self.globals: Dict[str, Any] = __globals or {}
+        self.locals: Dict[str, Any] = __locals or {}
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} globals={self.globals} locals={self.locals}"
@@ -245,7 +245,7 @@ class Settings(metaclass=_SettingsMeta):
 
     LOCALE: str = "en-US"
 
-    OWNERS: Annotated[set[int], lambda x: set(str_ints(x))] = set()  # type: ignore
+    OWNERS: Annotated[Set[int], lambda x: set(str_ints(x))] = set()  # type: ignore
 
     RETAIN: bool = False
 

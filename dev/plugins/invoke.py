@@ -126,7 +126,7 @@ class RootInvoke(root.Plugin):
         command_name: :class:`str`
             The name of the command to invoke.
         """
-        kwargs: dict[str, Any] = {"content": f"{ctx.prefix}{command_name}"}
+        kwargs: Dict[str, Any] = {"content": f"{ctx.prefix}{command_name}"}
         for attr in attrs:
             if isinstance(attr, (discord.User, discord.Member)):
                 kwargs["author"] = attr

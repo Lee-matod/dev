@@ -16,7 +16,7 @@ import pathlib
 import re
 import shutil
 import tempfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List
 
 import discord
 from discord.ext import commands
@@ -74,7 +74,7 @@ class RootShell(root.Plugin):
 
     def __init__(self, bot: types.Bot) -> None:
         super().__init__(bot)
-        self.active_shell_sessions: dict[int, ShellSession] = {}
+        self.active_shell_sessions: Dict[int, ShellSession] = {}
 
     @root.command("shell", parent="dev", aliases=["sh", "cmd", "bash", "ps"])
     async def root_shell(self, ctx: commands.Context[types.Bot], *, script: Annotated[str, clean_code]):
@@ -166,7 +166,7 @@ class RootShell(root.Plugin):
             if script is None:
                 return await send(ctx, "Malformed arguments were given.")
 
-            enabled_options: list[str] = [opt for opt in PYRIGHT_BOOLEANS if opt in cmd_args.split()]
+            enabled_options: List[str] = [opt for opt in PYRIGHT_BOOLEANS if opt in cmd_args.split()]
 
             for compiled in PYRIGHT_ARGS:
                 match = compiled.search(cmd_args)
@@ -228,7 +228,7 @@ class RootShell(root.Plugin):
             if script is None:
                 return await send(ctx, "Malformed arguments were given.")
 
-            enabled_options: list[str] = [opt for opt in BLACK_BOOLEANS if opt in cmd_args.split()]
+            enabled_options: List[str] = [opt for opt in BLACK_BOOLEANS if opt in cmd_args.split()]
 
             for compiled in BLACK_ARGS:
                 match = compiled.search(cmd_args)

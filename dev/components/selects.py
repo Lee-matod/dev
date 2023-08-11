@@ -12,7 +12,7 @@ All :class:`discord.ui.Select` related classes.
 from __future__ import annotations
 
 import itertools
-from typing import TYPE_CHECKING, ClassVar, List, Optional
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional
 
 import discord
 
@@ -57,7 +57,7 @@ class PermissionsSelector(discord.ui.Select[AuthoredMixin]):
 
     def sort_perms(self, permission: str) -> List[str]:
         perms = getattr(discord.Permissions, permission)()
-        perms_list: list[str] = []
+        perms_list: List[str] = []
         for perm, value in perms:
             if not value:
                 continue
@@ -77,12 +77,12 @@ class SearchCategory(discord.ui.Select[AuthoredMixin]):
 
     def __init__(self, embed: discord.Embed, /, **categories: List[str]):
         categories = dict(sorted([(k, v) for k, v in categories.items() if v], key=lambda x: x[0]))
-        options: list[discord.SelectOption] = [
+        options: List[discord.SelectOption] = [
             option for option in self.OPTIONS if option.value in categories or option.value == "all"
         ]
         super().__init__(options=options)
         self.embed: discord.Embed = embed
-        self._mapping: dict[str, str] = {
+        self._mapping: Dict[str, str] = {
             "all": "\n".join(list(itertools.chain(*[v[:3] for v in categories.values()]))[:10]),
             **{k: "\n".join(v) for k, v in categories.items() if v},
         }

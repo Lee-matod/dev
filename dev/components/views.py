@@ -39,7 +39,7 @@ class AuthoredMixin(discord.ui.View):
 
     def __init__(self, author: Optional[Union[types.User, int]], *components: discord.ui.Item[AuthoredMixin]) -> None:
         super().__init__()
-        self.author: int | None = getattr(author, "id", author)  # type: ignore
+        self.author: Optional[int] = getattr(author, "id", author)  # type: ignore
         for item in components:
             self.add_item(item)
 

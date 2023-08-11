@@ -11,7 +11,7 @@ All :class:`discord.ui.Modal` related classes.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Set, Union
 
 import discord
 
@@ -45,7 +45,7 @@ class EnvValueSubmitter(discord.ui.Modal):
 class SettingsEditor(discord.ui.Modal):
     def __init__(self, setting: str) -> None:
         self.setting: str = setting
-        self.setting_obj: Union[set[int], str] = getattr(Settings, setting)
+        self.setting_obj: Union[Set[int], str] = getattr(Settings, setting)
         self.item: discord.ui.TextInput[ModalSender] = discord.ui.TextInput(
             label=setting.replace("_", " ").title(),
             default=(", ".join(map(str, self.setting_obj)) if isinstance(self.setting_obj, set) else self.setting_obj),

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pathlib
 import time
-from typing import TYPE_CHECKING, Any, Literal, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Union
 
 import discord
 from discord import app_commands
@@ -85,7 +85,7 @@ class RootManagement(root.Plugin):
         emoji = _EXTENSION_EMOJIS[invoked_with]
 
         successful: int = 0
-        output: list[str] = []
+        output: List[str] = []
         coro = getattr(self.bot, f"{invoked_with}_extension")
         final = self._resolve_extensions(extensions)
         start = time.perf_counter()
@@ -147,14 +147,14 @@ class RootManagement(root.Plugin):
         elif target == "~*":
             if not guilds:
                 return await send(ctx, "Cannot copy globals to guilds because no guilds were given.")
-            skipped: set[int] = set()
-            global_menus: list[app_commands.ContextMenu] = [
+            skipped: Set[int] = set()
+            global_menus: List[app_commands.ContextMenu] = [
                 cmd for menu, cmd in self.bot.tree._context_menus.items() if menu[1] is None
             ]
             for guild_id in guilds:
-                mapping: dict[int, dict[str, app_commands.Command[Any, ..., Any] | app_commands.Group]] = self.bot.tree._guild_commands.get(guild_id, {}).copy()  # type: ignore
+                mapping: Dict[int, Dict[str, Union[app_commands.Command[Any, ..., Any], app_commands.Group]]] = self.bot.tree._guild_commands.get(guild_id, {}).copy()  # type: ignore
                 mapping.update(self.bot.tree._global_commands)  # type: ignore
-                local_menus: list[app_commands.ContextMenu] = [
+                local_menus: List[app_commands.ContextMenu] = [
                     cmd
                     for menu, cmd in self.bot.tree._context_menus.items()
                     if menu[1] is not None and menu[1] == guild_id
@@ -187,7 +187,7 @@ class RootManagement(root.Plugin):
                 syncing_guild = None
             guild_set.add(syncing_guild)
         successful_commands = 0
-        successful_guilds: set[str] = set()
+        successful_guilds: Set[str] = set()
         for guild in guild_set:
             try:
                 synced = await self.bot.tree.sync(guild=guild)
@@ -211,7 +211,7 @@ class RootManagement(root.Plugin):
         )
 
     def _resolve_extensions(self, extensions: Tuple[str, ...], /) -> Set[str]:
-        all_extensions: set[str] = set()
+        all_extensions: Set[str] = set()
         for ext in extensions:
             if ext == "~":
                 all_extensions.update(self.bot.extensions)

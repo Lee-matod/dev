@@ -12,7 +12,7 @@ Pagination interface and objects.
 from __future__ import annotations
 
 from textwrap import wrap
-from typing import Union
+from typing import List, Union
 
 import discord
 from discord.ext import commands
@@ -67,7 +67,7 @@ class Paginator(commands.Paginator):
         """
         max_page_size = self.max_size - self._prefix_len - self._suffix_len - 2 * self._linesep_len
         if len(line) > max_page_size:
-            lines: list[str] = wrap(line, max_page_size)
+            lines: List[str] = wrap(line, max_page_size)
             for l in lines:
                 super().add_line(l)
         else:

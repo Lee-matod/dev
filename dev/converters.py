@@ -126,7 +126,7 @@ def str_ints(content: str) -> List[int]:
     List[int]
         A list of the integers found in the string.
     """
-    int_list: list[int] = []
+    int_list: List[int] = []
     ints: str = ""
     for char in content:
         if char.isnumeric():

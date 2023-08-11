@@ -61,7 +61,7 @@ class RootSearch(root.Plugin):
 
 
 def _match(query: str, array: List[Tuple[str, str]]) -> List[str]:
-    results: list[str] = []
+    results: List[str] = []
     for match in difflib.get_close_matches(query, [item[0] for item in array], 10, 0.5):
         results.append([item[1] for item in array][[item[0] for item in array].index(str(match))])
     return results

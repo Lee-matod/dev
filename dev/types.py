@@ -11,7 +11,7 @@ Type shortcuts used for type hinting and type checking as well as enums.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Coroutine, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Coroutine, Optional, Tuple, TypeVar, Union
 
 import discord
 from discord.ext import commands
@@ -77,7 +77,7 @@ else:
         #  save the typehint somewhere and metadata
         def __init__(self, typehint: Any, *meta: Any) -> None:
             self.typehint: Any = typehint
-            self.metadata: tuple[Any] = meta
+            self.metadata: Tuple[Any] = meta
 
         def __call__(self, *args: Any, **kwds: Any) -> Any:
             callback = self.metadata[0]
@@ -85,7 +85,7 @@ else:
                 return self.metadata[0](*args, **kwds)
             return callback
 
-        def __class_getitem__(cls, key: tuple[Any, ...]) -> Annotated:
+        def __class_getitem__(cls, key: Tuple[Any, ...]) -> Annotated:
             return cls(*key)
 
 

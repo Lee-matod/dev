@@ -16,7 +16,7 @@ import contextlib
 import re
 import sys
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
 
 import discord
 from discord.ext import commands
@@ -101,11 +101,11 @@ class RootPython(root.Plugin):
             raise commands.MissingRequiredArgument(ctx.command.clean_params["code"])
         assert code is not None
 
-        args: dict[str, Any] = {"bot": self.bot, "ctx": ctx}
+        args: Dict[str, Any] = {"bot": self.bot, "ctx": ctx}
         if self.last_output is not None:
             args["_"] = self.last_output
         code = clean_code(replace_vars(code.replace("|root|", Settings.ROOT_FOLDER), self.scope))
-        output: list[str] = []
+        output: List[str] = []
 
         async def on_error(
             exc_type: Optional[Type[Exception]], exc_val: Optional[Exception], exc_tb: Optional[TracebackType]
@@ -170,12 +170,12 @@ class RootPython(root.Plugin):
             fm = black.FileMode()
             pyversion = _BLACK_PYVERSION.search(code)
             linelength = _BLACK_LINELENGTH.search(code)
-            bool_settings: list[tuple[str, bool]] = [
+            bool_settings: List[Tuple[str, bool]] = [
                 (setting, toggled == "enable") for toggled, setting in _BLACK_BOOL.findall(code)
             ]
             if pyversion is not None:
-                versions: set[int] = set(str_ints(pyversion.group(1).replace(".", "")))
-                target_versions: set[TargetVersion] = set()
+                versions: Set[int] = set(str_ints(pyversion.group(1).replace(".", "")))
+                target_versions: Set[TargetVersion] = set()
                 for ver in versions:
                     try:
                         obj = TargetVersion[f"PY{ver}"]

@@ -21,7 +21,20 @@ import queue
 import subprocess
 import sys
 import time
-from typing import IO, TYPE_CHECKING, Any, AsyncGenerator, Callable, Dict, Optional, Tuple, TypeVar, Union, overload
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    Any,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import discord
 
@@ -337,7 +350,7 @@ class Process:
                 raise InterruptedError("Subprocess has been killed")
             if time.perf_counter() - start > 60:
                 raise TimeoutError("No output in the last 60 seconds")
-        content: list[str] = []
+        content: List[str] = []
         while not self.queue.empty():
             item = self.queue.get()
             content.append(item)
@@ -423,7 +436,7 @@ class ShellSession:
     def __init__(self) -> None:
         self.cwd: str = os.getcwd()
         self.paginator: Optional[Paginator] = None
-        self._previous_processes: list[str] = []
+        self._previous_processes: List[str] = []
         self.__terminate: bool = False
 
     def __repr__(self) -> str:
@@ -599,8 +612,8 @@ class Execute:
     def __init__(self, code: str, scope: Scope, args: Dict[str, Any]) -> None:
         self.code: str = code
         self.vars: Scope = scope
-        self.args_name: list[str] = ["_self_variables", *args.keys()]
-        self.args_value: list[Any] = [scope, *args.values()]
+        self.args_name: List[str] = ["_self_variables", *args.keys()]
+        self.args_value: List[Any] = [scope, *args.values()]
         self._executor: Optional[Callable[..., Union[AsyncGenerator[Any, Any], Coro[Any]]]] = None
 
     @property
@@ -643,7 +656,7 @@ class Execute:
         ast_try.body.extend(code.body)
         ast.fix_missing_locations(template)
         ast.NodeTransformer().generic_visit(ast_try)
-        expressions: list[ast.stmt] = ast_try.body
+        expressions: List[ast.stmt] = ast_try.body
 
         for index, expr in enumerate(reversed(expressions), start=1):
             if not isinstance(expr, ast.Expr):

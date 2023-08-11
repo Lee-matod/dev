@@ -264,7 +264,7 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
             data["options"] = command_parameters
         else:
             #  Either 1 or 2 level deep command
-            subcommand_options: list[OptionsData] = [{"type": 1, "options": command_parameters, "name": command.name}]
+            subcommand_options: List[OptionsData] = [{"type": 1, "options": command_parameters, "name": command.name}]
             if command.parent is command.root_parent:
                 data["options"] = subcommand_options
             else:

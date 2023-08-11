@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import ast
 import inspect
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from discord.ext import commands
 
@@ -148,7 +148,7 @@ class RootOverride(root.Plugin):
                 indentation += 1
             else:
                 break
-        code_split: list[str] = [f"{' ' * indentation}{line}" for line in script_lines]
+        code_split: List[str] = [f"{' ' * indentation}{line}" for line in script_lines]
         with open(directory) as fp:
             file_lines = fp.readlines()
         start, end = line_no, line_no + (len(lines) - 1)
