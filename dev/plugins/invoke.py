@@ -35,7 +35,7 @@ class RootInvoke(root.Plugin):
     async def root_timeit(self, ctx: commands.Context[types.Bot], timeout: Optional[float], *, command_name: str):
         """Invoke a command and measure how long it takes to finish.
 
-        If a timeout is set and runs out, the command's invocation will not be canceled.
+        If a timeout is set and runs out, the command task will be cancelled.
 
         Parameters
         ----------
@@ -50,11 +50,24 @@ class RootInvoke(root.Plugin):
             return await send(ctx, f"Command `{command_name}` not found.")
 
         timeit = TimedInfo(timeout=timeout)
+        cancelled = False
+
+        async def start():
+            with timeit:
+                await self._execute_invokable(*invokable)
+            if not cancelled:
+                await send(ctx, f"Command finished in {timeit.duration:.3f}s ({timeit}).", forced=True)
+
+        async def cancel():
+            nonlocal cancelled
+            if timeit.end is None:
+                await ctx.message.reply("Command timed out.", mention_author=False)
+                task.cancel()
+                cancelled = True
+
+        task = self.bot.loop.create_task(start())
         if timeout is not None:
-            self.bot.loop.create_task(timeit.wait_for(ctx.message.reply("Command timed out.", mention_author=False)))
-        with timeit:
-            await self._execute_invokable(*invokable)
-        await send(ctx, f"Command finished in {timeit.duration:.3f}s ({timeit}).", forced=True)
+            await timeit.wait_for(cancel())
 
     @root.command("repeat", parent="dev", aliases=["repeat!"], require_var_positional=True)
     async def root_repeat(self, ctx: commands.Context[types.Bot], amount: int, *, command_name: str):
@@ -105,11 +118,7 @@ class RootInvoke(root.Plugin):
 
     @root.command("execute", parent="dev", aliases=["exec", "execute!", "exec!"], require_var_positional=True)
     async def root_execute(
-        self,
-        ctx: commands.Context[types.Bot],
-        attrs: commands.Greedy[_DiscordObjects],
-        *,
-        command_name: str,
+        self, ctx: commands.Context[types.Bot], attrs: commands.Greedy[_DiscordObjects], *, command_name: str
     ):
         """Execute a command in a custom environment.
 
