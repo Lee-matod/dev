@@ -103,7 +103,7 @@ class RootOverride(root.Plugin):
                     assert isinstance(obj, commands.Group)
                     for child in original.commands:
                         obj.add_command(child)
-                await ctx.message.add_reaction("\u2611")
+                await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
 
     @root.group(
         "overwrite",
@@ -175,4 +175,4 @@ class RootOverride(root.Plugin):
                 file_lines[line] = ""
         with open(directory, "w") as fp:
             fp.writelines(file_lines)
-        await ctx.message.add_reaction("\u2611")
+        await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")

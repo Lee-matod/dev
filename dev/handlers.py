@@ -164,15 +164,15 @@ class ExceptionHandler:
         if exc_val is None:
             if not self.debug:
                 with contextlib.suppress(discord.NotFound):
-                    await self.message.add_reaction("\u2611")
+                    await self.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
             return False
         with contextlib.suppress(discord.NotFound):
             if isinstance(exc_val, (EOFError, SyntaxError)):
-                await self.message.add_reaction("\U0001f4a2")
+                await self.message.add_reaction("\N{ANGER SYMBOL}")
             elif isinstance(exc_val, (TimeoutError, asyncio.TimeoutError)):
-                await self.message.add_reaction("\u23f0")
+                await self.message.add_reaction("\N{ALARM CLOCK}")
             elif isinstance(exc_val, (AssertionError, ImportError, NameError)):
-                await self.message.add_reaction("\u2753")
+                await self.message.add_reaction("\N{BLACK QUESTION MARK ORNAMENT}")
             elif isinstance(
                 exc_val,
                 (
@@ -188,11 +188,11 @@ class ExceptionHandler:
                 if isinstance(exc_val, commands.CommandInvokeError):
                     exc_val: Exception = getattr(exc_val, "original", exc_val)
                     exc_tb = exc_val.__traceback__
-                await self.message.add_reaction("\u2757")
+                await self.message.add_reaction("\N{HEAVY EXCLAMATION MARK SYMBOL}")
             elif isinstance(exc_val, ArithmeticError):
-                await self.message.add_reaction("\u2049")
+                await self.message.add_reaction("\N{EXCLAMATION QUESTION MARK}")
             else:  # error doesn't fall under any other category
-                await self.message.add_reaction("\u203c")
+                await self.message.add_reaction("\N{DOUBLE EXCLAMATION MARK}")
         if self.on_error is not None:
             if inspect.iscoroutinefunction(self.on_error):
                 await self.on_error(exc_type, exc_val, exc_tb)

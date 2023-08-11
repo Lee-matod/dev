@@ -83,8 +83,8 @@ class RootEnvironment(root.Plugin):
             if name is None:
                 raise commands.MissingRequiredArgument(ctx.command.clean_params["name"])  # type: ignore
             if name not in self.scope:
-                return await ctx.message.add_reaction("\u274c")
-            await ctx.message.add_reaction("\u2611")
+                return await ctx.message.add_reaction("\N{CROSS MARK}")
+            await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
 
         elif mode in ["content", "value"]:
             if name is None:

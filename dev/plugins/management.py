@@ -27,7 +27,11 @@ from dev.utils.utils import codeblock_wrapper, escape, format_exception, plural
 if TYPE_CHECKING:
     from dev import types
 
-_EXTENSION_EMOJIS = {"load": "\U0001f4e5", "reload": "\U0001f504", "unload": "\U0001f4e4"}
+_EXTENSION_EMOJIS = {
+    "load": "\N{INBOX TRAY}",
+    "reload": "\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}",
+    "unload": "\N{OUTBOX TRAY}",
+}
 
 
 class RootManagement(root.Plugin):
@@ -89,7 +93,7 @@ class RootManagement(root.Plugin):
             try:
                 await coro(ext)
             except commands.ExtensionError as exc:
-                output.append(f"\u26a0 {ext}: {exc}")
+                output.append(f"\N{WARNING SIGN}\N{VS16} {ext}: {exc}")
             else:
                 successful += 1
                 output.append(f"{emoji} {ext}")
@@ -202,7 +206,7 @@ class RootManagement(root.Plugin):
             fmt = "cleared all commands"
         await send(
             ctx,
-            f"\U0001f6f0 Successfully {fmt} across {plural(len(successful_guilds), 'guild')}.\n"
+            f"\N{SATELLITE} Successfully {fmt} across {plural(len(successful_guilds), 'guild')}.\n"
             + "\n".join(successful_guilds),
             forced=True,
         )

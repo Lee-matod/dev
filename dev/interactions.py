@@ -330,7 +330,7 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
             # it took too long.
             # By this time, the interaction would become unknown, so we have to simulate that too
             self._unknown_interaction = True
-            await ctx.message.add_reaction("\u2757")
+            await ctx.message.add_reaction("\N{HEAVY EXCLAMATION MARK SYMBOL}")
 
     @discord.utils.cached_slot_property("_cs_response")
     def response(self) -> InteractionResponse[ClientT]:

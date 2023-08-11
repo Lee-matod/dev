@@ -69,7 +69,7 @@ class _SigKill(AuthoredMixin):
         self.session: ShellSession = process._Process__session  # type: ignore
         self.process: Process = process
 
-    @discord.ui.button(label="Kill", emoji="\u26D4", style=discord.ButtonStyle.danger)
+    @discord.ui.button(label="Kill", emoji="\N{NO ENTRY}", style=discord.ButtonStyle.danger)
     async def sigkill(self, interaction: discord.Interaction, _: discord.ui.Button[_SigKill]):
         self.process.subprocess.kill()
         self.process.subprocess.terminate()

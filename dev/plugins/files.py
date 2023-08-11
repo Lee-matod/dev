@@ -52,16 +52,19 @@ class RootFiles(root.Plugin):
         files: list[str] = []
         for item in path.iterdir():
             if item.is_dir():
-                folders.append("\U0001f4c1 " + escape(str(item.absolute())))
+                folders.append("\N{FILE FOLDER} " + escape(str(item.absolute())))
             elif item.is_file():
-                files.append("\U0001f4c4 " + escape(str(item.absolute())))
+                files.append("\N{PAGE FACING UP} " + escape(str(item.absolute())))
         if not folders and not files:
             return await send(ctx, "Directory is empty.")
-        *finalized, last = [f"\u2560\u2550 {item.replace(str(path.absolute()), '', 1)}" for item in (*folders, *files)]
-        last = f"\u255a{last[1:]}"
+        *finalized, last = [
+            f"\N{BOX DRAWINGS DOUBLE VERTICAL AND RIGHT}\N{BOX DRAWINGS DOUBLE HORIZONTAL} {item.replace(str(path.absolute()), '', 1)}"
+            for item in (*folders, *files)
+        ]
+        last = f"\N{BOX DRAWINGS DOUBLE UP AND RIGHT}{last[1:]}"
         await send(
             ctx,
-            f"\U0001f4c2 {escape(str(path.absolute()))}\n" + "\n".join(finalized) + f"\n{last}",
+            f"\N{OPEN FILE FOLDER} {escape(str(path.absolute()))}\n" + "\n".join(finalized) + f"\n{last}",
             path_to_file=not ctx.invoked_with.endswith("!"),
         )
 
@@ -109,9 +112,9 @@ class RootFiles(root.Plugin):
             return await send(ctx, "File or directory already exists.")
         if ctx.invoked_with == "mkdir":
             path.mkdir()
-            return await ctx.message.add_reaction("\u2611")
+            return await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
         path.touch()
-        await ctx.message.add_reaction("\u2611")
+        await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
 
     @root.command("move", parent="dev explorer", aliases=["mv"], require_var_positional=True)
     async def root_explorer_move(
@@ -140,13 +143,13 @@ class RootFiles(root.Plugin):
                 else:
                     duplicate.rmdir()
             shutil.move(str(target.absolute()), destination)
-            await ctx.message.add_reaction("\u2611")
+            await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
 
         duplicate = discord.utils.get(destination.iterdir(), name=target.name)
         if duplicate is not None:
             return await send(
                 ctx,
-                "\u26a0\ufe0f Target directory has an item with the same name!\n"
+                "\N{WARNING SIGN}\N{VS16} Target directory has an item with the same name!\n"
                 "Proceeding might cause it to be replaced by the new item. Are you sure?",
                 Prompt(ctx.author.id, move),
             )
@@ -173,7 +176,7 @@ class RootFiles(root.Plugin):
         except FileNotFoundError:
             # We already checked if the origin exists, so this means that something went wrong with name
             return await send(ctx, "Invalid new name provided.")
-        await ctx.message.add_reaction("\u2611")
+        await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
 
     @root.command(
         "delete", parent="dev explorer", aliases=["del", "remove", "rm", "rmdir"], require_var_positional=True
@@ -193,19 +196,19 @@ class RootFiles(root.Plugin):
             return await send(ctx, "For security reasons, deleting current working directory is not allowed.")
         if path.is_file():
             path.unlink()
-            return await ctx.message.add_reaction("\u2611")
+            return await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
         try:
             path.rmdir()
         except OSError:
 
             async def func() -> None:
                 shutil.rmtree(path)
-                await ctx.message.add_reaction("\u2611")
+                await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
 
             return await send(
                 ctx,
-                "\u26a0\ufe0f Directory is not empty!\n"
+                "\N{WARNING SIGN}\N{VS16} Directory is not empty!\n"
                 "Deleting it will delete all files and folders inside it. Do you want to proceed?",
                 Prompt(ctx.author.id, func),
             )
-        await ctx.message.add_reaction("\u2611")
+        await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")

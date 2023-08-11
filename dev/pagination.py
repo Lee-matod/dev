@@ -148,12 +148,12 @@ class Interface(discord.ui.View):
             self.next_page.disabled = False
         self.current.label = f"{item}/{len(self.paginator.pages)}"
 
-    @discord.ui.button(label="\u226a")
+    @discord.ui.button(label="\N{MUCH LESS-THAN}")
     async def first_page(self, interaction: discord.Interaction, _) -> None:
         self.page_num = 1
         await interaction.response.edit_message(content=self.display_page, view=self)
 
-    @discord.ui.button(label="\u25c0", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="\N{BLACK LEFT-POINTING TRIANGLE}", style=discord.ButtonStyle.blurple)
     async def previous_page(self, interaction: discord.Interaction, _) -> None:
         self.page_num -= 1
         await interaction.response.edit_message(content=self.display_page, view=self)
@@ -162,12 +162,12 @@ class Interface(discord.ui.View):
     async def current(self, interaction: discord.Interaction, _) -> None:
         await interaction.response.send_modal(_PageSetter(self))
 
-    @discord.ui.button(label="\u25b6", style=discord.ButtonStyle.blurple, disabled=True)
+    @discord.ui.button(label="\N{BLACK RIGHT-POINTING TRIANGLE}", style=discord.ButtonStyle.blurple, disabled=True)
     async def next_page(self, interaction: discord.Interaction, _) -> None:
         self.page_num += 1
         await interaction.response.edit_message(content=self.display_page, view=self)
 
-    @discord.ui.button(label="\u226b", disabled=True)
+    @discord.ui.button(label="\N{MUCH GREATER-THAN}", disabled=True)
     async def last_page(self, interaction: discord.Interaction, _) -> None:
         self.page_num = len(self.paginator.pages)
         await interaction.response.edit_message(content=self.display_page, view=self)

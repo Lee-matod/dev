@@ -102,7 +102,7 @@ class RootInvoke(root.Plugin):
             handler.cleanup()
             await send(ctx, embeds)
         else:
-            await ctx.message.add_reaction("\u2611")
+            await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
 
     @root.command("execute", parent="dev", aliases=["exec", "execute!", "exec!"], require_var_positional=True)
     async def root_execute(

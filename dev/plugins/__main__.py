@@ -124,7 +124,7 @@ class RootCommand(root.Plugin):
         If the bot does not close within 5 seconds, `sys.exit()` is called regardless.
         """
         status = 0
-        await ctx.message.add_reaction("\U0001f44b")
+        await ctx.message.add_reaction("\N{WAVING HAND SIGN}")
         if ctx.invoked_with == "close":
             _log.info("Closing the bot now...")
             await self.bot.close()
