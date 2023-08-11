@@ -83,7 +83,7 @@ class RootPython(root.Plugin):
         """Evaluate or execute Python code.
 
         Just like in any REPL session, you can use '_' to gain access to the last value evaluated.
-        Sending a file instead is also supported.
+        Sending a file instead of using a codeblock is also supported.
 
         Parameters
         ----------
@@ -155,11 +155,8 @@ class RootPython(root.Plugin):
         async def root_black(self, ctx: commands.Context[types.Bot], *, code: Annotated[str, clean_code]):
             """Format a piece of code using the uncompromising black formatter.
 
-            Adjust the formatter to your liking by using comments as shown in the example below.
-            # black: enable=magic-trailing-comma
-            # black: disable=string-normalization
-            # black: line-length=120
-            # black: target-version=39
+            Adjust the formatter to your liking by using comments
+            (e.g. `# black: line-length=120`, `# black: disable=string-normalization`).
 
             Enabling or disabling multiple settings in a single comment is not supported.
 

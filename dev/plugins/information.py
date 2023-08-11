@@ -33,7 +33,7 @@ class RootInformation(root.Plugin):
     async def root_inspect(self, ctx: commands.Context[types.Bot], *, command_string: str):
         """Inspect a command.
 
-        Show the command's signature, aliases, cog, module, and some other useful information.
+        Show command signature, aliases, cog, module, and some other useful information.
 
         Parameters
         ----------
@@ -82,7 +82,7 @@ class RootInformation(root.Plugin):
 
     @root.command("source", parent="dev", aliases=["src"], require_var_positional=True)
     async def root_source(self, ctx: commands.Context[types.Bot], *, command_string: str):
-        """View the source code of a command if available.
+        """View the source code of a command, if available.
 
         The token of the bot will be hidden as `[token]` if it is found within the source code.
 
@@ -98,5 +98,5 @@ class RootInformation(root.Plugin):
         try:
             source = inspect.getsource(command.callback)
         except OSError:
-            return await send(ctx, f"Couldn't get source lines for the command `{command_string}`.")
+            return await send(ctx, f"Couldn't get source lines for command `{command_string}`.")
         await send(ctx, codeblock_wrapper(textwrap.dedent(source), "py"))

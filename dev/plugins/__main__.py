@@ -53,7 +53,7 @@ class RootCommand(root.Plugin):
     async def root_(self, ctx: commands.Context[types.Bot]):
         """Root command for the dev extension.
 
-        Gives a briefing of this extension, bot information, and process statistics.
+        Show a briefing of this extension, bot information, and process statistics.
         """
         process = psutil.Process()
         version = sys.version.replace("\n", "")

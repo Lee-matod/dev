@@ -50,12 +50,12 @@ class RootManagement(root.Plugin):
         ctx: commands.Context[types.Bot],
         channel: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
     ):
-        """Show which permissions the bot has.
+        """Show the permissions the bot has globally or for a channel.
 
-        A channel may be optionally passed to check for permissions there.
-
+        Parameters
+        ----------
         channel: Optional[Union[:class:`discord.abc.GuildChannel`, :class:`discord.Thread`]]
-            The specific channel to check the permissions for.
+            The specific channel to check permissions for.
         """
         if ctx.guild is None:
             return await send(ctx, "Please execute this command in a guild.")
@@ -71,8 +71,8 @@ class RootManagement(root.Plugin):
     @root.command("load", parent="dev", aliases=["reload", "unload"])
     async def root_load(self, ctx: commands.Context[types.Bot], *extensions: str):
         r"""Load, reload, or unload a set of extensions.
-        - Use '\~' to reference all currently loaded extensions.
-        - Use 'module.\*' to include all extensions in 'module'.
+        
+        `\~` references all currently loaded extensions; `module.\*` includes all extensions in `module`.
 
         Parameters
         ----------
@@ -111,19 +111,18 @@ class RootManagement(root.Plugin):
     async def root_sync(
         self, ctx: commands.Context[types.Bot], target: Optional[Literal[".", "*", "~.", "~*", "~"]], *guilds: int
     ):
-        r"""Sync this bot's application command tree with Discord.
-        Omit targets to sync globally.
+        r"""Sync this bot's application tree with Discord.
 
-        Using the inverter (\~) causes the following change in behavoir:
-        - *\~* clears all global commands or from the given guilds.
-        - *\~.* clears all commands from the current guild.
-        - *\~\** copes all global commands to the given guilds.
+        To change sync targets, use `.` to sync to the current guild; `*` to copy all global commands to the
+        current guild; omit to sync globally.
+
+        Using the inverter (`~`) causes `~` to clear all global commands or from the given guilds;
+        `~.` clears all commands from the current guild; `~*` copies all global commands to the given guilds.
 
         Parameters
         ----------
         target: Literal[".", "*", "~.", "~*", "~"]
-            How to sync. *\.* syncs to the current guild. *\** copies all global commands to the current guild and syncs.
-            *\~* inverts the current mode.
+            What should be done with the application tree.
         guilds: :class:`int`
             The guilds to sync the tree to. Not always necessary.
         """

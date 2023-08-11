@@ -79,9 +79,15 @@ class RootShell(root.Plugin):
     @root.command("shell", parent="dev", aliases=["sh", "cmd", "bash", "ps"])
     async def root_shell(self, ctx: commands.Context[types.Bot], *, script: Annotated[str, clean_code]):
         """Invoke and evaluate shell commands.
+
         After initiating a new session, reply to the message containing the terminal output to send
         a new command to the console.
         Type `exit` to quit the session.
+
+        Parameters
+        ----------
+        script: :class:`str`
+            The initial shell script to execute.
         """
         if ctx.author.id in self.active_shell_sessions:
             session = self.active_shell_sessions[ctx.author.id]
@@ -145,10 +151,8 @@ class RootShell(root.Plugin):
 
             Arguments that are before the codeblock will be forwarded to Pyright's executable options.
 
-            Adjust a temporary `pyproject.toml` file to your liking by using comments as shown below.
-            # pyproject: typeCheckingMode="strict"
-            # pyproject: pythonVersion="3.9"
-            # pyproject: reportUnnecessaryTypeIgnoreComment=true
+            Adjust a temporary `pyproject.toml` file to your liking by using comments
+            (e.g. `# pyproject: typeCheckingMode="strict"`, `# pyproject: pythonVersion="3.9"`).
 
             Invokes the system shell. This feature is only available if the pyright executable is detected.
 

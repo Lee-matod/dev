@@ -44,11 +44,8 @@ class RootOverride(root.Plugin):
     ):
         """Override the current callback and attributes of a command.
 
-        Similar to `dev overwrite`, but this temporarily changes the callback of the command.
-
-        The arguments of this command should consist of two parts:
-        1. The qualified name of the command to override.
-        2. The new callback of the command surrounded in a codeblock. Decorators should be included.
+        The arguments should consist of the qualified name of the command to override, and the new callback,
+        which should be inside a codeblock. Decorators should be included.
 
         Parameters
         ----------
@@ -117,11 +114,10 @@ class RootOverride(root.Plugin):
     ):
         """Overwrite the source code of a command.
 
-        Similar to `dev override`, but this edits the source code of the command.
+        The arguments should consist of the qualified name of the command to overwrite, and the new callback,
+        which should be inside a codeblock. Decorators should be included.
 
-        The arguments of this command should consist of two parts:
-        1. The qualified name of the command to override.
-        2. The new callback of the command surrounded in a codeblock. Decorators should be included.
+        Similar to `dev override`, but this edits the source code of the command.
 
         Parameters
         ----------

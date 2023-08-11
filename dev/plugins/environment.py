@@ -30,14 +30,14 @@ class RootEnvironment(root.Plugin):
     async def root_environment(
         self,
         ctx: commands.Context[types.Bot],
-        mode: Literal["all", "content", "create", "delete", "edit", "exists", "new", "remove", "replace", "value",],
+        mode: Literal["all", "content", "create", "delete", "edit", "exists", "new", "remove", "replace", "value"],
         *,
         name: Optional[str] = None,
     ):
-        """A virtual environment variable manager.
+        """Virtual environment variable manager.
 
-        This allows you to create temporary variables that can later be used as placeholder texts.
-        Note that all variables created using this manager will later be destroyed.
+        Allows you to create temporary variables that can later be used as placeholders.
+        All variables created using this manager will later be destroyed on restart.
 
         Parameters
         ----------

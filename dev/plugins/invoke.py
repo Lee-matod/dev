@@ -36,12 +36,12 @@ class RootInvoke(root.Plugin):
     async def root_timeit(self, ctx: commands.Context[types.Bot], timeout: Optional[float], *, command_name: str):
         """Invoke a command and measure how long it takes to finish.
 
-        If a timeout is set, the command's invocation will not be canceled.
+        If a timeout is set and runs out, the command's invocation will not be canceled.
 
         Parameters
         ----------
         timeout: Optional[:class:`float`]
-            A maximum amount of time that the command is allowed to take to finish executing.
+            The maximum amount of time that the command is allowed to take to finish.
         command_name: :class:`str`
             The name of the command to invoke.
         """
@@ -61,14 +61,14 @@ class RootInvoke(root.Plugin):
     async def root_repeat(self, ctx: commands.Context[types.Bot], amount: int, *, command_name: str):
         """Repeatedly call a command a given amount of times.
 
-        Checks can be optionally bypassed by using `dev repeat!` instead of `dev repeat`.
+        Checks can be optionally bypassed by using `dev repeat!`.
 
         Parameters
         ----------
         amount: :class:`int`
-            How many times the command should be invoked.
+            The amount of times the command should be invoked.
         command_name: :class:`str`
-            The qualified name of the command to invoke.
+            The name of the command to invoke.
         """
         kwargs = {"content": f"{ctx.prefix}{command_name}"}
         assert ctx.invoked_with is not None
@@ -86,7 +86,7 @@ class RootInvoke(root.Plugin):
         Parameters
         ----------
         command_name: :class:`str`
-            The qualified name of the command to invoke.
+            The name of the command to invoke.
         """
         kwargs = {"content": f"{ctx.prefix}{command_name}"}
         invokable = await self._get_invokable(ctx, command_name, kwargs)
@@ -117,14 +117,14 @@ class RootInvoke(root.Plugin):
         Supported additional attributes are Member, Guild, TextChannel, and Thread.
         Command checks can be optionally disabled by using `dev exec!|execute!` instead.
 
-        Application command invocation is also supported. Prefix the command name with a slash to invoke it.
+        Application command invocation is also supported. Prefix the command name with a forward slash to invoke it.
 
         Parameters
         ----------
         attrs: List[Union[:class:`discord.Guild`, :class:`discord.Member`, :class:`discord.TextChannel`, :class:`discord.Thread`, :class:`discord.User`]]
             Custom attributes that will be overriden when invoking the command.
         command_name: :class:`str`
-            The qualified name of the command to invoke.
+            The name of the command to invoke.
         """
         kwargs: dict[str, Any] = {"content": f"{ctx.prefix}{command_name}"}
         for attr in attrs:

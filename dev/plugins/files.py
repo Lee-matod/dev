@@ -127,7 +127,7 @@ class RootFiles(root.Plugin):
         target: :class:`pathlib.Path`
             The file or directory that will be moved.
         destination: :class:`pathlib.Path`
-            The directory in which `target` will be moved to.
+            The directory where the given file or folder will be moved to.
         """
         if destination.is_file():
             return await send(ctx, "Target directory is a file.")
@@ -164,7 +164,7 @@ class RootFiles(root.Plugin):
         origin: :class:`pathlib.Path`
             The file or directory that should be renamed.
         name: :class:`str`
-            The new name that the item should receive. It should not include any parent directories.
+            The new name that the item should receive.
         """
         if pathlib.Path(name).exists():
             return await send(ctx, "New path name already exists.")
@@ -184,11 +184,12 @@ class RootFiles(root.Plugin):
     async def root_explorer_delete(self, ctx: commands.Context[types.Bot], *, path: pathlib.Path):
         """Delete a file or directory. For security reasons, current working directory is blacklisted.
 
+        If provided with a directory that is not empty, a prompt will show before deleting.
+
         Parameters
         ----------
         path: :class:`pathlib.Path`
-            The file or directory that will be removed. If the given directory is not empty,
-            a prompt will show before deleting to ensure safety.
+            The file or directory that will be removed.
         """
         if not path.exists():
             return await send(ctx, "File or directory not found.")
