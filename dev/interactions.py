@@ -71,6 +71,8 @@ def get_app_command(
         app_command: Optional[Union[app_commands.Command[Any, ..., Any], app_commands.Group]] = discord.utils.get(
             app_command.commands, qualified_name=app_command_name
         )
+    if app_command is not None and possible_subcommands:
+        raise commands.TooManyArguments(f"Too many arguments passed to {app_command.name}")
     return app_command
 
 
@@ -555,8 +557,8 @@ class InteractionResponse(discord.InteractionResponse[ClientT]):
         if self._parent._unknown_interaction:
             raise discord.NotFound(UnknownError, {"code": 10062, "message": "Unknown interaction"})  # type: ignore
         kwargs.pop("ephemeral", None)
-        message = await self._parent._SyntheticInteraction__context.send(content, **kwargs)  # type: ignore
-        self._parent._original_response = message
+        message = await self._parent._context.send(content, **kwargs)
+        self._parent._original_response = message  # type: ignore
         self._response_type = discord.InteractionResponseType.channel_message
 
     async def edit_message(self, **kwargs: Any) -> None:
@@ -564,7 +566,7 @@ class InteractionResponse(discord.InteractionResponse[ClientT]):
             raise discord.InteractionResponded(self._parent)
         if self._parent._unknown_interaction:
             raise discord.NotFound(UnknownError, {"code": 10062, "message": "Unknown interaction"})  # type: ignore
-        await self._parent._SyntheticInteraction__context.message.edit(**kwargs)  # type: ignore
+        await self._parent._context.message.edit(**kwargs)
         self._response_type = discord.InteractionResponseType.message_update
 
     async def send_modal(self, _: discord.ui.Modal, /) -> None:
