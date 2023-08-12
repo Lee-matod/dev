@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     )
     from discord.types.member import Member as MemberPayload
     from discord.types.message import Attachment as AttachmentPayload
-    from discord.types.role import Role as RolePayload, RoleTags as RoleTagsPayload
+    from discord.types.role import Role as RolePayload
     from discord.types.threads import Thread as ThreadPayload, ThreadMetadata
     from discord.types.user import PartialUser as PartialUserPayload, User as UserPayload
 
@@ -132,8 +132,7 @@ def role(_role: discord.Role, /) -> RolePayload:
     }
     tags = _role.tags
     if tags is not None:
-        assert tags.bot_id and tags.integration_id and tags.subscription_listing_id
-        tags_payload: RoleTagsPayload = {
+        tags_payload = {
             "bot_id": tags.bot_id,
             "integration_id": tags.integration_id,
             "subscription_listing_id": tags.subscription_listing_id,
@@ -144,7 +143,7 @@ def role(_role: discord.Role, /) -> RolePayload:
             tags_payload["available_for_purchase"] = None
         if tags.is_guild_connection():
             tags_payload["guild_connections"] = None
-        payload["tags"] = tags_payload
+        payload["tags"] = tags_payload  # type: ignore
     return payload
 
 

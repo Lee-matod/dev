@@ -59,19 +59,18 @@ ChoiceT = TypeVar("ChoiceT", str, int, float, Union[str, int, float])
 def get_app_command(
     content: str, app_command_list: List[app_commands.Command[Any, ..., Any]]
 ) -> Optional[app_commands.Command[Any, ..., Any]]:
-    possible_subcommands = content.split()
-    app_command_name = possible_subcommands[0]
-    possible_subcommands = possible_subcommands[1:]
-    app_command: Optional[Union[app_commands.Command[Any, ..., Any], app_commands.Group]] = discord.utils.get(
-        app_command_list, name=app_command_name
-    )
-    while isinstance(app_command, discord.app_commands.Group):
-        app_command_name = f"{app_command_name} {possible_subcommands[0]}"
-        possible_subcommands = possible_subcommands[1:]
-        app_command: Optional[Union[app_commands.Command[Any, ..., Any], app_commands.Group]] = discord.utils.get(
-            app_command.commands, qualified_name=app_command_name
-        )
-    if app_command is not None and possible_subcommands:
+    command_string = content.split("\n")[0].split()
+    app_command_name = command_string[0]
+    extras = command_string[1:]
+
+    app_command = discord.utils.get(app_command_list, name=app_command_name)
+    while isinstance(app_command, app_commands.Group):
+        try:
+            app_command_name = extras.pop(0)
+        except IndexError:
+            return
+        app_command = discord.utils.get(app_command.commands, name=app_command_name)
+    if app_command is not None and extras:
         raise commands.TooManyArguments(f"Too many arguments passed to {app_command.name}")
     return app_command
 
@@ -253,24 +252,34 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
             value = obj
             converter: Optional[Callable[[to_dict.PayloadTypes], to_dict.Payloads]] = to_dict.TYPE_MAPPING.get(type(obj))  # type: ignore
             if converter is not None:
-                name = converter.__name__ + "s"
-                _append_snowflake(resolved, name, obj, converter(obj))
-                if name == "members":
-                    _append_snowflake(resolved, "users", obj, to_dict.user(obj._user))
+                name = (converter.__name__ + "s").replace("threads", "channels")
+                if isinstance(context.author, discord.Member) and isinstance(obj, to_dict.GuildChannels):
+                    #  Manually inject permissions value
+                    mapping = converter(obj)
+                    mapping["permissions"] = str(obj.permissions_for(context.author).value)  # type: ignore
+                    _append_snowflake(resolved, name, obj, mapping)
+                else:
+                    _append_snowflake(resolved, name, obj, converter(obj))
+                    if name == "members":
+                        _append_snowflake(resolved, "users", obj, to_dict.user(obj._user))
+            if isinstance(value, discord.abc.Snowflake):
+                value = str(value.id)
             command_parameters.append(
                 {"type": param.type.value, "name": param.display_name, "value": value}  # type: ignore
             )
+
         data["resolved"] = resolved
         #  Add application command options
-        if command.root_parent is None:
+        if command.parent is None:
             data["options"] = command_parameters
         else:
             #  Either 1 or 2 level deep command
             subcommand_options: List[OptionsData] = [{"type": 1, "options": command_parameters, "name": command.name}]
-            if command.parent is command.root_parent:
+            parent = command.parent
+            if parent.parent is None:
                 data["options"] = subcommand_options
             else:
-                data["options"] = [{"type": 2, "options": subcommand_options, "name": command.root_parent.name}]
+                data["options"] = [{"type": 2, "options": subcommand_options, "name": parent.name}]
         # DMChannel causes problems here, because it's techincally InteractionDMChannel
         channel: Union[
             to_dict.GuildChannelPayload, to_dict.InteractionDMChannelPayload, to_dict.GroupDMChannelPayload
@@ -502,8 +511,9 @@ class SyntheticWebhook:
         return self
 
     async def send(self, *args: Any, **kwargs: Any) -> discord.Message:
-        if self.__interaction.response.is_done():
-            return await self.__context.send(*args, **kwargs)
+        original_response = self.__interaction._original_response
+        if self.__interaction.response.is_done() and original_response:
+            return await original_response.reply(*args, **kwargs, mention_author=False)
         raise discord.NotFound(UnknownError, {"code": 10015, "message": "Unknown Webhook"})  # type: ignore
 
     async def fetch_message(self, _id: int, /, *, thread: discord.abc.Snowflake = MISSING) -> discord.Message:
