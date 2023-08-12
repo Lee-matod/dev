@@ -13,9 +13,11 @@ from __future__ import annotations
 
 import ast
 import inspect
+import textwrap
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from discord.ext import commands
+from discord.ext.commands._types import _BaseCommand  # type: ignore
 
 from dev import root
 from dev.converters import MessageCodeblock, codeblock_converter
@@ -68,19 +70,38 @@ class RootOverride(root.Plugin):
 
         async with ExceptionHandler(ctx.message, on_error):
             ast_parse = ast.parse(script)
-            if len(ast_parse.body) != 1 or not isinstance(ast_parse.body[0], ast.AsyncFunctionDef):
+            async_callback = isinstance(ast_parse.body[-1], ast.AsyncFunctionDef)
+            imports_exprs = len([expr for expr in ast_parse.body if isinstance(expr, (ast.Import, ast.ImportFrom))])
+            if not async_callback or len(ast_parse.body) > imports_exprs + 1:
                 return await send(
                     ctx, "The body of the script should consist of a single asynchronous function callback."
                 )
-            ast_func: ast.AsyncFunctionDef = ast_parse.body[0]
+            ast_func: ast.AsyncFunctionDef = ast_parse.body[-1]  # type: ignore
             scope = Scope(original.callback.__globals__)
-            executor = Execute(
-                f"{script}\nreturn {ast_func.name}", scope, {"bot": self.bot} if original.cog is None else {}
-            )
+            if original.cog is None:
+                code = f"{script}\nreturn {ast_func.name}"
+            else:
+                # Getting cog commands to register properly is pretty tricky.
+                # discord.py uses inspect to get function parameters, which means that
+                # I have to attach the callback to a class somehow.
+                code = (
+                    "from discord.ext import commands\n"
+                    f"class _TempCogSimulator(commands.Cog):\n{textwrap.indent(script, '    ')}\n"
+                    f"return _TempCogSimulator.{ast_func.name}"
+                )
+            executor = Execute(code, scope, {"bot": self.bot} if original.cog is None else {})
             self.bot.remove_command(original.qualified_name)
             async for obj in executor:
-                if not isinstance(obj, commands.Command):
-                    obj = type(original)(obj, **original_kwargs)
+                if not isinstance(obj, _BaseCommand):
+                    try:
+                        obj = type(original)(obj, **original_kwargs)
+                    except TypeError:
+                        self.bot.add_command(original)
+                        return await send(
+                            ctx,
+                            "Could not convert callback to command. "
+                            f"`{type(obj)}` is incompatible with `{type(original)}`.",
+                        )
                 if type(obj) != type(original):
                     self.bot.remove_command(obj.qualified_name)
                     self.bot.add_command(original)
@@ -100,7 +121,9 @@ class RootOverride(root.Plugin):
                     assert isinstance(obj, commands.Group)
                     for child in original.commands:
                         obj.add_command(child)
-                await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
+                if original.cog is not None:
+                    obj.cog = original.cog
+                return await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
 
     @root.group(
         "overwrite",
