@@ -14,7 +14,7 @@ from __future__ import annotations
 import ast
 import inspect
 import textwrap
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Literal, Optional
 
 from discord.ext import commands
 from discord.ext.commands._types import _BaseCommand  # type: ignore
@@ -68,7 +68,8 @@ class RootOverride(root.Plugin):
             except commands.CommandRegistrationError:
                 pass
 
-        async with ExceptionHandler(ctx.message, on_error):
+        exception_handler: ExceptionHandler[Literal[False]] = ExceptionHandler(ctx.message, on_error)
+        async with exception_handler:
             ast_parse = ast.parse(script)
             async_callback = isinstance(ast_parse.body[-1], ast.AsyncFunctionDef)
             imports_exprs = len([expr for expr in ast_parse.body if isinstance(expr, (ast.Import, ast.ImportFrom))])
@@ -158,7 +159,8 @@ class RootOverride(root.Plugin):
             return await send(ctx, "Could not find source.")
         lines, line_no = inspect.getsourcelines(origin.callback)
         line_no -= 1
-        async with ExceptionHandler(ctx.message):
+        exception_handler: ExceptionHandler[Literal[False]] = ExceptionHandler(ctx.message)
+        async with exception_handler:
             parsed = ast.parse(script)
             if len(parsed.body) != 1 or not isinstance(parsed.body[0], ast.AsyncFunctionDef):
                 return await send(

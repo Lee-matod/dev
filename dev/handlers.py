@@ -17,17 +17,31 @@ import inspect
 import io
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, TextIO, Tuple, Type, TypeVar
+from types import TracebackType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Generic,
+    List,
+    Literal,
+    Optional,
+    TextIO,
+    Tuple,
+    Type,
+    TypeVar,
+    final,
+    overload,
+)
 
 import discord
 from discord.ext import commands
 
 from dev.scope import Scope, Settings
-from dev.utils.utils import format_exception
 
 if TYPE_CHECKING:
-    from types import TracebackType
-
     from typing_extensions import Self
 
     from dev.types import Coro
@@ -35,6 +49,7 @@ if TYPE_CHECKING:
 __all__ = ("ExceptionHandler", "RelativeStandard", "TimedInfo", "replace_vars")
 
 T = TypeVar("T")
+DebugT = TypeVar("DebugT", bound=bool)
 
 
 class RelativeStandard(io.StringIO):
@@ -112,7 +127,8 @@ class TimedInfo:
             return await coro
 
 
-class ExceptionHandler:
+@final
+class ExceptionHandler(Generic[DebugT]):
     """Handle any exceptions in an async context manager.
     If any exceptions are raised during the process' lifetime, the bot will try to add reactions depending on the
     exception value.
@@ -128,44 +144,58 @@ class ExceptionHandler:
     ----------
     message: :class:`discord.Message`
         The message that the reactions will be added to.
-    on_error: Optional[Callable[[Optional[Type[Exception]], Optional[Exception], Optional[TracebackType]], Any]]
+    on_error: Optional[Callable[[Type[:class:`Exception`], :class:`Exception`, :class:`TracebackType`], Any]]
         An optional function that will receive any raised exceptions inside the context manager.
         This function *can* be a coroutine.
-    save_traceback: :class:`bool`
+    debug: :class:`bool`
         Whether to save a traceback if an exception is raised.
         Defaults to `False`.
     """
 
-    error: List[Tuple[str, str]] = []
-    debug: bool = False
+    _exceptions: ClassVar[Dict[discord.Message, List[Tuple[Type[Exception], Exception, TracebackType]]]] = {}
 
     def __init__(
         self,
         message: discord.Message,
         /,
-        on_error: Optional[
-            Callable[[Optional[Type[Exception]], Optional[Exception], Optional[TracebackType]], Any]
-        ] = None,
-        save_traceback: bool = False,
+        on_error: Optional[Callable[[Type[Exception], Exception, TracebackType], Any]] = None,
+        debug: DebugT = False,
     ) -> None:
         self.message: discord.Message = message
-        self.on_error: Optional[
-            Callable[[Optional[Type[Exception]], Optional[Exception], Optional[TracebackType]], Any]
-        ] = on_error
-        if save_traceback:
-            ExceptionHandler.debug = True
+        self.on_error: Optional[Callable[[Type[Exception], Exception, TracebackType], Any]] = on_error
+        self.debug: DebugT = debug
+        if debug:
+            type(self)._exceptions[message] = []
 
-    async def __aenter__(self) -> ExceptionHandler:
+    @overload
+    async def __aenter__(
+        self: ExceptionHandler[Literal[True]],
+    ) -> List[Tuple[Type[Exception], Exception, TracebackType]]:
+        ...
+
+    @overload
+    async def __aenter__(self: ExceptionHandler[Literal[False]]) -> ExceptionHandler[Literal[False]]:
+        ...
+
+    async def __aenter__(self: ExceptionHandler[DebugT]):  # type: ignore
+        if self.debug:
+            try:
+                tracebacks = type(self)._exceptions[self.message]
+            except KeyError:
+                return []  # type: ignore
+            return tracebacks
         return self
 
     async def __aexit__(
-        self, exc_type: Optional[Type[Exception]], exc_val: Optional[Exception], exc_tb: Optional[TracebackType]  # type: ignore
+        self, exc_type: Optional[Type[Exception]], exc_val: Optional[Exception], exc_tb: Optional[TracebackType]
     ) -> bool:
         if exc_val is None:
-            if not self.debug:
-                with contextlib.suppress(discord.NotFound):
-                    await self.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
+            try:
+                await self.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
+            except discord.NotFound:
+                pass
             return False
+
         with contextlib.suppress(discord.NotFound):
             if isinstance(exc_val, (EOFError, SyntaxError)):
                 await self.message.add_reaction("\N{ANGER SYMBOL}")
@@ -186,30 +216,33 @@ class ExceptionHandler:
                 ),
             ):
                 if isinstance(exc_val, commands.CommandInvokeError):
-                    exc_val: Exception = getattr(exc_val, "original", exc_val)
+                    exc_val = getattr(exc_val, "original", exc_val)
+                    if TYPE_CHECKING:
+                        assert exc_val is not None
                     exc_tb = exc_val.__traceback__
                 await self.message.add_reaction("\N{HEAVY EXCLAMATION MARK SYMBOL}")
             elif isinstance(exc_val, ArithmeticError):
                 await self.message.add_reaction("\N{EXCLAMATION QUESTION MARK}")
             else:  # error doesn't fall under any other category
                 await self.message.add_reaction("\N{DOUBLE EXCLAMATION MARK}")
+
+        if TYPE_CHECKING:
+            assert exc_type is not None
+            assert exc_val is not None
+            assert exc_tb is not None
+
         if self.on_error is not None:
             if inspect.iscoroutinefunction(self.on_error):
                 await self.on_error(exc_type, exc_val, exc_tb)
             else:
                 self.on_error(exc_type, exc_val, exc_tb)
 
-        if self.debug:
-            ExceptionHandler.error.append((type(exc_val).__name__, format_exception(exc_val)))
+        if self.message in type(self)._exceptions:
+            if self.debug:
+                del type(self)._exceptions[self.message]
+            else:
+                type(self)._exceptions[self.message].append((exc_type, exc_val, exc_tb))
         return True
-
-    @classmethod
-    def cleanup(cls) -> None:
-        """Deletes any tracebacks that were saved if send_traceback was set to True.
-        This method should always get called once you have finished handling any tracebacks
-        """
-        cls.error = []
-        cls.debug = False
 
 
 def replace_vars(string: str, scope: Scope) -> str:
@@ -230,3 +263,4 @@ def replace_vars(string: str, scope: Scope) -> str:
     for key, value in scope.items():
         string = string.replace(Settings.VIRTUAL_VARS % key, value)
     return string
+

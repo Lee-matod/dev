@@ -16,7 +16,7 @@ import contextlib
 import re
 import sys
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type
 
 import discord
 from discord.ext import commands
@@ -107,11 +107,7 @@ class RootPython(root.Plugin):
         code = clean_code(replace_vars(code.replace("|root|", Settings.ROOT_FOLDER), self.scope))
         output: List[str] = []
 
-        async def on_error(
-            exc_type: Optional[Type[Exception]], exc_val: Optional[Exception], exc_tb: Optional[TracebackType]
-        ) -> None:
-            if handler.debug or exc_type is None or exc_val is None or exc_tb is None:
-                return
+        async def on_error(exc_type: Type[Exception], exc_val: Exception, _: Optional[TracebackType]) -> None:
             if isinstance(exc_val, (SyntaxError, ImportError, NameError, AttributeError)):
                 await send(ctx, codeblock_wrapper(f"{exc_type.__name__}: {exc_val}", "py"))
 
@@ -119,8 +115,9 @@ class RootPython(root.Plugin):
         executor = Execute(code, self._get_scope(), args)
         stdout = RelativeStandard(callback=lambda s: output.append(s), filename=executor.filename)
         stderr = RelativeStandard(sys.__stderr__, lambda s: output.append(s), filename=executor.filename)
+        exception_handler: ExceptionHandler[Literal[False]] = ExceptionHandler(ctx.message, on_error=on_error)
         try:
-            async with ExceptionHandler(ctx.message, on_error=on_error) as handler:
+            async with exception_handler:
                 with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                     async for expr in executor:
                         if expr is None:

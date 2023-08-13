@@ -21,6 +21,7 @@ from dev.converters import GlobalTextChannelConverter
 from dev.handlers import ExceptionHandler, TimedInfo
 from dev.interactions import SyntheticInteraction, get_app_command, get_parameters
 from dev.utils.functs import generate_ctx, send
+from dev.utils.utils import format_exception
 
 if TYPE_CHECKING:
     from dev import types
@@ -104,17 +105,15 @@ class RootInvoke(root.Plugin):
         invokable = await self._get_invokable(ctx, command_name, kwargs)
         if invokable is None:
             return await send(ctx, f"Command `{command_name}` not found.")
-        async with ExceptionHandler(ctx.message, save_traceback=True) as handler:
+        handler: ExceptionHandler[Literal[True]] = ExceptionHandler(ctx.message, debug=True)
+        async with handler as tracebacks:
             await self._execute_invokable(*invokable)
-        if handler.error:
-            embeds = [
-                discord.Embed(title=exc[0], description=f"```py\n{exc[1]}\n```", color=discord.Color.red())
-                for exc in handler.error
+        embeds = [
+                discord.Embed(title=exc[0].__name__, description=f"```py\n{format_exception(exc[1])}\n```", color=discord.Color.red())
+                for exc in tracebacks
             ]
-            handler.cleanup()
+        if embeds:
             await send(ctx, embeds)
-        else:
-            await ctx.message.add_reaction("\N{BALLOT BOX WITH CHECK}")
 
     @root.command("execute", parent="dev", aliases=["exec", "execute!", "exec!"], require_var_positional=True)
     async def root_execute(
