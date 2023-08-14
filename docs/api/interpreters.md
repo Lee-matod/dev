@@ -94,6 +94,16 @@ by [run_until_complete](https://github.com/Lee-matod/dev/blob/main/docs/api/inte
 > - [TimeoutError](https://docs.python.org/3/library/exceptions.html#TimeoutError) – The subprocess did not output
     anything in the last 60 seconds.
 
+> ### write(message)
+> Write a message to this process' standard input.
+> #### Parameters
+> - message([str](https://docs.python.org/3/library/stdtypes.html#str)) – The message that will be sent to stdin.
+> #### Returns
+> Optional[[int]((https://docs.python.org/3/library/functions.html#int))] – The amount of characters writte, if writting
+> was successful.
+> #### Raises
+> - [ConnectionError](https://docs.python.org/3/library/exceptions.html#ConnectionError) – The current process is no longer alive.
+
 > ### `property` is_alive
 > [bool](https://docs.python.org/3/library/functions.html#bool) – Whether the current process is active or has pending
 output to get formatted.
