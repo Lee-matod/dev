@@ -108,12 +108,8 @@ class RootInvoke(root.Plugin):
         handler: ExceptionHandler[Literal[True]] = ExceptionHandler(ctx.message, debug=True)
         async with handler as tracebacks:
             await self._execute_invokable(*invokable)
-        embeds = [
-                discord.Embed(title=exc[0].__name__, description=f"```py\n{format_exception(exc[1])}\n```", color=discord.Color.red())
-                for exc in tracebacks
-            ]
-        if embeds:
-            await send(ctx, embeds)
+        if tracebacks:
+            await send(ctx, "\n".join(f"```py\n{format_exception(*exc)}\n```" for exc in tracebacks))
 
     @root.command("execute", parent="dev", aliases=["exec", "execute!", "exec!"], require_var_positional=True)
     async def root_execute(

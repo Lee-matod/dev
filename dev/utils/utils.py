@@ -12,9 +12,12 @@ Basic utilities used within the dev extension.
 from __future__ import annotations
 
 import traceback
-from typing import Dict
+from typing import TYPE_CHECKING, Dict, Optional, Type, overload
 
 from discord.utils import escape_markdown, escape_mentions
+
+if TYPE_CHECKING:
+    from types import TracebackType
 
 __all__ = ("clean_code", "codeblock_wrapper", "escape", "format_exception", "plural", "responses")
 
@@ -27,7 +30,19 @@ responses: Dict[str, str] = {
 }
 
 
-def format_exception(exception: BaseException, /) -> str:
+@overload
+def format_exception(etype: Type[Exception], val: Exception, tb: TracebackType, /) -> str:
+    ...
+
+
+@overload
+def format_exception(exception: Exception, /) -> str:
+    ...
+
+
+def format_exception(
+    exception: Exception | Type[Exception], val: Optional[Exception] = None, tb: Optional[TracebackType] = None, /
+) -> str:
     """Formats a stack trace and traceback information.
 
     Shorthand for :meth:`traceback.format_exception`.
@@ -42,7 +57,9 @@ def format_exception(exception: BaseException, /) -> str:
     str
         The formatted exception.
     """
-    return "".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
+    if isinstance(exception, Exception):
+        return "".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
+    return "".join(traceback.format_exception(exception, val, tb))
 
 
 def clean_code(content: str) -> str:

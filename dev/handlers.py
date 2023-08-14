@@ -115,7 +115,8 @@ class TimedInfo:
         return self.end - self.start
 
     async def wait_for(self, coro: Coro[T], /) -> Optional[T]:
-        """Wait for the timeout to end. If timeout is reached and :attr:`end` is not set, react to the given message.
+        """Wait for the timeout to end. If timeout is reached and :attr:`end` is not set, invoke the
+        provided coroutine.
 
         This function should be called as a task.
         """
@@ -164,8 +165,9 @@ class ExceptionHandler(Generic[DebugT]):
         self.message: discord.Message = message
         self.on_error: Optional[Callable[[Type[Exception], Exception, TracebackType], Any]] = on_error
         self.debug: DebugT = debug
-        if debug:
-            type(self)._exceptions[message] = []
+        cls = type(self)
+        if debug and cls._exceptions.get(message) is None:
+            cls._exceptions[message] = []
 
     @overload
     async def __aenter__(
@@ -263,4 +265,3 @@ def replace_vars(string: str, scope: Scope) -> str:
     for key, value in scope.items():
         string = string.replace(Settings.VIRTUAL_VARS % key, value)
     return string
-
