@@ -76,14 +76,30 @@ POWERSHELL = pathlib.Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershel
 SHELL = os.getenv("SHELL") or "/bin/bash"
 
 
-class _SigKill(AuthoredMixin):
+class _InputModal(discord.ui.Modal):
+    input_message: discord.ui.TextInput[_InputModal] = discord.ui.TextInput(label="Standard input")
+
+    def __init__(self, process: Process, /):
+        super().__init__(title="Input")
+        self.process: Process = process
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        self.process.write(self.input_message.value)
+        await interaction.response.edit_message()
+
+
+class _ProcessHandlerButtons(AuthoredMixin):
     def __init__(self, author: Union[types.User, int], process: Process, /):
         super().__init__(author)
         self.session: ShellSession = process._Process__session  # type: ignore
         self.process: Process = process
 
+    @discord.ui.button(label="Input")
+    async def write_stdin(self, interaction: discord.Interaction, _: discord.ui.Button[_ProcessHandlerButtons]):
+        await interaction.response.send_modal(_InputModal(self.process))
+
     @discord.ui.button(label="Kill", emoji="\N{NO ENTRY}", style=discord.ButtonStyle.danger)
-    async def sigkill(self, interaction: discord.Interaction, _: discord.ui.Button[_SigKill]):
+    async def sigkill(self, interaction: discord.Interaction, _: discord.ui.Button[_ProcessHandlerButtons]):
         self.process.subprocess.kill()
         self.process.subprocess.terminate()
         self.process.force_kill = True
@@ -195,11 +211,42 @@ class Process:
         self.subprocess.kill()
         self.subprocess.terminate()
         self.close_code = self.subprocess.wait(timeout=0.5)
+        if self.stdout_task is not None:
+            self.stdout_task.cancel()
+        if self.stderr_task is not None:
+            self.stderr_task.cancel()
 
-    def _get_view(self, author: Union[types.User, int]) -> Optional[_SigKill]:
+    def _get_view(self, author: Union[types.User, int]) -> Optional[_ProcessHandlerButtons]:
         if self.is_alive:
-            return _SigKill(author, self)
+            return _ProcessHandlerButtons(author, self)
         return None
+
+    def write(self, message: str) -> Optional[int]:
+        """Write a message to this process' standard input.
+
+        Paramters
+        ---------
+        message: :class:`str`
+            The message that will be sent to stdin.
+
+        Returns
+        -------
+        Optional[int]
+            The amount of characters writte, if writting was successful.
+
+        Raises
+        ------
+        ConnectionError
+            The current process is no longer alive.
+        """
+        if not self.is_alive:
+            raise ConnectionError("Process is no longer alive")
+        stdin = self.subprocess.stdin
+        if stdin is None:
+            return
+        chars = stdin.write(f"{message.strip()}\n".encode("utf-8"))
+        stdin.flush()
+        return chars
 
     @property
     def message(self) -> Optional[discord.Message]:
