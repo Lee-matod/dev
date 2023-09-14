@@ -164,8 +164,18 @@ class RootInvoke(root.Plugin):
         self, ctx: commands.Context[types.Bot], content: str, kwargs: Dict[str, Any]
     ) -> Optional[Tuple[Union[SyntheticInteraction[types.Bot], types.Command], commands.Context[types.Bot]]]:
         if content.startswith("/"):
-            app_commands = self.bot.tree.get_commands(type=discord.AppCommandType.chat_input)
-            app_command = get_app_command(content[1:].split("\n")[0], app_commands.copy())  # type: ignore
+            command_name = content[1:].split("\n")[0]
+            global_command = get_app_command(
+                command_name, self.bot.tree.get_commands(type=discord.AppCommandType.chat_input)
+            )
+            local_command = get_app_command(
+                command_name,
+                self.bot.tree.get_commands(guild=ctx.guild, type=discord.AppCommandType.chat_input)
+                if ctx.guild is not None
+                else [],
+            )
+            # Prefer local commands over global commands
+            app_command = local_command or global_command
             if app_command is None:
                 return
             kwargs["content"] = kwargs["content"].removeprefix(ctx.prefix)

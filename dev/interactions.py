@@ -57,7 +57,7 @@ ChoiceT = TypeVar("ChoiceT", str, int, float, Union[str, int, float])
 
 
 def get_app_command(
-    content: str, app_command_list: List[app_commands.Command[Any, ..., Any]]
+    content: str, app_command_list: List[Union[app_commands.Command[Any, ..., Any], app_commands.Group]]
 ) -> Optional[app_commands.Command[Any, ..., Any]]:
     command_string = content.split("\n")[0].split()
     app_command_name = command_string[0]
