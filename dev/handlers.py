@@ -32,6 +32,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Union,
     final,
     overload,
 )
@@ -179,12 +180,14 @@ class ExceptionHandler(Generic[DebugT]):
     async def __aenter__(self: ExceptionHandler[Literal[False]]) -> ExceptionHandler[Literal[False]]:
         ...
 
-    async def __aenter__(self: ExceptionHandler[DebugT]):  # type: ignore
+    async def __aenter__(  # type: ignore
+        self: ExceptionHandler[DebugT],
+    ) -> Union[List[Tuple[Type[Exception], Exception, TracebackType]], ExceptionHandler[DebugT]]:
         if self.debug:
             try:
                 tracebacks = type(self)._exceptions[self.message]
             except KeyError:
-                return []  # type: ignore
+                return []
             return tracebacks
         return self
 
@@ -240,10 +243,9 @@ class ExceptionHandler(Generic[DebugT]):
                 self.on_error(exc_type, exc_val, exc_tb)
 
         if self.message in type(self)._exceptions:
+            type(self)._exceptions[self.message].append((exc_type, exc_val, exc_tb))
             if self.debug:
                 del type(self)._exceptions[self.message]
-            else:
-                type(self)._exceptions[self.message].append((exc_type, exc_val, exc_tb))
         return True
 
 
