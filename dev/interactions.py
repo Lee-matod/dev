@@ -211,7 +211,6 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
         "id",
         "type",
         "guild_id",
-        "channel_id",
         "data",
         "application_id",
         "message",
@@ -224,19 +223,19 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
         "command_failed",
         "_permissions",
         "_app_permissions",
-        "_app_command",
         "_state",
         "_client",
-        "_context",
         "_session",
         "_baton",
         "_original_response",
-        "_unknown_interaction",
         "_cs_response",
         "_cs_followup",
-        "_cs_channel",
+        "channel",
         "_cs_namespace",
         "_cs_command",
+        "_unknown_interaction",
+        "_context",
+        "_app_command",
     )
 
     def __init__(
@@ -267,6 +266,8 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
                         _append_snowflake(resolved, "users", obj, to_dict.user(obj._user))
             if isinstance(value, discord.abc.Snowflake):
                 value = str(value.id)
+            if value is None:
+                continue
             command_parameters.append(
                 {"type": param.type.value, "name": param.display_name, "value": value}  # type: ignore
             )
@@ -306,6 +307,7 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
         }
         if context.guild is not None:
             payload["guild_id"] = context.guild.id
+            payload["data"]["guild_id"] = context.guild.id
             payload["member"] = to_dict.member(context.author)  # type: ignore
         else:
             user = context.author if isinstance(context.author, discord.User) else context.author._user
@@ -363,7 +365,6 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
         if tree is None:
             return app_commands.Namespace(self, {}, [])
 
-        # The type checker does not understand this narrowing
         data: InteractionPayloadData = self.data  # type: ignore
 
         try:
