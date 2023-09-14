@@ -88,6 +88,9 @@ async def get_parameters(
     mapped: Dict[app_commands.Parameter, Any] = {}
     for req in required_arguments:
         if req.display_name not in parameters:
+            # For some reason it's called displayed_name instead of display_name
+            # in ext.commands.Parameter, and this causes errors
+            setattr(req, "displayed_name", req.display_name)
             raise commands.MissingRequiredArgument(req)  # type: ignore
         mapped[req] = await _parameter_type(context, req, parameters[req.display_name])
     for opt in optional_arguments:
@@ -201,9 +204,9 @@ class InvalidChoice(app_commands.AppCommandError):
 
 
 class SyntheticInteraction(discord.Interaction[ClientT]):
-    #  I really don't like setting new attributes/methods, but I don't see any
-    #  other way to do this without making everything a lot more complicated than
-    #  what it has to be.
+    # I really don't like setting new attributes/methods, but I don't see any
+    # other way to do this without making everything a lot more complicated than
+    # what it has to be.
     __slots__: Tuple[str, ...] = (
         "id",
         "type",
