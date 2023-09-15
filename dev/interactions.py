@@ -301,14 +301,14 @@ class SyntheticInteraction(discord.Interaction[ClientT]):
             "application_id": context.me.id,
             "data": data,
             "channel": channel,
-            "app_permissions": str(context.me.guild_permissions.value)
-            if isinstance(context.me, discord.Member)
-            else "0",
+            "app_permissions": str(context.bot_permissions.value),
         }
         if context.guild is not None:
             payload["guild_id"] = context.guild.id
             payload["data"]["guild_id"] = context.guild.id
-            payload["member"] = to_dict.member(context.author)  # type: ignore
+            member = to_dict.member(context.author)  # type: ignore
+            member["permissions"] = str(context.permissions.value)
+            payload["member"] = member  # type: ignore
         else:
             user = context.author if isinstance(context.author, discord.User) else context.author._user
             payload["user"] = to_dict.user(user)  # type: ignore
